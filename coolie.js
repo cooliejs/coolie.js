@@ -35,10 +35,16 @@
         throw new Error('can not found javascript main file');
     }
 
-    window.define = function (id, factory) {
-        var requires;
+    /**
+     * 定义一个模块
+     * @param {String} [id] 模块id
+     * @param {Array} [deps] 模块依赖
+     * @param {Function} factory 模块方法
+     */
+    window.define = function (id, deps, factory) {
+        var args = arguments;
 
-        isSync = arguments.length > 1;
+        isSync = args.length === 3;
         requireLength++;
 
         if (isSync) {
@@ -46,29 +52,33 @@
                 throw new Error('module id must be a string');
             }
 
+            if (!Array.isArray(deps)) {
+                throw new Error('module dependencies must be an array');
+            }
+
             if (typeof factory !== 'function') {
                 throw new Error('module factory must be a function');
             }
         } else {
-            factory = id;
+            factory = args[0];
             id = '';
         }
 
         if (typeof factory === 'function') {
-            requires = _parseRequires(factory.toString());
-            factory.id = id ? id : cwf;
-            _pushModule(requires, factory);
+            deps = isSync ? deps : _parseRequires(factory.toString());
+            factory.id = isSync ? id : cwf;
+            _pushModule(deps, factory);
 
             // 同步加载 && 无依赖可解析
             if (isSync) {
-                if (!requires.length) {
+                if (!deps.length) {
                     inParse = !1;
                 }
             }
             // 异步加载
             else {
-                if (requires.length) {
-                    requires.forEach(function (dep) {
+                if (deps.length) {
+                    deps.forEach(function (dep) {
                         id = _pathJoin(_getPathname(cwf), dep);
                         _loadScript(id);
                     });
@@ -110,7 +120,7 @@
             var module = {
                 id: id,
                 dependencies: deps,
-                uri: isSync ? HOST + cwf: id,
+                uri: isSync ? HOST + cwf : id,
                 exports: {}
             };
 

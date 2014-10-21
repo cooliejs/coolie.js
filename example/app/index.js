@@ -4,7 +4,7 @@ define('index.js', ['1'], function (r) {
     alert(name);
 });
 
-define('1', function (r, e, m) {
+define('1', [], function (r, e, m) {
     m.exports = '1';
 });
 
