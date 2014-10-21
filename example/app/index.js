@@ -1,10 +1,10 @@
-define('index.js', function (require) {
-    var name = require('1');
+define('index.js', ['1'], function (r) {
+    var name = r('1');
 
     alert(name);
 });
 
-define('1', function (require, exports, module) {
-    module.exports = '1';
+define('1', function (r, e, m) {
+    m.exports = '1';
 });
 
