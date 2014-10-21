@@ -46,32 +46,31 @@ define('1', [], function (a, b, c){
 
 
 
-# Config
-
-- 方法1：使用配置 JS 文件【推荐】，易于构建
-- 方法2：直接内联在 HTML 里，优先级最高，无法被正常构建
-
-## 方法1：文件配置
+# API
+## `config`
 ```
 coolie.config({
-    // 这里的base是相对于配置文件的
+	// * 入口模块的基准路径，也可以写绝对路径
+    // `base`是相对于`coolie.js`所在的路径的
+	// 可选
 	base: './',
-	// 入口文件版本，用于清除文件缓存，常用于发布到生产环境上，具体细节查看`coolie`发布工具
-	// 比如入口文件是`index.js`，那么实际请求的路径为`/path/to/index.js?v=abc123`
+
+	// * 模块文件版本，用于清除文件缓存，常用于发布到生产环境上，具体细节查看`coolie`发布工具
+	// 比如入口文件是`index.js`，那么实际请求的路径为`/path/to/index.js?_=abc123`
+	// 可选
 	version: 'abc123'
+
 	// 这里没有配置`main`，入口文件直接写在内联属性上
 });
 ```
 
-## 方法2：属性配置
 
+## `use`
 ```
-<script src="./path/to/coolie.js" data-base="./" data-main="./index.js"></script>
+// 运行入口模块，注意这里没有回调
+coolie.use('./index.js');
 ```
-- `base`
-  模块入口的基准路径，相对于当前页面，默认为`coolie.js`所在的路径
-- `main`（必须）
-  模块入口的路径，相对于`base`
+
 
 
 # Builder
