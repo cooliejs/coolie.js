@@ -16,7 +16,6 @@
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
-    var REG_QUERY_AND_HASH = /(\?.*|#.*)$/;
     // 入口模块
     var mainMoule;
     // 入口模块是否为匿名模块
@@ -86,7 +85,6 @@
     };
 
 
-
     /**
      * @namespace coolie
      * @type {{config: config, use: use}}
@@ -121,13 +119,8 @@
                 throw new Error('main module must be a string');
             }
 
-            // 模块已经载入了
-            if (modules[main]) {
-//                _execModule(main);
-            } else {
-                mainMoule = _pathJoin(config.base, main);
-                _loadScript(mainMoule);
-            }
+            mainMoule = _pathJoin(config.base, main);
+            _loadScript(mainMoule);
 
             return this;
         }
@@ -282,17 +275,6 @@
      */
     function _getPathname(filepath) {
         return filepath.replace(REG_FILE_BASENAME, '/');
-    }
-
-
-    /**
-     * 或者文件路径的文件名
-     * @param filepath
-     * @returns {*|string}
-     * @private
-     */
-    function _getBasename(filepath) {
-        return (filepath.match(REG_FILE_BASENAME) || ['', ''])[1];
     }
 
 
@@ -453,17 +435,5 @@
 
         return scripts[scripts.length - 1];
     }
-
-
-    /**
-     * 清理URI上的无效字符
-     * @param uri
-     * @returns {XML|string|void}
-     * @private
-     */
-    function _cleanURI(uri){
-        return uri.replace(REG_QUERY_AND_HASH, '');
-    }
-
 })();
 
