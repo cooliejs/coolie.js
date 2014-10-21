@@ -335,6 +335,7 @@
         }
 
         function onload() {
+            console.log(url);
             // Ensure only run once and handle memory leak in IE
             node.onload = node.onerror = node.onreadystatechange = null
 

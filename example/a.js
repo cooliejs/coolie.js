@@ -1,6 +1,7 @@
 define(function(require, exports, module){
-    require('./libs/path1/path2/b.js');
+    var b = require('./libs/path1/path2/b.js');
     module.exports = function(){
-        alert('load ' + this.dirname);
+        alert('load ' + module.id);
+        alert(b.name);
     };
 });

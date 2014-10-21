@@ -7,74 +7,83 @@
 (function () {
     'use strict';
 
-    var regUpPath = /\.\.\//g;
-    var regComment = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
-    var regRequire = /require\(["'](.*?)["']\)/g;
-    var noop = function () {
-        // ignore
-    };
-    var meNode = _getMeNode();
-    var main = _getData(meNode, 'main');
-    var base = _getData(meNode, 'base') || _getPathname(meNode.getAttribute('src'));
-    var containerNode = document.body || document.documentElement || meNode.parentNode;
+    // 该正则取自 seajs
+    var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g
+    var REG_SLASH = /\\\\/g
+    var REG_UP_PATH = /\.\.\//g;
+    var REG_READY_STATE_CHANGE = /loaded|complete/;
     var HOST = location.protocol + '//' + location.host;
-    var CWF = _pathJoin(location.pathname, base);
+    var meNode = _getMeNode();
+    var main = _getNodeData(meNode, 'main');
+    var base = _getNodeData(meNode, 'base') || _getPathname(meNode.getAttribute('src'));
+    var containerNode = document.body || document.documentElement || meNode.parentNode;
+    // 当前解析文件
+    var cwf = _pathJoin(location.pathname, base);
+    var mainMoule = _pathJoin(_getPathname(cwf), main);
     var modules = {};
+    var inParse = !0;
+    // 依赖长度
+    var requireLength = 0;
+    // 完成加载长度
+    var doneLength = 0;
 
     if (!main) {
         throw new Error('can not found javascript main file');
     }
 
     window.define = function (factory) {
-        var the = {
-            dirname: CWF
-        };
-        var require = function (path) {
-//            _loadScript(this.dirname, path);
-        };
         var requires;
 
+        requireLength++;
         if (_isFunction(factory)) {
             requires = _parseRequires(factory.toString());
-            console.log(requires);
+            factory.filename = cwf;
+            _pushModule(cwf, requires, factory);
+
+            if (requires.length) {
+                requires.forEach(function (dep) {
+                    var id = _pathJoin(_getPathname(cwf), dep);
+
+                    _loadScript(id);
+                });
+            }else{
+                inParse = !1;
+            }
         }
     };
 
-    _loadScript(main);
+
+    _loadScript(mainMoule);
 
 
-    /**
-     * 模块递归加载
-     * @param file
-     * @private
-     */
-    function _loadModules(file) {
-        _ajaxScript(file, function (err, data) {
-            if (err) {
-                return !1;
-            }
+    function _pushModule(id, deps, factory) {
+        modules[id] = (function () {
+            var require = function (module) {
+                var path = _getPathname(factory.filename);
 
-            var requires = _parseRequires(data);
+                module = _pathJoin(path, module);
 
-            if(requires.length){
-                requires.forEach(function (require) {
-                    _loadModules(require);
-                });
-            }else{
-                _runModules();
-            }
-        });
-    }
+                if (!modules[module]) {
+                    throw new Error('can not found module `' + module + '`, require in `' + id + '`');
+                }
 
+                return modules[module]();
+            };
 
-    /**
-     * 执行模块
-     * @private
-     */
-    function _runModules() {
-        for(var i in modules){
-            modules[i]();
-        }
+            var module = {
+                id: id,
+                dependencies: deps,
+                uri: HOST + factory.filename,
+                exports: {}
+            };
+
+            modules[id] = module;
+
+            return function () {
+                factory.call(window, require, module.exports, module);
+                return module.exports;
+            };
+        })();
     }
 
 
@@ -91,62 +100,41 @@
 
 
     /**
-     * 异步加载脚本
-     * @param src {String} 加载路径
-     * @param [callback] {Function} 回调
-     * @private
-     */
-    function _ajaxScript(src, callback) {
-        var xhr = new XMLHttpRequest();
-        var url = CWF = _pathJoin(_getPathname(CWF), src);
-        var time = Date.now();
-        var done = function (err, text) {
-            if (!err) {
-                console.log(HOST + url, (Date.now() - time) + 'ms');
-                modules[url] = text;
-            }
-
-            (callback || noop)(err, text);
-        };
-
-        xhr.onload = function () {
-            if (xhr.status === 200 || xhr.status === 304) {
-                done(null, xhr.responseText);
-            } else {
-                done(new Error(xhr.responseType));
-            }
-        };
-        xhr.onerror = done;
-        xhr.open('GET', url);
-        xhr.send(null);
-    }
-
-
-    /**
      * 异步加载并执行脚本
-     * @param src {String} 加载路径
-     * @param [callback] {Function} 回调
+     * @param src {String} 脚本完整路径
      * @private
      */
-    function _loadScript(src, callback) {
-        base = _getPathname(base);
-
+    function _loadScript(src) {
         var script = document.createElement('script');
-        var url = CWF =_pathJoin(_getPathname(CWF), src);
         var time = Date.now();
         var done = function (err) {
             if (!err) {
-                console.log(HOST + url, (Date.now() - time) + 'ms');
+                console.log(HOST + src, (Date.now() - time) + 'ms');
             }
 
-            (callback || noop)(err);
+            script.onload = script.onerror = null;
+            containerNode.removeChild(script);
+
+            // 依赖全部加载完成 && 解析完成
+            if(requireLength === ++doneLength && !inParse){
+                modules[mainMoule]();
+            }
         };
 
-        script.src = url;
+        cwf = script.src = src;
         script.async = true;
         script.defer = true;
-        script.onload = done;
-        script.onerror = done;
+        script.onload = function () {
+            done();
+        };
+        script.onerror = function (err) {
+            done(err);
+        };
+        script.onreadystatechange = function () {
+            if(REG_READY_STATE_CHANGE.test(script.readyState)){
+                done();
+            }
+        };
         containerNode.appendChild(script);
     }
 
@@ -209,7 +197,7 @@
         // 向上查找
         else if (to.indexOf('../') === 0) {
             fromPath = from.slice(1, -1).split('/');
-            toDepth = to.match(regUpPath).length;
+            toDepth = to.match(REG_UP_PATH).length;
 
             if (toDepth > fromPath.length) {
                 throw new Error('can not change path from `' + from + '` to `' + to + '`');
@@ -224,7 +212,7 @@
             return (fromPath ? '/' : '') +
                 (fromPath ? fromPath : '/') +
                 (fromPath ? '/' : '') +
-                to.replace(regUpPath, '');
+                to.replace(REG_UP_PATH, '');
         } else {
             throw new Error('can not change path from `' + from + '` to `' + to + '`');
         }
@@ -238,7 +226,7 @@
      * @returns {*}
      * @private
      */
-    function _getData(node, name) {
+    function _getNodeData(node, name) {
         return node.dataset[name];
     }
 
@@ -249,18 +237,14 @@
      * @returns {Array}
      * @private
      */
-    function _parseRequires(data) {
-        data = data.replace(regComment, '');
+    function _parseRequires(code) {
         var requires = [];
-        var matches;
-        var require;
 
-        while ((matches = regRequire.exec(data)) !== null) {
-            require = matches[1];
-            if (requires.indexOf(require) === -1) {
-                requires.push(require);
+        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function (m, m1, m2) {
+            if (m2) {
+                requires.push(m2)
             }
-        }
+        });
 
         return requires;
     }
