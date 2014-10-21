@@ -17,7 +17,8 @@
     var REG_END_PART = /[^\/]+\/$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
     // 入口模块
-    var mainMoule;
+    var mainFile;
+    var execModule;
     // 入口模块是否为匿名模块
     var isMainAnonymous;
     // 当前脚本
@@ -51,6 +52,8 @@
 
         if (isMainAnonymous === undefined) {
             isMainAnonymous = isAnonymous;
+
+            execModule = isAnonymous ? mainFile : id;
         }
 
         // define(fn);
@@ -77,10 +80,7 @@
             throw new Error('module factory must be a function');
         }
 
-
         deps = isAnonymous ? _parseRequires(factory.toString()) : deps;
-        factory = factory;
-
         dependencies.push([id, deps, factory]);
     };
 
@@ -119,8 +119,8 @@
                 throw new Error('main module must be a string');
             }
 
-            mainMoule = _pathJoin(config.base, main);
-            _loadScript(mainMoule);
+            mainFile = _pathJoin(config.base, main);
+            _loadScript(mainFile);
 
             return this;
         }
@@ -139,7 +139,7 @@
         if (dependencies.length) {
             // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
             meta = dependencies.shift();
-            module.id = script.id;
+            module.id = meta[0] || script.id;
             module.deps = meta[1];
             module.factory = meta[2];
 
@@ -150,14 +150,14 @@
                 modules[module.id] = module;
             }
 
-            if (module.deps.length) {
+            if (isMainAnonymous && module.deps.length) {
                 _loadRequeire(module.id, module.deps);
             }
         }
 
-        // （依赖全部加载完成 || 入口同步机制） && 解析完成
+        // 依赖全部加载完成
         if (requireLength === doneLength) {
-            _execModule(mainMoule);
+            _execModule(execModule);
         }
     }
 
@@ -171,10 +171,12 @@
     function _loadRequeire(relativeTo, deps) {
         var path = _getPathname(relativeTo);
 
-        _each(deps, function (i, dep) {
-            var id = _pathJoin(path, dep);
-            _loadScript(id);
-        });
+        if(isMainAnonymous){
+            _each(deps, function (i, dep) {
+                var id = _pathJoin(path, dep);
+                _loadScript(id);
+            });
+        }
     }
 
 
@@ -189,7 +191,7 @@
         module.exports = {};
         module.exec = (function () {
             var require = function (dep) {
-                var depId = _pathJoin(_getPathname(module.id), dep);
+                var depId = isMainAnonymous ? _pathJoin(_getPathname(module.id), dep) : dep;
 
                 if (!modules[depId]) {
                     throw new Error('can not found module `' + depId + '`, require in `' + module.id + '`');
