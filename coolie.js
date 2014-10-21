@@ -1,5 +1,5 @@
 /*!
- * porter
+ * coolie 苦力
  * @author ydr.me
  * @create 2014-10-21 14:52
  */
@@ -16,24 +16,28 @@
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
-    // 配置
-    var config = {};
-    // 当前解析文件，current working file
-    var cwf;
+    var REG_QUERY_AND_HASH = /(\?.*|#.*)$/;
     // 入口模块
     var mainMoule;
-    var meNode = _getMeNode();
-    var containerNode = document.body || document.documentElement || meNode.parentNode;
-    var mePath = _getPathname(_pathJoin(location.pathname, meNode.getAttribute('src')));
+    // 入口模块是否为匿名模块
+    var isMainAnonymous;
+    // 当前脚本
+    var currentScript = _getCurrentScript();
+    var containerNode = currentScript.parentNode;
+    var mePath = _getPathname(_pathJoin(location.pathname, currentScript.getAttribute('src')));
+    // 配置
+    var config = {
+        base: mePath
+    };
+    var modulesCache = {};
     var modules = {};
-    // 是否为同步加载机制，异步：开发环境（默认），一个模块一个文件；同步：生产环境，多个模块合并成一个文件
-    var isSync = !1;
-    // 是否正在解析
-    var inParse = !0;
     // 依赖长度
     var requireLength = 0;
     // 完成加载长度
     var doneLength = 0;
+    // 加载依赖队列
+    var dependencies = [];
+
 
     /**
      * 定义一个模块
@@ -44,49 +48,44 @@
      */
     window.define = function (id, deps, factory) {
         var args = arguments;
+        var isAnonymous = args.length === 1;
 
-        isSync = args.length === 3;
-        requireLength++;
+        if (isMainAnonymous === undefined) {
+            isMainAnonymous = isAnonymous;
+        }
 
-        if (isSync) {
+        // define(fn);
+        if (isAnonymous) {
+            factory = args[0];
+            id = '';
+        } else {
             if (!_isString(id)) {
                 throw new Error('module id must be a string');
+            }
+
+            // define(id, fn);
+            if (_isFunction(args[1])) {
+                factory = args[1];
+                deps = [];
             }
 
             if (!_isArray(deps)) {
                 throw new Error('module dependencies must be an array');
             }
-        } else {
-            factory = args[0];
-            id = '';
         }
 
         if (!_isFunction(factory)) {
             throw new Error('module factory must be a function');
         }
 
-        deps = isSync ? deps : _parseRequires(factory.toString());
-        factory.id = isSync ? id : cwf;
-        _pushModule(deps, factory);
 
-        // 同步加载 && 无依赖可解析
-        if (isSync) {
-            if (!deps.length) {
-                inParse = !1;
-            }
-        }
-        // 异步加载
-        else {
-            if (deps.length) {
-                _each(deps, function (i, dep) {
-                    id = _pathJoin(_getPathname(cwf), dep);
-                    _loadScript(id);
-                });
-            } else {
-                inParse = !1;
-            }
-        }
+        deps = isAnonymous ? _parseRequires(factory.toString()) : deps;
+        factory = factory;
+
+        dependencies.push([id, deps, factory]);
     };
+
+
 
     /**
      * @namespace coolie
@@ -118,13 +117,17 @@
                 throw new Error('coolie config `base` property must be a string');
             }
 
-            if(!_isString(main)){
+            if (!_isString(main)) {
                 throw new Error('main module must be a string');
             }
 
-            cwf = config.base;
-            mainMoule = _pathJoin(_getPathname(cwf), main);
-            _loadScript(mainMoule);
+            // 模块已经载入了
+            if (modules[main]) {
+//                _execModule(main);
+            } else {
+                mainMoule = _pathJoin(config.base, main);
+                _loadScript(mainMoule);
+            }
 
             return this;
         }
@@ -132,38 +135,78 @@
 
 
     /**
-     * 模块入栈
-     * @param deps
-     * @param factory
+     * 脚本加载完毕保存模块
+     * @param script
      * @private
      */
-    function _pushModule(deps, factory) {
-        var id = factory.id;
+    function _saveModule(script) {
+        var module = {};
+        var meta;
 
-        modules[id] = (function () {
-            var require = function (module) {
-                if (!isSync) {
-                    module = _pathJoin(_getPathname(id), module);
+        if (dependencies.length) {
+            // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
+            meta = dependencies.shift();
+            module.id = script.id;
+            module.deps = meta[1];
+            module.factory = meta[2];
+
+            // 包装
+            _wrapModule(module);
+
+            if (!modules[module.id]) {
+                modules[module.id] = module;
+            }
+
+            if (module.deps.length) {
+                _loadRequeire(module.id, module.deps);
+            }
+        }
+
+        // （依赖全部加载完成 || 入口同步机制） && 解析完成
+        if (requireLength === doneLength) {
+            _execModule(mainMoule);
+        }
+    }
+
+
+    /**
+     * 加载依赖，拉到外面来构造独立作用域，防止执行define切换路径影响到路径匹配
+     * @param relativeTo
+     * @param deps
+     * @private
+     */
+    function _loadRequeire(relativeTo, deps) {
+        var path = _getPathname(relativeTo);
+
+        _each(deps, function (i, dep) {
+            var id = _pathJoin(path, dep);
+            _loadScript(id);
+        });
+    }
+
+
+    /**
+     * 模块入栈
+     * @param isAnonymous 是否匿名
+     * @param deps 依赖
+     * @param factory 函数
+     * @private
+     */
+    function _wrapModule(module) {
+        module.exports = {};
+        module.exec = (function () {
+            var require = function (dep) {
+                var depId = _pathJoin(_getPathname(module.id), dep);
+
+                if (!modules[depId]) {
+                    throw new Error('can not found module `' + depId + '`, require in `' + module.id + '`');
                 }
 
-                if (!modules[module]) {
-                    throw new Error('can not found module `' + module + '`, require in `' + id + '`');
-                }
-
-                return modules[module]();
+                return modules[depId].exec();
             };
-
-            var module = {
-                id: id,
-                dependencies: deps,
-                uri: isSync ? cwf : id,
-                exports: {}
-            };
-
-            modules[id] = module;
 
             return function () {
-                factory.call(window, require, module.exports, module);
+                module.factory.call(window, require, module.exports, module);
                 return module.exports;
             };
         })();
@@ -180,19 +223,7 @@
             throw new Error('can not found module `' + module + '`');
         }
 
-        modules[module]();
-    }
-
-
-    /**
-     * 获取自身节点
-     * @returns {Node}
-     * @private
-     */
-    function _getMeNode() {
-        var scripts = document.getElementsByTagName('script');
-
-        return scripts[scripts.length - 1];
+        modules[module].exec();
     }
 
 
@@ -202,36 +233,42 @@
      * @private
      */
     function _loadScript(src) {
-        var script = document.createElement('script');
-        var time = Date.now();
-        var done = function (err) {
+        var script;
+        var time;
+        var complete;
+
+        if (modulesCache[src]) {
+            return !1;
+        }
+
+        modulesCache[src] = 1;
+        requireLength++;
+        script = document.createElement('script');
+        time = Date.now();
+        complete = function (err) {
             if (!err) {
                 console.log(src, (Date.now() - time) + 'ms');
                 doneLength++;
+                _saveModule(script);
             }
 
-            script.onload = script.onerror = null;
+            script.onload = script.onerror = script.onreadystatechange = null;
             containerNode.removeChild(script);
-
-            // （依赖全部加载完成 || 同步机制） && 解析完成
-            if ((requireLength === doneLength || isSync) && !inParse) {
-                _execModule(isSync ? _getBasename(mainMoule) : mainMoule);
-            }
         };
 
-        cwf = src;
-        script.src = _addRequestVersion(src);
+        script.id = src;
         script.async = true;
         script.defer = true;
+        script.src = _addRequestVersion(src);
         script.onload = function () {
-            done();
+            complete();
         };
         script.onerror = function (err) {
-            done(err);
+            complete(err);
         };
         script.onreadystatechange = function () {
             if (REG_READY_STATE_CHANGE.test(script.readyState)) {
-                done();
+                complete();
             }
         };
         containerNode.appendChild(script);
@@ -317,7 +354,6 @@
     }
 
 
-
     /**
      * 解析出当前文本中的依赖信息，返回依赖数组
      * @param data
@@ -394,7 +430,6 @@
     }
 
 
-
     /**
      * 添加请求版本号
      * @param str
@@ -403,8 +438,32 @@
      */
     function _addRequestVersion(str) {
         return config.version ?
-            str + (str.indexOf('?') > -1 ? '&': '?') + '_=' + encodeURIComponent(config.version):
+            str + (str.indexOf('?') > -1 ? '&' : '?') + '_=' + encodeURIComponent(config.version) :
             str;
     }
+
+
+    /**
+     * 获取当前脚本
+     * @returns {Node}
+     * @private
+     */
+    function _getCurrentScript() {
+        var scripts = document.getElementsByTagName('script');
+
+        return scripts[scripts.length - 1];
+    }
+
+
+    /**
+     * 清理URI上的无效字符
+     * @param uri
+     * @returns {XML|string|void}
+     * @private
+     */
+    function _cleanURI(uri){
+        return uri.replace(REG_QUERY_AND_HASH, '');
+    }
+
 })();
 
