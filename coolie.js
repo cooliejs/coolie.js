@@ -12,6 +12,7 @@
     var REG_SLASH = /\\\\/g
     var REG_UP_PATH = /\.\.\//g;
     var REG_READY_STATE_CHANGE = /loaded|complete/;
+    var REG_FILE_BASENAME = /\/([^\/]+)$/;
     var HOST = location.protocol + '//' + location.host;
     var meNode = _getMeNode();
     var main = _getNodeData(meNode, 'main');
@@ -21,6 +22,9 @@
     var cwf = _pathJoin(location.pathname, base);
     var mainMoule = _pathJoin(_getPathname(cwf), main);
     var modules = {};
+    // 是否为同步加载机制，异步：开发环境（默认），一个模块一个文件；同步：生产环境，多个模块合并成一个文件
+    var isSync = !1;
+    // 是否正在解析
     var inParse = !0;
     // 依赖长度
     var requireLength = 0;
@@ -31,24 +35,49 @@
         throw new Error('can not found javascript main file');
     }
 
-    window.define = function (factory) {
+    window.define = function (id, factory) {
         var requires;
 
+        isSync = arguments.length > 1;
         requireLength++;
-        if (_isFunction(factory)) {
-            requires = _parseRequires(factory.toString());
-            factory.filename = cwf;
-            _pushModule(cwf, requires, factory);
 
-            if (requires.length) {
-                requires.forEach(function (dep) {
-                    var id = _pathJoin(_getPathname(cwf), dep);
-
-                    _loadScript(id);
-                });
-            }else{
-                inParse = !1;
+        if (isSync) {
+            if (typeof id !== 'string') {
+                throw new Error('module id must be a string');
             }
+
+            if (typeof factory !== 'function') {
+                throw new Error('module factory must be a function');
+            }
+        } else {
+            factory = id;
+            id = '';
+        }
+
+        if (typeof factory === 'function') {
+            requires = _parseRequires(factory.toString());
+            factory.id = id ? id : cwf;
+            _pushModule(requires, factory);
+
+            // 同步加载 && 无依赖可解析
+            if (isSync) {
+                if (!requires.length) {
+                    inParse = !1;
+                }
+            }
+            // 异步加载
+            else {
+                if (requires.length) {
+                    requires.forEach(function (dep) {
+                        id = _pathJoin(_getPathname(cwf), dep);
+                        _loadScript(id);
+                    });
+                } else {
+                    inParse = !1;
+                }
+            }
+        } else {
+            throw new Error('module factory must be a function');
         }
     };
 
@@ -56,12 +85,20 @@
     _loadScript(mainMoule);
 
 
-    function _pushModule(id, deps, factory) {
+    /**
+     * 模块入栈
+     * @param deps
+     * @param factory
+     * @private
+     */
+    function _pushModule(deps, factory) {
+        var id = factory.id;
+
         modules[id] = (function () {
             var require = function (module) {
-                var path = _getPathname(factory.filename);
-
-                module = _pathJoin(path, module);
+                if (!isSync) {
+                    module = _pathJoin(_getPathname(id), module);
+                }
 
                 if (!modules[module]) {
                     throw new Error('can not found module `' + module + '`, require in `' + id + '`');
@@ -73,7 +110,7 @@
             var module = {
                 id: id,
                 dependencies: deps,
-                uri: HOST + factory.filename,
+                uri: isSync ? HOST + cwf: id,
                 exports: {}
             };
 
@@ -84,6 +121,20 @@
                 return module.exports;
             };
         })();
+    }
+
+
+    /**
+     * 模块入口执行
+     * @param module
+     * @private
+     */
+    function _execModule(module) {
+        if (!modules[module]) {
+            throw new Error('can not found module `' + module + '`');
+        }
+
+        modules[module]();
     }
 
 
@@ -110,14 +161,15 @@
         var done = function (err) {
             if (!err) {
                 console.log(HOST + src, (Date.now() - time) + 'ms');
+                doneLength++;
             }
 
             script.onload = script.onerror = null;
             containerNode.removeChild(script);
 
-            // 依赖全部加载完成 && 解析完成
-            if(requireLength === ++doneLength && !inParse){
-                modules[mainMoule]();
+            // （依赖全部加载完成 || 同步机制） && 解析完成
+            if ((requireLength === doneLength || isSync) && !inParse) {
+                _execModule(isSync ? _getBasename(mainMoule) : mainMoule);
             }
         };
 
@@ -131,7 +183,7 @@
             done(err);
         };
         script.onreadystatechange = function () {
-            if(REG_READY_STATE_CHANGE.test(script.readyState)){
+            if (REG_READY_STATE_CHANGE.test(script.readyState)) {
                 done();
             }
         };
@@ -140,23 +192,23 @@
 
 
     /**
-     * 判断对象是否为 Function 实例
-     * @param obj
-     * @returns {boolean}
+     * 或者文件路径的文件层级
+     * @param filepath
      * @private
      */
-    function _isFunction(obj) {
-        return typeof obj === 'function';
+    function _getPathname(filepath) {
+        return filepath.replace(REG_FILE_BASENAME, '/');
     }
 
 
     /**
-     * 获取文件所在的路径
-     * @param file
+     * 或者文件路径的文件名
+     * @param filepath
+     * @returns {*|string}
      * @private
      */
-    function _getPathname(file) {
-        return file.replace(/\/[^\/]+$/, '/');
+    function _getBasename(filepath) {
+        return (filepath.match(REG_FILE_BASENAME) || ['', ''])[1];
     }
 
 
