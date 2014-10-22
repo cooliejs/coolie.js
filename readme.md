@@ -5,7 +5,7 @@ A coolie for JavaScript module management and module transportation.
 一个为 JavaScript 模块管理和模块运输的苦力工。
 
 - 它只加载脚本文件，如果你的文件是样式、文本，那么请手动用脚本包裹一层。
-- 它只兼容高级浏览器，依赖`Array.isArray`和`[].forEach`。
+- 它只兼容高级浏览器，依赖于`script.onload`。
 
 
 # Module

@@ -4,7 +4,7 @@ if(window.seajs){
 
 if(window.coolie){
     coolie.config({
-        base: './example/',
+        base: './example/anonymous/',
         version: 'def123'
     }).use('./index.js');
 }

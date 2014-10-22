@@ -52,7 +52,6 @@
 
         if (isMainAnonymous === undefined) {
             isMainAnonymous = isAnonymous;
-
             execModule = isAnonymous ? mainFile : id;
         }
 
@@ -139,19 +138,45 @@
         if (dependencies.length) {
             // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
             meta = dependencies.shift();
+
+            // 是否为匿名模块
+            module.isAnonymous = meta[0] === '';
+
+            // 模块ID
+            // 匿名：模块加载的路径
+            // 具名：模块的ID
             module.id = meta[0] || script.id;
+
+            // 模块所在路径
+            module.path = module.isAnonymous ? _getPathname(module.id) : '';
+
+            // 模块依赖数组
             module.deps = meta[1];
+
+            // 模块出厂函数
             module.factory = meta[2];
 
             // 包装
+            // 添加 module.exec 执行函数
             _wrapModule(module);
 
             if (!modules[module.id]) {
                 modules[module.id] = module;
             }
 
-            if (isMainAnonymous && module.deps.length) {
-                _loadRequeire(module.id, module.deps);
+            if (module.deps.length) {
+                _each(module.deps, function (i, dep) {
+                    // 匿名模块：依赖采用相对路径方式
+                    // 具名模块：依赖采用绝对路径方式
+                    var depId = module.isAnonymous ? _pathJoin(module.path, dep) : dep;
+
+                    if (_isDepCircle(module.id, depId)) {
+                        throw new Error('`' + module.id + '` and `' + depId + '` make up circular dependencies');
+                    }
+
+                    module.deps[i] = depId;
+                    _loadScript(depId);
+                });
             }
         }
 
@@ -163,20 +188,29 @@
 
 
     /**
-     * 加载依赖，拉到外面来构造独立作用域，防止执行define切换路径影响到路径匹配
-     * @param relativeTo
-     * @param deps
+     * 判断是否构成循环引用
+     * @param src
+     * @param dep
+     * @returns {boolean}
      * @private
      */
-    function _loadRequeire(relativeTo, deps) {
-        var path = _getPathname(relativeTo);
+    function _isDepCircle(src, dep) {
+        var ret = !1;
 
-        if(isMainAnonymous){
-            _each(deps, function (i, dep) {
-                var id = _pathJoin(path, dep);
-                _loadScript(id);
-            });
+        if (!modules[dep]) {
+            return ret;
         }
+
+        var deps = modules[dep].deps;
+
+        _each(deps, function (i, _dep) {
+            if (src === _dep) {
+                ret = !0;
+                return !1;
+            }
+        });
+
+        return ret;
     }
 
 
@@ -191,7 +225,7 @@
         module.exports = {};
         module.exec = (function () {
             var require = function (dep) {
-                var depId = isMainAnonymous ? _pathJoin(_getPathname(module.id), dep) : dep;
+                var depId = module.isAnonymous ? _pathJoin(_getPathname(module.id), dep) : dep;
 
                 if (!modules[depId]) {
                     throw new Error('can not found module `' + depId + '`, require in `' + module.id + '`');
@@ -226,11 +260,15 @@
      * 异步加载并执行脚本
      * @param src {String} 脚本完整路径
      * @private
+     *
+     * @example
+     * src为相对、绝对路径的都会被加载，如“./”、“../”、“/”、“//”或“http://”
      */
     function _loadScript(src) {
         var script;
-        var time;
+        var time = Date.now();
         var complete;
+        var srcType = _getPathType(src);
 
         if (modulesCache[src]) {
             return !1;
@@ -238,16 +276,29 @@
 
         modulesCache[src] = 1;
         requireLength++;
+
+        // 非路径型地址，主动触发 _saveModule
+        if (!srcType) {
+            // 这里使用延迟函数原因：
+            // 1. 与 onload 有相同效果了
+            // 2. 不再是同步函数了，不会递归执行，导致计数错误
+            return setTimeout(function () {
+                console.log('import', src, '0ms');
+                doneLength++;
+                _saveModule(script);
+            }, 1);
+        }
+
         script = document.createElement('script');
-        time = Date.now();
         complete = function (err) {
+            script.onload = script.onerror = script.onreadystatechange = null;
+
             if (!err) {
-                console.log(src, (Date.now() - time) + 'ms');
+                console.log('load', src, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
             }
 
-            script.onload = script.onerror = script.onreadystatechange = null;
             containerNode.removeChild(script);
         };
 
@@ -294,8 +345,8 @@
 
     function _pathJoin(from, to) {
         var fromHost = (from.match(REG_HOST) || [''])[0];
-        var fromBeiginType = from.replace(REG_HOST, '').match(REG_BEGIN_TYPE);
-        var toBeginType = to.replace(REG_HOST, '').match(REG_BEGIN_TYPE);
+        var fromBeiginType = _getPathType(from);
+        var toBeginType = _getPathType(to);
         var toDepth = 0;
         var from2 = from.replace(REG_HOST, '');
         var to2 = to;
@@ -308,9 +359,7 @@
             from2 += '/';
         }
 
-        if (toBeginType) {
-            toBeginType = toBeginType[0];
-        } else {
+        if (!toBeginType) {
             to2 = './' + to2;
             toBeginType = './';
         }
@@ -402,12 +451,16 @@
 
         if (_isArray(list)) {
             for (i = 0, j = list.length; i < j; i++) {
-                callback(i, list[i]);
+                if (callback(i, list[i]) === false) {
+                    break;
+                }
             }
         } else if (typeof list === 'object') {
             for (i in list) {
                 if (list.hasOwnProperty(i)) {
-                    callback(i, list[i]);
+                    if (callback(i, list[i]) === false) {
+                        break;
+                    }
                 }
             }
         }
@@ -436,6 +489,16 @@
         var scripts = document.getElementsByTagName('script');
 
         return scripts[scripts.length - 1];
+    }
+
+    /**
+     * 获取路径类型
+     * @param path
+     * @returns {String} 返回值有 “./”、“/”、“../”和“”
+     * @private
+     */
+    function _getPathType(path) {
+        return (path.replace(REG_HOST, '').match(REG_BEGIN_TYPE) || [''])[0];
     }
 })();
 
