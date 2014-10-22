@@ -21,7 +21,7 @@
     // 当前脚本
     var currentScript = _getCurrentScript();
     var containerNode = currentScript.parentNode;
-    var mePath = _getPathname(_pathJoin(location.pathname, currentScript.getAttribute('src')));
+    var mePath = _getPathname(_pathJoin(_getPathname(location.pathname), currentScript.getAttribute('src')));
     var meMain = _getMain(currentScript);
     // 配置
     var config = {
