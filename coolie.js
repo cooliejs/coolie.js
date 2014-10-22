@@ -11,7 +11,6 @@
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
     var REG_UP_PATH = /\.\.\//g;
-    var REG_READY_STATE_CHANGE = /loaded|complete/;
     var REG_FILE_BASENAME = /\/([^\/]+)$/;
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
@@ -89,7 +88,7 @@
     window.coolie = {
         /**
          * 配置 coolie
-         * @param cnf {Object} 配置
+         * @param [cnf] {Object} 配置
          * @returns {coolie}
          */
         config: function (cnf) {
@@ -104,7 +103,7 @@
 
         /**
          * 执行入口模块
-         * @param main {String} 入口模块ID
+         * @param [main] {String} 入口模块ID，为空时读取`data-main`
          * @returns {coolie}
          */
         use: function (main) {
@@ -120,8 +119,11 @@
                 throw new Error('main module must be a string');
             }
 
-            if (meMain && main && meMain !== main) {
-                console.log('inline main is `' + meMain + '`, use main is `' + main + '`');
+            if (meMain && meMain !== main) {
+                if (main) {
+                    console.log('inline main is `' + meMain + '`, use main is `' + main + '`');
+                }
+
                 main = meMain;
             }
 
@@ -298,7 +300,7 @@
 
         script = document.createElement('script');
         complete = function (err) {
-            script.onload = script.onerror = script.onreadystatechange = null;
+            script.onload = script.onerror = null;
 
             if (!err) {
                 console.log('load', src, (Date.now() - time) + 'ms');
@@ -318,11 +320,6 @@
         };
         script.onerror = function (err) {
             complete(err);
-        };
-        script.onreadystatechange = function () {
-            if (REG_READY_STATE_CHANGE.test(script.readyState)) {
-                complete();
-            }
         };
         containerNode.appendChild(script);
     }
@@ -349,7 +346,6 @@
      * to   ../de.js
      * =>   /de.js
      */
-
     function _pathJoin(from, to) {
         var fromHost = (from.match(REG_HOST) || [''])[0];
         var fromBeiginType = _getPathType(from);
@@ -396,7 +392,7 @@
 
     /**
      * 解析出当前文本中的依赖信息，返回依赖数组
-     * @param data
+     * @param code {String} 源码
      * @returns {Array}
      * @private
      */
@@ -416,7 +412,7 @@
     /**
      * 判断是否为数组
      * @param obj
-     * @returns {*|boolean}
+     * @returns {Boolean}
      * @private
      */
     function _isArray(obj) {
@@ -427,7 +423,7 @@
     /**
      * 判断是否为函数
      * @param obj
-     * @returns {boolean}
+     * @returns {Boolean}
      * @private
      */
     function _isFunction(obj) {
@@ -438,7 +434,7 @@
     /**
      * 判断是否为字符串
      * @param obj
-     * @returns {boolean}
+     * @returns {Boolean}
      * @private
      */
     function _isString(obj) {
@@ -449,7 +445,7 @@
     /**
      * 遍历
      * @param list
-     * @param callback
+     * @param callback {Function} 返回 false，中断当前循环
      * @private
      */
     function _each(list, callback) {
@@ -517,7 +513,7 @@
     /**
      * 获取路径类型
      * @param path
-     * @returns {String} 返回值有 “./”、“/”、“../”和“”
+     * @returns {String} 返回值有 “./”、“/”、“../”和“”（空字符串）
      * @private
      */
     function _getPathType(path) {
