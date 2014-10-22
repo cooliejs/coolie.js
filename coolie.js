@@ -19,12 +19,11 @@
     // 入口模块
     var mainFile;
     var execModule;
-    // 入口模块是否为匿名模块
-    var isMainAnonymous;
     // 当前脚本
     var currentScript = _getCurrentScript();
     var containerNode = currentScript.parentNode;
     var mePath = _getPathname(_pathJoin(location.pathname, currentScript.getAttribute('src')));
+    var meMain = _getMain(currentScript);
     // 配置
     var config = {
         base: mePath
@@ -50,8 +49,7 @@
         var args = arguments;
         var isAnonymous = args.length === 1;
 
-        if (isMainAnonymous === undefined) {
-            isMainAnonymous = isAnonymous;
+        if (execModule === undefined) {
             execModule = isAnonymous ? mainFile : id;
         }
 
@@ -110,12 +108,21 @@
          * @returns {coolie}
          */
         use: function (main) {
+            if (mainFile) {
+                throw new Error('can not  execute `coolie.use` twice more');
+            }
+
             if (!_isString(config.base)) {
                 throw new Error('coolie config `base` property must be a string');
             }
 
-            if (!_isString(main)) {
+            if (main && !_isString(main)) {
                 throw new Error('main module must be a string');
+            }
+
+            if (meMain && main && meMain !== main) {
+                console.log('inline main is `' + meMain + '`, use main is `' + main + '`');
+                main = meMain;
             }
 
             mainFile = _pathJoin(config.base, main);
@@ -171,7 +178,7 @@
                     var depId = module.isAnonymous ? _pathJoin(module.path, dep) : dep;
 
                     if (_isDepCircle(module.id, depId)) {
-                        throw new Error('`' + module.id + '` and `' + depId + '` make up circular dependencies');
+                        throw new Error('`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship');
                     }
 
                     module.deps[i] = depId;
@@ -490,6 +497,22 @@
 
         return scripts[scripts.length - 1];
     }
+
+
+    /**
+     * 获取 data-main 属性值
+     * @param node
+     * @returns {String}
+     * @private
+     */
+    function _getMain(node) {
+        if (node.dataset) {
+            return node.dataset.main;
+        }
+
+        return node.getAttribute('data-main');
+    }
+
 
     /**
      * 获取路径类型
