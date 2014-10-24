@@ -1,0 +1,7 @@
+{
+    "src": "./example",
+    "dest": "./dest",
+    "main": ["./example/**/*.js"],
+    "coolie-config.js": "./coolie-config.js",
+    "copyFiles": ""
+}
