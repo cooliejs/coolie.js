@@ -88,12 +88,12 @@ coolie.use('./index.js');
 
 
 # Builder
-[配套的打包工具即将上线](https://github.com/cloudcome/nodejs-coolie)。
+[配套的打包工具已经上线](https://github.com/cloudcome/nodejs-coolie)。
 
 打包工具会将路径压缩成1个字符，因此`coolie`不会配置路径别名。
 
 
 # Version
 
-## 0.0.1
+## 0.0.2
 * 完成模块化管理和加载
