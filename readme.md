@@ -4,8 +4,6 @@ A coolie for JavaScript module management and module transportation.
 
 一个为 JavaScript 模块管理和模块运输的苦力工。
 
-它只加载脚本文件，如果你的文件是样式、文本，那么请手动用脚本包裹一层。
-
 
 
 # Module
@@ -16,8 +14,10 @@ A coolie for JavaScript module management and module transportation.
 define(function (require){
 	// 模块依赖，不能省略文件后缀
 	var num = require('./abc.js');
+	var text = require('./def.txt');
 
-	alert(num);
+	alert(num + text);
+	// => "123这里是一串纯文本"
 });
 ```
 依赖模块：`./abc.js`
@@ -28,19 +28,28 @@ define(function (require, exports, module){
 	module.exports = 123;
 });
 ```
+依赖文本：`./def.txt`
+```
+这里是一串纯文本
+```
 
 ## 生产环境（无须关心，一切自动化）
 打包之后（这里为了演示，没有压缩），只要入口文件名和模块名一致，就是入口模块
 
 模块入口：`./index.js?v=abc123`
 ```
-define('index.js', ['1'], function (a){
+define('index.js', ['1', '2'], function (a){
 	var b = a('1');
+	var c = a('2');
 
-	alert(b);
+	alert(b+c);
+	// => "123这里是一串纯文本"
 });
 define('1', [], function (a, b, c){
 	c.exports = 123;
+});
+define('2', [], function (a, b, c){
+	c.exports = '这里是一串纯文本';
 });
 ```
 
@@ -95,5 +104,8 @@ coolie.use('./index.js');
 
 # Version
 
+## 0.1.0
+- 支持文本加载
+
 ## 0.0.2
-* 完成模块化管理和加载
+- 完成模块化管理和加载

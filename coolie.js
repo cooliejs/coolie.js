@@ -15,6 +15,8 @@
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
+    var REG_QUERY_HASH = /[?#].*$/;
+    var REG_SUFFIX = /\.[^.]*$/;
     // 入口模块
     var mainFile;
     var execModule;
@@ -83,9 +85,17 @@
 
     /**
      * @namespace coolie
-     * @type {{config: config, use: use}}
+     * @type {{version: String, config: Function, use: Function}}
      */
     window.coolie = {
+        /**
+         * 版本号
+         * @name version
+         * @type String
+         */
+        version: '0.1.0',
+
+
         /**
          * 配置 coolie
          * @param [cnf] {Object} 配置
@@ -138,54 +148,80 @@
     /**
      * 脚本加载完毕保存模块
      * @param script
+     * @param [id]
      * @private
      */
-    function _saveModule(script) {
+    function _saveModule(script, id) {
         var module = {};
         var meta;
 
-        if (dependencies.length) {
-            // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
-            meta = dependencies.shift();
+        // load script
+        if (script.nodeType) {
+            if (dependencies.length) {
+                // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
+                meta = dependencies.shift();
 
-            // 是否为匿名模块
-            module.isAnonymous = meta[0] === '';
+                // 是否为匿名模块
+                module.isAnonymous = meta[0] === '';
 
-            // 模块ID
-            // 匿名：模块加载的路径
-            // 具名：模块的ID
-            module.id = meta[0] || script.id;
+                // 模块ID
+                // 匿名：模块加载的路径
+                // 具名：模块的ID
+                module.id = meta[0] || script.id;
 
-            // 模块所在路径
-            module.path = module.isAnonymous ? _getPathname(module.id) : '';
+                // 模块所在路径
+                module.path = module.isAnonymous ? _getPathname(module.id) : '';
 
-            // 模块依赖数组
-            module.deps = meta[1];
+                // 模块依赖数组
+                module.deps = meta[1];
 
-            // 模块出厂函数
-            module.factory = meta[2];
+                // 模块出厂函数
+                module.factory = meta[2];
 
+                // 包装
+                // 添加 module.exec 执行函数
+                _wrapModule(module);
+
+                if (!modules[module.id]) {
+                    modules[module.id] = module;
+                }
+
+                if (module.deps.length) {
+                    _each(module.deps, function (i, dep) {
+                        // 匿名模块：依赖采用相对路径方式
+                        // 具名模块：依赖采用绝对路径方式
+                        var depId = module.isAnonymous ? _pathJoin(module.path, dep) : dep;
+                        var depSuffix = _getPathSuffix(depId);
+
+                        if (_isDepCircle(module.id, depId)) {
+                            throw new Error('`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship');
+                        }
+
+                        module.deps[i] = depId;
+
+                        if (depSuffix === '.js') {
+                            _loadScript(depId);
+                        } else {
+                            _ajaxText(depId);
+                        }
+                    });
+                }
+            }
+        }
+        // ajax text
+        else {
+            module.isAnonymous = !1;
+            module.id = id;
+            module.path = _getPathname(id);
+            module.deps = [];
+            module.factory = function (require, exports, module) {
+                module.exports = script;
+            };
             // 包装
             // 添加 module.exec 执行函数
             _wrapModule(module);
-
             if (!modules[module.id]) {
                 modules[module.id] = module;
-            }
-
-            if (module.deps.length) {
-                _each(module.deps, function (i, dep) {
-                    // 匿名模块：依赖采用相对路径方式
-                    // 具名模块：依赖采用绝对路径方式
-                    var depId = module.isAnonymous ? _pathJoin(module.path, dep) : dep;
-
-                    if (_isDepCircle(module.id, depId)) {
-                        throw new Error('`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship');
-                    }
-
-                    module.deps[i] = depId;
-                    _loadScript(depId);
-                });
             }
         }
 
@@ -302,7 +338,7 @@
         complete = function (err) {
             script.onload = script.onerror = null;
 
-            if (!err) {
+            if (!(err && err.constructor === Error)) {
                 console.log('load', src, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
@@ -315,13 +351,32 @@
         script.async = true;
         script.defer = true;
         script.src = _addRequestVersion(src);
-        script.onload = function () {
-            complete();
-        };
-        script.onerror = function (err) {
-            complete(err);
-        };
+        script.onload = script.onerror = complete;
         containerNode.appendChild(script);
+    }
+
+
+    /**
+     * 异步加载文本内容
+     * @param url
+     * @private
+     */
+    function _ajaxText(url) {
+        var xhr = new XMLHttpRequest();
+        var time = Date.now();
+        var complete = function () {
+            if (xhr.status === 200 || xhr.status === 301) {
+                console.log('ajax', url, (Date.now() - time) + 'ms');
+                doneLength++;
+                _saveModule(xhr.responseText, url);
+            } else {
+                throw new Error('Can not ajax ' + url + ', response status is ' + xhr.status);
+            }
+        };
+        requireLength++;
+        xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
+        xhr.open('GET', url);
+        xhr.send();
     }
 
 
@@ -332,6 +387,29 @@
      */
     function _getPathname(filepath) {
         return filepath.replace(REG_FILE_BASENAME, '/');
+    }
+
+
+
+    /**
+     * 获取路径类型
+     * @param path
+     * @returns {String} 返回值有 “./”、“/”、“../”和“”（空字符串）
+     * @private
+     */
+    function _getPathType(path) {
+        return (path.replace(REG_HOST, '').match(REG_BEGIN_TYPE) || [''])[0];
+    }
+
+
+    /**
+     * 获取路径后缀
+     * @param path
+     * @returns {*|string}
+     * @private
+     */
+    function _getPathSuffix(path) {
+        return (path.replace(REG_QUERY_HASH, '').match(REG_SUFFIX) || [''])[0].toLowerCase();
     }
 
 
@@ -478,7 +556,7 @@
      */
     function _addRequestVersion(str) {
         return config.version ?
-            str + (str.indexOf('?') > -1 ? '&' : '?') + '_=' + encodeURIComponent(config.version) :
+        str + (str.indexOf('?') > -1 ? '&' : '?') + '_=' + encodeURIComponent(config.version) :
             str;
     }
 
@@ -509,15 +587,5 @@
         return node.getAttribute('data-main');
     }
 
-
-    /**
-     * 获取路径类型
-     * @param path
-     * @returns {String} 返回值有 “./”、“/”、“../”和“”（空字符串）
-     * @private
-     */
-    function _getPathType(path) {
-        return (path.replace(REG_HOST, '').match(REG_BEGIN_TYPE) || [''])[0];
-    }
 })();
 

@@ -23,20 +23,9 @@
 </head>
 <body>
 
-<script src="../../coolie.js" data-main="./index.js"></script>
-<script>
-    if(window.seajs){
-        seajs.config({
-            base: './async/'
-        }).use('./index.js');
-    }
+<script src="../../coolie.js" data-main="./async/index.js"></script>
+<script src="../../coolie-config.js"></script>
 
-    if(window.coolie){
-        coolie.config({
-            base: './example/async/'
-        }).use();
-    }
-</script>
 
 </body>
 </html>
