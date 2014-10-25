@@ -1,7 +1,6 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @create 2014-10-21 14:52
  */
 
 (function () {
@@ -15,8 +14,7 @@
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
-    var REG_QUERY_HASH = /[?#].*$/;
-    var REG_SUFFIX = /\.[^.]*$/;
+    var REG_TEXT = /^text!/i;
     // 入口模块
     var mainFile;
     var execModule;
@@ -49,10 +47,6 @@
     window.define = function (id, deps, factory) {
         var args = arguments;
         var isAnonymous = args.length === 1;
-
-        if (execModule === undefined) {
-            execModule = isAnonymous ? mainFile : id;
-        }
 
         // define(fn);
         if (isAnonymous) {
@@ -138,6 +132,7 @@
             }
 
             mainFile = _pathJoin(config.base, main);
+            execModule = _getBasename(main);
             _loadScript(mainFile);
 
             return this;
@@ -147,7 +142,7 @@
 
     /**
      * 脚本加载完毕保存模块
-     * @param script
+     * @param [script]
      * @param [id]
      * @private
      */
@@ -155,61 +150,8 @@
         var module = {};
         var meta;
 
-        // load script
-        if (script.nodeType) {
-            if (dependencies.length) {
-                // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
-                meta = dependencies.shift();
-
-                // 是否为匿名模块
-                module.isAnonymous = meta[0] === '';
-
-                // 模块ID
-                // 匿名：模块加载的路径
-                // 具名：模块的ID
-                module.id = meta[0] || script.id;
-
-                // 模块所在路径
-                module.path = module.isAnonymous ? _getPathname(module.id) : '';
-
-                // 模块依赖数组
-                module.deps = meta[1];
-
-                // 模块出厂函数
-                module.factory = meta[2];
-
-                // 包装
-                // 添加 module.exec 执行函数
-                _wrapModule(module);
-
-                if (!modules[module.id]) {
-                    modules[module.id] = module;
-                }
-
-                if (module.deps.length) {
-                    _each(module.deps, function (i, dep) {
-                        // 匿名模块：依赖采用相对路径方式
-                        // 具名模块：依赖采用绝对路径方式
-                        var depId = module.isAnonymous ? _pathJoin(module.path, dep) : dep;
-                        var depSuffix = _getPathSuffix(depId);
-
-                        if (_isDepCircle(module.id, depId)) {
-                            throw new Error('`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship');
-                        }
-
-                        module.deps[i] = depId;
-
-                        if (depSuffix === '.js') {
-                            _loadScript(depId);
-                        } else {
-                            _ajaxText(depId);
-                        }
-                    });
-                }
-            }
-        }
         // ajax text
-        else {
+        if (arguments.length === 2) {
             module.isAnonymous = !1;
             module.id = id;
             module.path = _getPathname(id);
@@ -224,9 +166,61 @@
                 modules[module.id] = module;
             }
         }
+        // load/import script
+        else if (dependencies.length) {
+            // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
+            meta = dependencies.shift();
+
+            // 是否为匿名模块
+            module.isAnonymous = meta[0] === '';
+
+            // 模块ID
+            // 匿名：模块加载的路径
+            // 具名：模块的ID
+            module.id = meta[0] || script.id;
+
+            // 模块所在路径
+            module.path = module.isAnonymous ? _getPathname(module.id) : '';
+
+            // 模块依赖数组
+            module.deps = meta[1];
+
+            // 模块出厂函数
+            module.factory = meta[2];
+
+            // 包装
+            // 添加 module.exec 执行函数
+            _wrapModule(module);
+
+            if (!modules[module.id]) {
+                modules[module.id] = module;
+            }
+
+            if (module.deps.length) {
+                _each(module.deps, function (i, dep) {
+                    // 匿名模块：依赖采用相对路径方式
+                    // 具名模块：依赖采用绝对路径方式
+                    var relDep = dep.replace(REG_TEXT, '');
+                    var depId = module.isAnonymous ? _pathJoin(module.path, relDep) : relDep;
+
+                    if (_isDepCircle(module.id, depId)) {
+                        throw new Error('`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship');
+                    }
+
+                    module.deps[i] = depId;
+
+                    if (REG_TEXT.test(dep)) {
+                        _ajaxText(depId);
+                    } else {
+                        _loadScript(depId);
+                    }
+                });
+            }
+        }
+
 
         // 依赖全部加载完成
-        if (requireLength === doneLength) {
+        if (requireLength === doneLength && execModule && modules[execModule]) {
             _execModule(execModule);
         }
     }
@@ -270,6 +264,8 @@
         module.exports = {};
         module.exec = (function () {
             var require = function (dep) {
+                dep = dep.replace(REG_TEXT, '');
+
                 var depId = module.isAnonymous ? _pathJoin(_getPathname(module.id), dep) : dep;
 
                 if (!modules[depId]) {
@@ -330,7 +326,7 @@
             return setTimeout(function () {
                 console.log('import', src, '0ms');
                 doneLength++;
-                _saveModule(script);
+                _saveModule();
             }, 1);
         }
 
@@ -365,30 +361,42 @@
         var xhr = new XMLHttpRequest();
         var time = Date.now();
         var complete = function () {
-            if (xhr.status === 200 || xhr.status === 301) {
+            if (xhr.status === 200 || xhr.status === 304) {
                 console.log('ajax', url, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(xhr.responseText, url);
             } else {
-                throw new Error('Can not ajax ' + url + ', response status is ' + xhr.status);
+                throw new Error('can not ajax ' + url + ', response status is ' + xhr.status);
             }
         };
+
         requireLength++;
         xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
         xhr.open('GET', url);
-        xhr.send();
+        xhr.send(null);
     }
 
 
     /**
      * 或者文件路径的文件层级
      * @param filepath
+     * @returns {*|string}
      * @private
      */
     function _getPathname(filepath) {
         return filepath.replace(REG_FILE_BASENAME, '/');
     }
 
+
+    /**
+     * 获取文件路径的名称
+     * @param filepath
+     * @returns {*|string}
+     * @private
+     */
+    function _getBasename(filepath){
+        return (filepath.match(REG_FILE_BASENAME) || ['',''])[1];
+    }
 
 
     /**
@@ -398,18 +406,10 @@
      * @private
      */
     function _getPathType(path) {
-        return (path.replace(REG_HOST, '').match(REG_BEGIN_TYPE) || [''])[0];
-    }
-
-
-    /**
-     * 获取路径后缀
-     * @param path
-     * @returns {*|string}
-     * @private
-     */
-    function _getPathSuffix(path) {
-        return (path.replace(REG_QUERY_HASH, '').match(REG_SUFFIX) || [''])[0].toLowerCase();
+        return (path
+            .replace(REG_TEXT, '')
+            .replace(REG_HOST, '')
+            .match(REG_BEGIN_TYPE) || [''])[0];
     }
 
 
@@ -588,4 +588,3 @@
     }
 
 })();
-

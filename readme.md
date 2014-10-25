@@ -14,7 +14,7 @@ A coolie for JavaScript module management and module transportation.
 define(function (require){
 	// 模块依赖，不能省略文件后缀
 	var num = require('./abc.js');
-	var text = require('./def.txt');
+	var text = require('text!./def.txt');
 
 	alert(num + text);
 	// => "123这里是一串纯文本"
