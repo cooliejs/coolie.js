@@ -1,6 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
+ * @create 2014-10-21 14:52
  */
 
 (function () {
@@ -47,6 +48,10 @@
     window.define = function (id, deps, factory) {
         var args = arguments;
         var isAnonymous = args.length === 1;
+
+        if (execModule === undefined) {
+            execModule = isAnonymous ? mainFile : id;
+        }
 
         // define(fn);
         if (isAnonymous) {
@@ -132,7 +137,6 @@
             }
 
             mainFile = _pathJoin(config.base, main);
-            execModule = _getBasename(main);
             _loadScript(mainFile);
 
             return this;
@@ -324,7 +328,7 @@
             // 1. 与 onload 有相同效果了
             // 2. 不再是同步函数了，不会递归执行，导致计数错误
             return setTimeout(function () {
-                console.log('import', src, '0ms');
+                console.log('>import module', src, '0ms');
                 doneLength++;
                 _saveModule();
             }, 1);
@@ -335,7 +339,7 @@
             script.onload = script.onerror = null;
 
             if (!(err && err.constructor === Error)) {
-                console.log('load', src, (Date.now() - time) + 'ms');
+                console.log('>load   module', src, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
             }
@@ -362,7 +366,7 @@
         var time = Date.now();
         var complete = function () {
             if (xhr.status === 200 || xhr.status === 304) {
-                console.log('ajax', url, (Date.now() - time) + 'ms');
+                console.log('>ajax   module', url, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(xhr.responseText, url);
             } else {
@@ -588,3 +592,4 @@
     }
 
 })();
+
