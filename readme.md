@@ -102,6 +102,13 @@ coolie.use('./index.js');
 打包工具会将路径压缩成1个字符，因此`coolie`不会配置路径别名。
 
 
+# 帮助
+- [`coolie`介绍](https://github.com/cloudcome/coolie/blob/master/help/introduction.md)
+- [推荐开发脚手架](https://github.com/cloudcome/coolie/blob/master/help/recommend.md)
+- [开发环境下模块书写方式](https://github.com/cloudcome/coolie/blob/master/help/development.md)
+- [如何从开发环境构建到生产环境](https://github.com/cloudcome/coolie/blob/master/help/production.md)
+
+
 # Version
 
 ## 0.1.0
