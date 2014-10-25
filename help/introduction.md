@@ -1,6 +1,6 @@
 # 什么是 coolie
 `coolie`中文意思是“苦力”，在此它指的是为前端脚本模块化服务的一个苦力。它整合了你需要的所有模块，并且按顺序给你运行完毕。
-因此，为了减轻`coolie`的工作量，请按照约定、规范、标准来书写模块（如何书写模块？）。
+因此，为了减轻`coolie`的工作量，请按照约定、规范、标准来书写模块（[如何书写模块？](https://github.com/cloudcome/coolie/blob/master/help/development.md)）。
 
 # 为什么要用 coolie
 服务于脚本模块化的加载器，眼花缭乱，相信你看到这里也有这样的感觉，是不是觉得都没有一款适合你的？我也和你一样，所以`coolie`就诞生了。
@@ -18,3 +18,7 @@
 <script src="/path/to/coolie.js" data-main="./index.js"></script>
 <script src="/path/to/coolie-config.js"></script>
 ```
+
+- [推荐开发脚手架](https://github.com/cloudcome/coolie/blob/master/help/recommend.md)
+- [开发环境下模块书写方式](https://github.com/cloudcome/coolie/blob/master/help/development.md)
+- [如何从开发环境构建到生产环境](https://github.com/cloudcome/coolie/blob/master/help/production.md)
