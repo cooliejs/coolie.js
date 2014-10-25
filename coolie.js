@@ -393,17 +393,6 @@
 
 
     /**
-     * 获取文件路径的名称
-     * @param filepath
-     * @returns {*|string}
-     * @private
-     */
-    function _getBasename(filepath){
-        return (filepath.match(REG_FILE_BASENAME) || ['',''])[1];
-    }
-
-
-    /**
      * 获取路径类型
      * @param path
      * @returns {String} 返回值有 “./”、“/”、“../”和“”（空字符串）
