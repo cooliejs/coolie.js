@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @create 2014-10-21 14:52
+ * @version 0.1.0
  */
 
 (function () {
@@ -146,22 +146,26 @@
 
     /**
      * 脚本加载完毕保存模块
-     * @param [script]
-     * @param [id]
+     * @param [scriptORxhr] script对象或xhr对象
+     * @param [id] xhr 请求的地址
      * @private
      */
-    function _saveModule(script, id) {
+    function _saveModule(scriptORxhr, id) {
         var module = {};
         var meta;
+        var script;
+        var xhr;
 
         // ajax text
         if (arguments.length === 2) {
+            xhr = scriptORxhr;
             module.isAnonymous = !1;
             module.id = id;
             module.path = _getPathname(id);
             module.deps = [];
             module.factory = function (require, exports, module) {
-                module.exports = script;
+                module.exports = xhr.responseText || '';
+                xhr = null;
             };
             // 包装
             // 添加 module.exec 执行函数
@@ -170,8 +174,9 @@
                 modules[module.id] = module;
             }
         }
-        // load/import script
+        // load/local script
         else if (dependencies.length) {
+            script = scriptORxhr;
             // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
             meta = dependencies.shift();
 
@@ -182,6 +187,7 @@
             // 匿名：模块加载的路径
             // 具名：模块的ID
             module.id = meta[0] || script.id;
+            script = null;
 
             // 模块所在路径
             module.path = module.isAnonymous ? _getPathname(module.id) : '';
@@ -208,7 +214,7 @@
                     var depId = module.isAnonymous ? _pathJoin(module.path, relDep) : relDep;
 
                     if (_isDepCircle(module.id, depId)) {
-                        throw new Error('`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship');
+                        throw '`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship';
                     }
 
                     module.deps[i] = depId;
@@ -221,7 +227,6 @@
                 });
             }
         }
-
 
         // 依赖全部加载完成
         if (requireLength === doneLength && execModule && modules[execModule]) {
@@ -273,7 +278,7 @@
                 var depId = module.isAnonymous ? _pathJoin(_getPathname(module.id), dep) : dep;
 
                 if (!modules[depId]) {
-                    throw new Error('can not found module `' + depId + '`, require in `' + module.id + '`');
+                    throw 'can not found module `' + depId + '`, require in `' + module.id + '`';
                 }
 
                 return modules[depId].exec();
@@ -294,7 +299,7 @@
      */
     function _execModule(module) {
         if (!modules[module]) {
-            throw new Error('can not found module `' + module + '`');
+            throw 'can not found module `' + module + '`';
         }
 
         modules[module].exec();
@@ -328,7 +333,7 @@
             // 1. 与 onload 有相同效果了
             // 2. 不再是同步函数了，不会递归执行，导致计数错误
             return setTimeout(function () {
-                console.log('>import module', src, '0ms');
+                console.log('>local module', src, '0ms');
                 doneLength++;
                 _saveModule();
             }, 1);
@@ -336,10 +341,8 @@
 
         script = document.createElement('script');
         complete = function (err) {
-            script.onload = script.onerror = null;
-
             if (!(err && err.constructor === Error)) {
-                console.log('>load   module', src, (Date.now() - time) + 'ms');
+                console.log('>load module', src, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
             }
@@ -366,11 +369,11 @@
         var time = Date.now();
         var complete = function () {
             if (xhr.status === 200 || xhr.status === 304) {
-                console.log('>ajax   module', url, (Date.now() - time) + 'ms');
+                console.log('>ajax module', url, (Date.now() - time) + 'ms');
                 doneLength++;
-                _saveModule(xhr.responseText, url);
+                _saveModule(xhr, url);
             } else {
-                throw new Error('can not ajax ' + url + ', response status is ' + xhr.status);
+                throw 'can not ajax ' + url + ', response status is ' + xhr.status;
             }
         };
 
@@ -447,7 +450,7 @@
 
                 while (toDepth-- > 0) {
                     if (!REG_END_PART.test(from2)) {
-                        throw new Error('can not change path from `' + from + '` to `' + to + '`');
+                        throw 'can not change path from `' + from + '` to `' + to + '`';
                     }
 
                     from2 = from2.replace(REG_END_PART, '');

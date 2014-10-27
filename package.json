@@ -1,0 +1,37 @@
+{
+  "name": "coolie",
+  "version": "0.1.1",
+  "description": "A coolie for JavaScript module management and module transportation.",
+  "scripts": {
+    "jsminify": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm -o ./coolie.min.js",
+    "jsminify2": "console.log('123');"
+  },
+  "preferGlobal": false,
+  "bin": {},
+  "main": "coolie.js",
+  "keywords": [
+    "cloudcome",
+    "AMD",
+    "CMD",
+    "module",
+    "coolie",
+    "seajs"
+  ],
+  "author": {
+    "name": "cloudcome",
+    "email": "cloudcome@163.com",
+    "url": "http://ydr.me"
+  },
+  "homepage": "https://github.com/cloudcome/coolie",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cloudcome/coolie"
+  },
+  "bugs": {
+    "url": "https://github.com/cloudcome/coolie/issues"
+  },
+  "licenses": "MIT",
+  "devDependencies": {
+    "uglify-js": "^2.4.15"
+  }
+}
