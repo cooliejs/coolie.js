@@ -1,4 +1,4 @@
 coolie.config({
-    base: "./example/",
+    base: "./example",
     version: ""
 }).use();
