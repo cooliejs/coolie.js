@@ -1,4 +1,4 @@
-/*!
+/**
  * coolie 苦力
  * @author ydr.me
  * @version 0.1.0
@@ -94,6 +94,13 @@
          */
         version: '0.1.0',
 
+        /**
+         * 模块出口
+         * @name modules
+         * @type Object
+         */
+        modules: modules,
+
 
         /**
          * 配置 coolie
@@ -137,6 +144,7 @@
             }
 
             mainFile = _pathJoin(config.base, main);
+            console.group('modules');
             _loadScript(mainFile);
 
             return this;
@@ -159,19 +167,25 @@
         // ajax text
         if (arguments.length === 2) {
             xhr = scriptORxhr;
-            module.isAnonymous = !1;
-            module.id = id;
-            module.path = _getPathname(id);
-            module.deps = [];
-            module.factory = function (require, exports, module) {
+            // 是否命名
+            module._isAn = !1;
+            // 模块ID
+            module._id = id;
+            // 模块目录
+            module._path = _getPathname(id);
+            // 模块依赖
+            module._deps = [];
+            // 模块原始方法
+            module._factory = function (require, exports, module) {
                 module.exports = xhr.responseText || '';
                 xhr = null;
             };
             // 包装
-            // 添加 module.exec 执行函数
+            // 添加 module._exec 执行函数
             _wrapModule(module);
-            if (!modules[module.id]) {
-                modules[module.id] = module;
+
+            if (!modules[module._id]) {
+                modules[module._id] = module;
             }
         }
         // load/local script
@@ -181,43 +195,45 @@
             meta = dependencies.shift();
 
             // 是否为匿名模块
-            module.isAnonymous = meta[0] === '';
+            module._isAn = meta[0] === '';
 
             // 模块ID
             // 匿名：模块加载的路径
             // 具名：模块的ID
-            module.id = meta[0] || script.id;
+            module._id = meta[0] || script.id;
             script = null;
 
             // 模块所在路径
-            module.path = module.isAnonymous ? _getPathname(module.id) : '';
+            module._path = module._isAn ? _getPathname(module._id) : '';
 
             // 模块依赖数组
-            module.deps = meta[1];
+            module._deps = meta[1];
 
             // 模块出厂函数
-            module.factory = meta[2];
+            module._factory = meta[2];
 
             // 包装
-            // 添加 module.exec 执行函数
+            // 添加 module._exec 执行函数
             _wrapModule(module);
 
-            if (!modules[module.id]) {
-                modules[module.id] = module;
+            if (!modules[module._id]) {
+                modules[module._id] = module;
             }
 
-            if (module.deps.length) {
-                _each(module.deps, function (i, dep) {
+            if (module._deps.length) {
+
+                _each(module._deps, function (i, dep) {
                     // 匿名模块：依赖采用相对路径方式
                     // 具名模块：依赖采用绝对路径方式
                     var relDep = dep.replace(REG_TEXT, '');
-                    var depId = module.isAnonymous ? _pathJoin(module.path, relDep) : relDep;
+                    var depId = module._isAn ? _pathJoin(module._path, relDep) : relDep;
 
-                    if (_isDepCircle(module.id, depId)) {
-                        throw '`' + module.id + '` and `' + depId + '` make up a circular dependencies relationship';
+                    if (modulesCache[depId] && modulesCache[depId][module._id]) {
+                        throw '`' + module._id + '` and `' + depId + '` make up a circular dependency relationship';
                     }
 
-                    module.deps[i] = depId;
+                    module._deps[i] = depId;
+                    modulesCache[module._id][depId] = 1;
 
                     if (REG_TEXT.test(dep)) {
                         _ajaxText(depId);
@@ -230,35 +246,9 @@
 
         // 依赖全部加载完成
         if (requireLength === doneLength && execModule && modules[execModule]) {
+            modulesCache = null;
             _execModule(execModule);
         }
-    }
-
-
-    /**
-     * 判断是否构成循环引用
-     * @param src
-     * @param dep
-     * @returns {boolean}
-     * @private
-     */
-    function _isDepCircle(src, dep) {
-        var ret = !1;
-
-        if (!modules[dep]) {
-            return ret;
-        }
-
-        var deps = modules[dep].deps;
-
-        _each(deps, function (i, _dep) {
-            if (src === _dep) {
-                ret = !0;
-                return !1;
-            }
-        });
-
-        return ret;
     }
 
 
@@ -271,21 +261,21 @@
      */
     function _wrapModule(module) {
         module.exports = {};
-        module.exec = (function () {
+        module._exec = (function () {
             var require = function (dep) {
                 dep = dep.replace(REG_TEXT, '');
 
-                var depId = module.isAnonymous ? _pathJoin(_getPathname(module.id), dep) : dep;
+                var depId = module._isAn ? _pathJoin(_getPathname(module._id), dep) : dep;
 
                 if (!modules[depId]) {
-                    throw 'can not found module `' + depId + '`, require in `' + module.id + '`';
+                    throw 'can not found module `' + depId + '`, require in `' + module._id + '`';
                 }
 
-                return modules[depId].exec();
+                return modules[depId]._exec();
             };
 
             return function () {
-                module.factory.call(window, require, module.exports, module);
+                module._factory.call(window, require, module.exports, module);
                 return module.exports;
             };
         })();
@@ -302,7 +292,8 @@
             throw 'can not found module `' + module + '`';
         }
 
-        modules[module].exec();
+        console.groupEnd('modules');
+        modules[module]._exec();
     }
 
 
@@ -321,10 +312,11 @@
         var srcType = _getPathType(src);
 
         if (modulesCache[src]) {
+            console.warn('repeat ignore', src);
             return !1;
         }
 
-        modulesCache[src] = 1;
+        modulesCache[src] = {};
         requireLength++;
 
         // 非路径型地址，主动触发 _saveModule
@@ -333,7 +325,7 @@
             // 1. 与 onload 有相同效果了
             // 2. 不再是同步函数了，不会递归执行，导致计数错误
             return setTimeout(function () {
-                console.log('>local module', src, '0ms');
+                console.log('inline', src, '0ms');
                 doneLength++;
                 _saveModule();
             }, 1);
@@ -342,7 +334,7 @@
         script = document.createElement('script');
         complete = function (err) {
             if (!(err && err.constructor === Error)) {
-                console.log('>load module', src, (Date.now() - time) + 'ms');
+                console.log('script', src, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
             }
@@ -369,7 +361,7 @@
         var time = Date.now();
         var complete = function () {
             if (xhr.status === 200 || xhr.status === 304) {
-                console.log('>ajax module', url, (Date.now() - time) + 'ms');
+                console.log('ajax', url, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(xhr, url);
             } else {
