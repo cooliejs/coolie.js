@@ -235,9 +235,7 @@
             // 添加 module._exec 执行函数
             _wrapModule(module);
 
-            if (modules[module._id]) {
-                console.warn('repeat ignore', module._id);
-            } else {
+            if (!modules[module._id]) {
                 modules[module._id] = module;
             }
 
