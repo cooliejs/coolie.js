@@ -387,7 +387,7 @@
         var time = Date.now();
         var complete = function () {
             if (xhr.status === 200 || xhr.status === 304) {
-                console.log('ajax module', url, (Date.now() - time) + 'ms');
+                console.log('text module', url, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(xhr, url);
             } else {
