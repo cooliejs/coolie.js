@@ -99,7 +99,7 @@ coolie.use('./index.js');
 # Builder
 [配套的打包工具已经上线](https://github.com/cloudcome/nodejs-coolie)。
 
-[see](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20141028170749360717674649.jpg)
+![see](http://ydrimg.oss-cn-hangzhou.aliyuncs.com/20141028170749360717674649.jpg)
 
 
 # 帮助
