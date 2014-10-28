@@ -254,7 +254,9 @@
                         by: module._id
                     });
 
-                    if (!modules[depId]) {
+                    if (!moduleDepsMap[depId]) {
+                        moduleDepsMap[depId] = {};
+
                         if (REG_TEXT.test(dep)) {
                             _ajaxText(depId);
                         } else {
