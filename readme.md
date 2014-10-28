@@ -34,11 +34,11 @@ define(function (require, exports, module){
 ```
 
 ## 生产环境（无须关心，一切自动化）
-打包之后（这里为了演示，没有压缩），只要入口文件名和模块名一致，就是入口模块
+打包之后（这里为了演示，没有压缩），合并后的第一个模块为入口模块，无须关心其ID
 
 模块入口：`./index.js?v=abc123`
 ```
-define('index.js', ['1', '2'], function (a){
+define('0', ['1', '2'], function (a){
 	var b = a('1');
 	var c = a('2');
 
