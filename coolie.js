@@ -7,7 +7,7 @@
 (function () {
     'use strict';
 
-    var version = '0.1.1';
+    var version = '0.1.2';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -202,6 +202,7 @@
             // 添加 module._exec 执行函数
             _wrapModule(module);
             modules[module._id] = module;
+            moduleDepsMap[module._id] = {};
         }
         // load/local script
         else if (defineModules.length) {
@@ -475,7 +476,7 @@
                 return fromHost + from2 + to2.replace(REG_UP_PATH, '');
 
             default:
-                return to2;
+                return fromHost + to2;
         }
     }
 
