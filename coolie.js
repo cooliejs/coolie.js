@@ -201,10 +201,7 @@
             // 包装
             // 添加 module._exec 执行函数
             _wrapModule(module);
-
-            if (!modules[module._id]) {
-                modules[module._id] = module;
-            }
+            modules[module._id] = module;
         }
         // load/local script
         else if (defineModules.length) {
@@ -235,10 +232,7 @@
             // 添加 module._exec 执行函数
             _wrapModule(module);
 
-            if (!modules[module._id]) {
-                modules[module._id] = module;
-            }
-
+            modules[module._id] = module;
             moduleDepsMap[module._id] = {};
 
             if (module._deps.length) {
@@ -259,10 +253,12 @@
                         by: module._id
                     });
 
-                    if (REG_TEXT.test(dep)) {
-                        _ajaxText(depId);
-                    } else {
-                        _loadScript(depId);
+                    if (!modules[depId]) {
+                        if (REG_TEXT.test(dep)) {
+                            _ajaxText(depId);
+                        } else {
+                            _loadScript(depId);
+                        }
                     }
                 });
             }
