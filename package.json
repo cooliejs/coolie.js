@@ -3,8 +3,7 @@
   "version": "0.1.1",
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
-    "jsminify": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm -o ./coolie.min.js",
-    "jsminify2": "console.log('123');"
+    "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js"
   },
   "preferGlobal": false,
   "bin": {},

@@ -1,13 +1,14 @@
-/**
+/*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.1.1
+ * @version 0.1.3
+ * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.1.2';
+    var version = '0.1.3';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -358,8 +359,10 @@
         }
 
         script = document.createElement('script');
-        complete = function (err) {
-            if (!(err && err.constructor === Error)) {
+        complete = function (eve) {
+            if (eve.type === 'error') {
+                console.groupEnd('coolie modules');
+            } else {
                 console.log('script module', src, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
