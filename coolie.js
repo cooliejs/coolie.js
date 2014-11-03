@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.1.3
+ * @version 0.1.4
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.1.3';
+    var version = '0.1.4';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -17,7 +17,7 @@
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
-    var REG_TEXT = /^text!/i;
+    var REG_TEXT = /^(css|html|text)!/i;
     // 入口文件
     var mainFile;
     // 入口模块ID，构建之后情况
