@@ -10,7 +10,7 @@ A coolie for JavaScript module management and module transportation.
 ## 引用模块标识
 - 直接相对路径，如`./abc/def.js`，JS直接模块
 - CSS 文本，如`css!./abc/def.css`，会在构建时被压缩
-- HTML 文本，如`html!./abc/def.css`，会在构建时被压缩
+- HTML 文本，如`html!./abc/def.html`，会在构建时被压缩
 - 其他纯文本，如`text!./abc/def.txt`，不会在构建时被压缩
 
 ## 开发环境（注意看注释说明）
