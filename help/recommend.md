@@ -4,34 +4,49 @@
 ## 推荐的文件结构
 <pre>
 - src 开发环境文件夹
-   - coolie.json 构建配置
-   - coolie.js 苦力加载器
-   - coolie-config.js 苦力加载配置
-   - libs 脚本库
-   - widget 组件库
-   - ui UI库
-   - page 页面出口脚本
-       - signin.js
-       - signup.js
-       - home
-           - page1.js
-           - page2.js
-       - user
-           - page1.js
-           - page2.js
-- dest 生产环境文件夹
-   - ... 省略，与开发环境一一对应
+  - coolie.json 构建配置
+  - static
+    - js
+      - coolie.js 苦力加载器
+      - coolie-config.js 苦力加载配置
+      - libs 脚本库
+      - widget 组件库
+      - ui UI库
+      - page 页面出口脚本
+        - signin.js
+        - signup.js
+        - home
+          - page1.js
+          - page2.js
+        - user
+          - page1.js
+          - page2.js
+    - css
+    - img
+    - fonts
+  - template
+    - signin.html
+    - signup.html
+    - home
+      - page1.html
+      - page2.html
+    - user
+      - page1.html
+      - page2.html
+- dest 生产环境文件夹， 构建生成
+  - ... 省略，与开发环境一一对应
 </pre>
 
 - Q：为什么是这样的结构？
-- A：开发环境与生产环境的脚本完全隔离，利于维护和构建操作。在开发模式下，脚本的根目录指向`src`，在生产环境下脚本
-的根目录，切换到`dest`。
+- A：开发环境与生产环境的脚本完全隔离，利于维护和构建操作。在开发模式下，前端资源指向`src`；在生产环境下，切换到`dest`。
 例如，在`nodejs`中使用`express`可以这样：
 ```js
 if(app.get('env') === 'development'){
-    app.use('/js', express.static(__dirname + '/src'));
+    app.use('/static/', express.static(path.join(__dirname, './src/static/')));
+    app.set('views', path.join(__dirname, './src/template/'));
 }else{
-    app.use('/js', express.static(__dirname + '/dest'));
+    app.use('/static/', express.static(path.join(__dirname, './dest/static/')));
+    app.set('views', path.join(__dirname, './dest/template/'));
 }
 ```
 
@@ -41,8 +56,8 @@ if(app.get('env') === 'development'){
 {
     "dest": "../dest/",
     "main": "./page/**/*.js",
-    "coolie-config.js": "./coolie-config.js",
-    "copyFiles": "./coolie.js"
+    "coolie-config.js": "./static/js/coolie-config.js",
+    "copyFiles": "**/*.*"
 }
 ```
 - `dest` 构建结果目录。
