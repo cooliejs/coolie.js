@@ -118,8 +118,3 @@ coolie.use('./index.js');
 # Version
 [版本历史](https://github.com/cloudcome/coolie/blob/master/version.md)
 
-## 0.1.0
-- 支持文本加载
-
-## 0.0.2
-- 完成模块化管理和加载
