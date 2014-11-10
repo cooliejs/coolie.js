@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.1.4
+ * @version 0.1.5
  * @license MIT
  */
 
@@ -185,7 +185,7 @@
         if (arguments.length === 2) {
             xhr = scriptORxhr;
             // 是否命名
-            module._isAn = !1;
+            module._isAnonymous = false;
             // 模块ID
             module._id = id;
             // 模块类型
@@ -212,7 +212,7 @@
             meta = defineModules.shift();
 
             // 是否为匿名模块
-            module._isAn = meta[0] === '';
+            module._isAnonymous = meta[0] === '';
 
             // 模块ID
             // 匿名：模块加载的路径
@@ -222,7 +222,7 @@
             script = null;
 
             // 模块所在路径
-            module._path = module._isAn ? _getPathname(module._id) : '';
+            module._path = module._isAnonymous ? _getPathname(module._id) : '';
 
             // 模块依赖数组
             module._deps = meta[1];
@@ -242,7 +242,7 @@
                     // 匿名模块：依赖采用相对路径方式
                     // 具名模块：依赖采用绝对路径方式
                     var relDep = dep.replace(REG_TEXT, '');
-                    var depId = module._isAn ? _pathJoin(module._path, relDep) : relDep;
+                    var depId = module._isAnonymous ? _pathJoin(module._path, relDep) : relDep;
 
                     if (moduleDepsMap[depId] && moduleDepsMap[depId][module._id]) {
                         throw 'module `' + module._id + '` and module `' + depId + '` make up a circular dependency relationship';
@@ -297,7 +297,7 @@
             var require = function (dep) {
                 dep = dep.replace(REG_TEXT, '');
 
-                var depId = module._isAn ? _pathJoin(_getPathname(module._id), dep) : dep;
+                var depId = module._isAnonymous ? _pathJoin(_getPathname(module._id), dep) : dep;
 
                 if (!modules[depId]) {
                     throw 'can not found module `' + depId + '`, require in `' + module._id + '`';
@@ -307,8 +307,15 @@
             };
 
             return function () {
-                module._factory.call(window, require, module.exports, module);
-                return module.exports;
+                var id = module._id;
+
+                if (module._hasExport) {
+                    return modules[id].exports;
+                } else {
+                    module._factory.call(window, require, module.exports, module);
+                    module._hasExport = true;
+                    return modules[id].exports = module.exports;
+                }
             };
         })();
     }
