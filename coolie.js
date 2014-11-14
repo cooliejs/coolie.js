@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    var version = '0.1.4';
+    var version = '0.1.5';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
