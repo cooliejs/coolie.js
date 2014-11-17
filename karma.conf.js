@@ -13,10 +13,24 @@ module.exports = function (config) {
         frameworks: ['mocha'],
 
 
+        client: {
+            mocha: {
+                reporter: 'html', // change Karma's debug.html to the mocha web reporter
+                ui: 'bdd'
+            }
+        },
+
+
         // list of files / patterns to load in the browser
         files: [
+            'node_modules/mocha/mocha.js',
+            'node_modules/should/should.js',
             './coolie.js',
-            './test/**/*.js'
+            {
+                pattern: './test/modules/**/*.js',
+                included: false
+            },
+            './test/unit/main.test.js'
         ],
 
 
@@ -27,9 +41,14 @@ module.exports = function (config) {
         // preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
         preprocessors: {
-            'coolie.js': 'coverage'
+            './coolie.js': ['coverage']
         },
 
+
+        // test results reporter to use
+        // possible values: 'dots', 'progress'
+        // available reporters: https://npmjs.org/browse/keyword/karma-reporter
+        reporters: ['progress', 'junit', 'coverage'],
 
         //Code Coverage options. report type available:
         //- html (default)
@@ -39,16 +58,9 @@ module.exports = function (config) {
         //- text-summary (standard output)
         //- cobertura (xml format supported by Jenkins)
         coverageReporter: {
-            // cf. http://gotwarlost.github.com/istanbul/public/apidocs/
-            type: 'cobertura',
+            type: 'lcov',
             dir: 'coverage/'
         },
-
-
-        // test results reporter to use
-        // possible values: 'dots', 'progress'
-        // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-        reporters: ['progress', 'junit', 'coverage'],
 
 
         // web server port

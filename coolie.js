@@ -119,6 +119,13 @@
 
 
         /**
+         * 模块全部加载完成进行回调
+         * name callback
+         */
+        callback: null,
+
+
+        /**
          * 配置 coolie
          * @param [cnf] {Object} 配置
          * @returns {coolie}
@@ -334,6 +341,10 @@
         console.log('past ' + (Date.now() - beginTime) + ' ms');
         console.groupEnd('coolie modules');
         modules[module]._exec();
+
+        if (_isFunction(coolie.callback)) {
+            coolie.callback(modules[module].exports);
+        }
     }
 
 
