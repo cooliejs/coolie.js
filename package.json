@@ -3,7 +3,8 @@
   "version": "0.1.4",
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
-    "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js"
+    "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
+    "test": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS"
   },
   "preferGlobal": false,
   "bin": {},
@@ -36,6 +37,7 @@
     "karma-coverage": "^0.2.6",
     "karma-junit-reporter": "^0.2.2",
     "karma-mocha": "^0.1.9",
+    "karma-phantomjs-launcher": "^0.1.4",
     "mocha": "^2.0.1",
     "should": "^4.3.0",
     "uglify-js": "^2.4.15"

@@ -1,15 +1,10 @@
 <?xml version="1.0"?>
 <testsuites>
-  <testsuite name="Chrome 39.0.2159 (Windows 7)" package="" timestamp="2014-11-17T10:23:22" id="0" hostname="MININT-NN1DQST">
+  <testsuite name="PhantomJS 1.9.8 (Windows 7)" package="" timestamp="2014-11-17T10:49:48" id="0" hostname="MININT-NN1DQST" tests="1" errors="0" failures="0" time="0.004">
     <properties>
-      <property name="browser.fullName" value="Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2159.4 Safari/537.36"/>
+      <property name="browser.fullName" value="Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.8 Safari/534.34"/>
     </properties>
-  </testsuite>
-  <testsuite name="Chrome 39.0.2159 (Windows 7)" package="" timestamp="2014-11-17T10:23:22" id="0" hostname="MININT-NN1DQST" tests="1" errors="0" failures="0" time="0.013">
-    <properties>
-      <property name="browser.fullName" value="Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2159.4 Safari/537.36"/>
-    </properties>
-    <testcase name="module1 + module2" time="0.013" classname="Chrome 39.0.2159 (Windows 7).modules"/>
+    <testcase name="module1 + module2" time="0.004" classname="PhantomJS 1.9.8 (Windows 7).modules"/>
     <system-out><![CDATA[
 ]]></system-out>
     <system-err/>
