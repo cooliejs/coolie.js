@@ -1,0 +1,5 @@
+language: node_js
+node_js:
+  - 0.10.x
+script:
+  - node_modules/karma/bin/karma start --browsers=Chrome
