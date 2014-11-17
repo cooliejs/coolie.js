@@ -31,6 +31,12 @@
   },
   "licenses": "MIT",
   "devDependencies": {
+    "karma": "^0.12.25",
+    "karma-chrome-launcher": "^0.1.5",
+    "karma-junit-reporter": "^0.2.2",
+    "karma-mocha": "^0.1.9",
+    "mocha": "^2.0.1",
+    "should": "^4.3.0",
     "uglify-js": "^2.4.15"
   }
 }
