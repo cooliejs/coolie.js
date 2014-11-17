@@ -6,3 +6,5 @@ before_script:
   - sh -e /etc/init.d/xvfb start
 script:
   - node ./node_modules/karma/bin/karma start --browsers PhantomJS --single-run
+after_script:
+  npm install coveralls && cat ./coverage/lcov.info | coveralls
