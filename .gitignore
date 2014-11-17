@@ -36,3 +36,4 @@ sea-modules
 _site
 .cache
 dist
+coverage
