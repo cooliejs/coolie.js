@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.1.6
+ * @version 0.2.0
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.1.6';
+    var version = '0.2.0';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -16,6 +16,8 @@
     var REG_FILE_BASENAME = /\/([^\/]+)$/;
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
+    var REG_SEARCH = /\?.*$/;
+    var REG_SUFFIX = /(\.[^.]*)$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
     var REG_TEXT = /^(css|html|text)!/i;
     // 入口文件
@@ -128,6 +130,8 @@
         /**
          * 配置 coolie
          * @param [cnf] {Object} 配置
+         * @param [cnf.base] {String} 基础路径，相对于`coolie.js`
+         * @param [cnf.version] {String|Object} 版本号，字符串修改的是所有请求模块的querystring，而对象值修改的是某个模块的版本号（推荐）
          * @returns {coolie}
          */
         config: function (cnf) {
@@ -361,6 +365,7 @@
         var complete;
         var srcType = _getPathType(src);
         var time = Date.now();
+        var url = _addRequestVersion(src);
 
         requireLength++;
 
@@ -370,7 +375,7 @@
             // 1. 与 onload 有相同效果了
             // 2. 不再是同步函数了，不会递归执行，导致计数错误
             return setTimeout(function () {
-                console.log('local module', src, (Date.now() - time) + 'ms');
+                console.log('local module', url, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule();
             }, 1);
@@ -378,21 +383,21 @@
 
         script = document.createElement('script');
         complete = function (eve) {
+            containerNode.removeChild(script);
+
             if (eve.type === 'error') {
                 console.groupEnd('coolie modules');
             } else {
-                console.log('script module', src, (Date.now() - time) + 'ms');
+                console.log('script module', url, (Date.now() - time) + 'ms');
                 doneLength++;
                 _saveModule(script);
             }
-
-            containerNode.removeChild(script);
         };
 
         script.id = src;
         script.async = true;
         script.defer = true;
-        script.src = _addRequestVersion(src);
+        script.src = url;
         script.onload = script.onerror = complete;
         containerNode.appendChild(script);
     }
@@ -524,13 +529,23 @@
 
 
     /**
+     * 类型判断
+     * @param obj
+     * @returns {string}
+     */
+    function _typeis(obj) {
+        return Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
+    }
+
+
+    /**
      * 判断是否为数组
      * @param obj
      * @returns {Boolean}
      * @private
      */
     function _isArray(obj) {
-        return obj && obj instanceof  Array;
+        return _typeis(obj) === 'array';
     }
 
 
@@ -541,7 +556,7 @@
      * @private
      */
     function _isFunction(obj) {
-        return typeof obj === 'function';
+        return _typeis(obj) === 'function';
     }
 
 
@@ -552,7 +567,7 @@
      * @private
      */
     function _isString(obj) {
-        return typeof obj === 'string';
+        return _typeis(obj) === 'string';
     }
 
 
@@ -590,10 +605,28 @@
      * @returns {String}
      * @private
      */
-    function _addRequestVersion(str) {
-        return config.version ?
-        str + (str.indexOf('?') > -1 ? '&' : '?') + '_=' + encodeURIComponent(config.version) :
-            str;
+    function _addRequestVersion(url) {
+        var type = _typeis(config.version);
+        var relative;
+        var version;
+        var search;
+
+        switch (type) {
+            case 'string':
+                return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + encodeURIComponent(config.version);
+
+            case 'object':
+                relative = url.replace(config.base, '');
+                search = (url.match(REG_SEARCH) || [''])[0];
+                version = config.version[relative] || config.version['./' + relative];
+
+                return version ?
+                url.replace(REG_SEARCH, '').replace(REG_SUFFIX, '.' + version + '$1') + search :
+                    url;
+
+            default :
+                return url;
+        }
     }
 
 
