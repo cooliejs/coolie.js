@@ -1,4 +1,4 @@
-# Coolie@0.2.0 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
+# Coolie@0.3.0 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
 
 A coolie for JavaScript module management and module transportation.
 
