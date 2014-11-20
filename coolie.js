@@ -17,6 +17,7 @@
     var REG_BEGIN_TYPE = /^.*?\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_SEARCH = /\?.*$/;
+    var REG_SEARCH_HASH = /[?#].*$/;
     var REG_SUFFIX = /(\.[^.]*)$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
     var REG_TEXT = /^(css|html|text)!/i;
@@ -307,9 +308,7 @@
         module.exports = {};
         module._exec = (function () {
             var require = function (dep) {
-                dep = dep.replace(REG_TEXT, '');
-
-                var depId = module._isAnonymous ? _fixPath(_pathJoin(_getPathname(module._id), dep)) : dep;
+                var depId = module._isAnonymous ? _pathJoin(_getPathname(module._id), _fixPath(dep)) : dep;
 
                 if (!modules[depId]) {
                     throw 'can not found module `' + depId + '`, require in `' + module._id + '`';
@@ -355,10 +354,12 @@
 
     /**
      * 修正路径
-     * @param path {String}
+     * @param path {String} 原始路径
+     * @param isTextPath {Boolean} 是否为文本路径
      * @private
      *
      * @example
+     * "text!path/to/a.css" => "path/to/a.css"
      * "path/to/a.min.js?abc123" => "path/to/a.min.js?abc123"
      * "path/to/a" => "path/to/a.js"
      * "path/to/a.php#" => "path/to/a.php"
@@ -366,6 +367,11 @@
      * "path/to/a.js" => "path/to/a.js"
      */
     function _fixPath(path) {
+        // 文本路径
+        if (REG_TEXT.test(path)) {
+            return path.replace(REG_SEARCH_HASH, '').replace(REG_TEXT, '');
+        }
+
         if (path.indexOf('?') > -1) {
             return path;
         }
