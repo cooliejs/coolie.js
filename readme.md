@@ -1,8 +1,11 @@
 # Coolie@0.3.0 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
 
 苦力——一个纯净、易用的模块加载器。
-`coolie`遵守AMD规范中的部分约定，[配套的构建工具](https://github.com/cloudcome/nodejs-coolie)，
-与之对应，[更多内容可以查看帮助](https://github.com/cloudcome/coolie/wiki)。
+
+`coolie`遵守AMD规范中的部分约定（[如何开发模块？](https://github.com/cloudcome/coolie/wiki/development)），
+[配套的前端构建工具](https://github.com/cloudcome/nodejs-coolie)，
+与之对应（[如何构建模块？](https://github.com/cloudcome/coolie/wiki/production)），
+[更多内容可以查看帮助](https://github.com/cloudcome/coolie/wiki)。
 
 
 # 接口
