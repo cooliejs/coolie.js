@@ -360,7 +360,10 @@
      *
      * @example
      * "text!path/to/a.css" => "path/to/a.css"
-     * "path/to/a.min.js?abc123" => "path/to/a.min.js?abc123"
+     * "text!path/to/a.css?abc123" => "path/to/a.css"
+     * "text!path/to/a.css#abc123" => "path/to/a.css"
+     * "text!path/to/a.css?abc123#abc123" => "path/to/a.css"
+     * "path/to/a.min.js?abc123" => "path/to/a.min.js"
      * "path/to/a" => "path/to/a.js"
      * "path/to/a.php#" => "path/to/a.php"
      * "path/to/a/" => "path/to/a/index.js"
