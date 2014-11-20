@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.2.0
+ * @version 0.3.0
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.2.0';
+    var version = '0.3.0';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -20,6 +20,7 @@
     var REG_SUFFIX = /(\.[^.]*)$/;
     var REG_HOST = /^.*\/\/[^\/]*/;
     var REG_TEXT = /^(css|html|text)!/i;
+    var REG_JS = /\.js$/i;
     // 入口文件
     var mainFile;
     // 入口模块ID，构建之后情况
@@ -308,7 +309,7 @@
             var require = function (dep) {
                 dep = dep.replace(REG_TEXT, '');
 
-                var depId = module._isAnonymous ? _pathJoin(_getPathname(module._id), dep) : dep;
+                var depId = module._isAnonymous ? _fixPath(_pathJoin(_getPathname(module._id), dep)) : dep;
 
                 if (!modules[depId]) {
                     throw 'can not found module `' + depId + '`, require in `' + module._id + '`';
@@ -353,6 +354,38 @@
 
 
     /**
+     * 修正路径
+     * @param path {String}
+     * @private
+     *
+     * @example
+     * "path/to/a.min.js?abc123" => "path/to/a.min.js?abc123"
+     * "path/to/a" => "path/to/a.js"
+     * "path/to/a.php#" => "path/to/a.php"
+     * "path/to/a/" => "path/to/a/index.js"
+     * "path/to/a.js" => "path/to/a.js"
+     */
+    function _fixPath(path) {
+        if (path.indexOf('?') > -1) {
+            return path;
+        }
+
+        var lastChar = path.slice(-1);
+
+        switch (lastChar) {
+            case '#':
+                return path.slice(0, -1);
+
+            case '/':
+                return path + 'index.js';
+
+            default :
+                return REG_JS.test(path) ? path : path + '.js';
+        }
+    }
+
+
+    /**
      * 异步加载并执行脚本
      * @param src {String} 脚本完整路径
      * @private
@@ -361,6 +394,8 @@
      * // src为相对、绝对路径的都会被加载，如“./”、“../”、“/”、“//”或“http://”
      */
     function _loadScript(src) {
+        src = _fixPath(src);
+
         var script;
         var complete;
         var srcType = _getPathType(src);
