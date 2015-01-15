@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.3.1
+ * @version 0.4.0
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.3.1';
+    var version = '0.4.0';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -30,8 +30,9 @@
     // 当前脚本
     var currentScript = _getCurrentScript();
     var containerNode = currentScript.parentNode;
-    var mePath = location.protocol + '//' + location.host + _getPathname(_pathJoin(_getPathname(location.pathname), currentScript.getAttribute('src')));
-    var meMain = _getMain(currentScript);
+    var mePath = location.protocol + '//' + location.host + _getPathname(_joinPath(_getPathname(location.pathname), currentScript.getAttribute('src')));
+    var meMain = _getData(currentScript, 'main');
+    var meConfig = _getData(currentScript, 'config');
     // 配置
     var config = {
         base: mePath
@@ -139,7 +140,7 @@
         config: function (cnf) {
             cnf = cnf || {};
 
-            config.base = cnf.base ? _pathJoin(mePath, cnf.base) : mePath;
+            config.base = cnf.base ? _joinPath(mePath, cnf.base) : mePath;
             config.version = cnf.version;
 
             return this;
@@ -172,7 +173,7 @@
                 main = meMain;
             }
 
-            mainFile = _pathJoin(config.base, main);
+            mainFile = _joinPath(config.base, main);
             beginTime = Date.now();
             console.group('coolie modules');
             _loadScript(mainFile);
@@ -180,6 +181,18 @@
             return this;
         }
     };
+
+
+    (function _execConfig() {
+        if (meConfig) {
+            var script = document.createElement('script');
+            var src = _joinPath(mePath, meConfig);
+
+            script.src = src + '?_=' + Date.now();
+            containerNode.appendChild(script);
+            console.log('load config', src);
+        }
+    })();
 
 
     /**
@@ -255,7 +268,7 @@
                     // 匿名模块：依赖采用相对路径方式
                     // 具名模块：依赖采用绝对路径方式
                     var relDep = dep.replace(REG_TEXT, '');
-                    var depId = module._isAnonymous ? _pathJoin(module._path, relDep) : relDep;
+                    var depId = module._isAnonymous ? _joinPath(module._path, relDep) : relDep;
 
                     if (moduleDepsMap[depId] && moduleDepsMap[depId][module._id]) {
                         throw 'module `' + module._id + '` and module `' + depId + '` make up a circular dependency relationship';
@@ -308,7 +321,7 @@
         module.exports = {};
         module._exec = (function () {
             var require = function (dep) {
-                var depId = module._isAnonymous ? _pathJoin(_getPathname(module._id), _fixPath(dep)) : dep;
+                var depId = module._isAnonymous ? _joinPath(_getPathname(module._id), _fixPath(dep)) : dep;
 
                 if (!modules[depId]) {
                     throw 'can not found module `' + depId + '`, require in `' + module._id + '`';
@@ -510,7 +523,7 @@
      * to   ../de.js
      * =>   /de.js
      */
-    function _pathJoin(from, to) {
+    function _joinPath(from, to) {
         var fromHost = (from.match(REG_HOST) || [''])[0];
         var fromBeiginType = _getPathType(from);
         var toBeginType = _getPathType(to);
@@ -690,15 +703,12 @@
     /**
      * 获取 data-main 属性值
      * @param node
+     * @param dataName
      * @returns {String}
      * @private
      */
-    function _getMain(node) {
-        if (node.dataset) {
-            return node.dataset.main;
-        }
-
-        return node.getAttribute('data-main');
+    function _getData(node, dataName) {
+        return node.getAttribute('data-' + dataName);
     }
 
 })();
