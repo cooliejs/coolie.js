@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.4.0
+ * @version 0.5.0
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.4.0';
+    var version = '0.5.0';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -80,7 +80,7 @@
             id = '';
         } else {
             if (!_isString(id)) {
-                throw new Error('module id must be a string');
+                throw 'module id must be a string';
             }
 
             // define(id, fn);
@@ -90,12 +90,12 @@
             }
 
             if (!_isArray(deps)) {
-                throw new Error('module defineModules must be an array');
+                throw 'module defineModules must be an array';
             }
         }
 
         if (!_isFunction(factory)) {
-            throw new Error('module factory must be a function');
+            throw 'module factory must be a function';
         }
 
         deps = isAnonymous ? _parseRequires(factory.toString()) : deps;
@@ -125,7 +125,8 @@
 
         /**
          * 模块全部加载完成进行回调
-         * name callback
+         * @name callback
+         * @type Function|Null
          */
         callback: null,
 
@@ -234,6 +235,7 @@
         // load/local script
         else if (defineModules.length) {
             script = scriptORxhr;
+            //meta = _getRunScript();
             // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
             meta = defineModules.shift();
 
@@ -312,9 +314,7 @@
 
     /**
      * 模块入栈
-     * @param isAnonymous 是否匿名
-     * @param deps 依赖
-     * @param factory 函数
+     * @param module 模块
      * @private
      */
     function _wrapModule(module) {
@@ -369,7 +369,6 @@
     /**
      * 修正路径
      * @param path {String} 原始路径
-     * @param isTextPath {Boolean} 是否为文本路径
      * @private
      *
      * @example
@@ -659,7 +658,7 @@
 
     /**
      * 添加请求版本号
-     * @param str
+     * @param url {String} 请求地址
      * @returns {String}
      * @private
      */
@@ -697,6 +696,26 @@
         var scripts = document.getElementsByTagName('script');
 
         return scripts[scripts.length - 1];
+    }
+
+
+    /**
+     * 获得当前运行的脚本
+     * @returns {*}
+     * @private
+     */
+    function _getRunScript() {
+        var scripts = containerNode.getElementsByName('script');
+        var length = scripts.length;
+        var node;
+
+        while (length--) {
+            node = scripts[length];
+
+            if (node.readyState === 'interactive') {
+                return node;
+            }
+        }
     }
 
 
