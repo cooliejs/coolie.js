@@ -2,7 +2,7 @@
 <!--
  - index.html
  - @author ydr.me
- - @create 2014-10-21 20:41
+ - @create 2014-10-21 14:54
  -->
 <html>
 <head lang="zh-cn">
@@ -10,6 +10,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="renderer" content="webkit">
     <meta name="viewport" content="width=device-width,user-scalable=no,maximum-scale=1.0,minimum-scale=1.0,minimal-ui">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-touch-fullscreen" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -21,7 +22,8 @@
     <title>index.html</title>
 </head>
 <body>
-<script src="../../coolie.js" data-main="./sign/index.js"></script>
-<script src="../../example/sign/coolie-config.js"></script>
+<script src="../../coolie.js"
+        data-config="./examples/anonymous/coolie-config.js"
+        data-main="./anonymous/index.js"></script>
 </body>
 </html>
