@@ -30,7 +30,8 @@
     // 当前脚本
     var currentScript = _getCurrentScript();
     var containerNode = currentScript.parentNode;
-    var mePath = location.protocol + '//' + location.host + _getPathname(_joinPath(_getPathname(location.pathname), currentScript.getAttribute('src')));
+    //var mePath = location.protocol + '//' + location.host + _getPathname(_joinPath(_getPathname(location.pathname), currentScript.getAttribute('src')));
+    var mePath = _getPathname(_getScriptAbsoluteSrc(currentScript));
     var meMain = _getData(currentScript, 'main');
     var meConfig = _getData(currentScript, 'config');
     // 配置
@@ -235,7 +236,6 @@
         // load/local script
         else if (defineModules.length) {
             script = scriptORxhr;
-            //meta = _getRunScript();
             // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
             meta = defineModules.shift();
 
@@ -704,18 +704,31 @@
      * @returns {*}
      * @private
      */
-    function _getRunScript() {
-        var scripts = containerNode.getElementsByName('script');
-        var length = scripts.length;
-        var node;
+    //function _getRunScript() {
+    //    var scripts = containerNode.getElementsByTagName('script');
+    //    var length = scripts.length;
+    //    var node;
+    //
+    //    while (length--) {
+    //        node = scripts[length];
+    //
+    //        if (node.readyState === 'interactive') {
+    //            return node;
+    //        }
+    //    }
+    //}
 
-        while (length--) {
-            node = scripts[length];
 
-            if (node.readyState === 'interactive') {
-                return node;
-            }
-        }
+    /**
+     * 获取 script 标签的绝对路径
+     * @param node
+     * @returns {string|CSSStyleDeclaration.src|*|src}
+     */
+    function _getScriptAbsoluteSrc(node) {
+        return node.hasAttribute ? // non-IE6/7
+            node.src :
+            // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
+            node.getAttribute('src', 4);
     }
 
 
