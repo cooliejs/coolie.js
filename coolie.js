@@ -19,7 +19,8 @@
     var REG_SEARCH = /\?.*$/;
     var REG_SEARCH_HASH = /[?#].*$/;
     var REG_SUFFIX = /(\.[^.]*)$/;
-    var REG_HOST = /^.*\/\/[^\/]*/;
+    var REG_SCHEMA = /^https?:/i;
+    var REG_HOST = /^(.*)\/\/[^/]*/;
     var REG_TEXT = /^(css|html|text)!/i;
     var REG_JS = /\.js$/i;
     // 入口文件
@@ -31,6 +32,7 @@
     var currentScript = _getCurrentScript();
     var containerNode = currentScript.parentNode;
     //var mePath = location.protocol + '//' + location.host + _getPathname(_joinPath(_getPathname(location.pathname), currentScript.getAttribute('src')));
+    //var pagePath = _getPathname(location.href);
     var mePath = _getPathname(_getScriptAbsoluteSrc(currentScript));
     var meMain = _getData(currentScript, 'main');
     var meConfig = _getData(currentScript, 'config');
@@ -178,23 +180,16 @@
             mainFile = _joinPath(config.base, main);
             beginTime = Date.now();
             console.group('coolie modules');
-            _loadScript(mainFile);
+            _loadModule(mainFile);
 
             return this;
         }
     };
 
 
-    (function _execConfig() {
-        if (meConfig) {
-            var script = document.createElement('script');
-            var src = _joinPath(mePath, meConfig);
-
-            script.src = src + '?_=' + Date.now();
-            containerNode.appendChild(script);
-            console.log('load config', src);
-        }
-    })();
+    if (meConfig) {
+        _loadScript(_joinPath(mePath, meConfig) + '?_=' + Date.now());
+    }
 
 
     /**
@@ -289,7 +284,7 @@
                         if (REG_TEXT.test(dep)) {
                             _ajaxText(depId);
                         } else {
-                            _loadScript(depId);
+                            _loadModule(depId);
                         }
                     }
                 });
@@ -324,7 +319,7 @@
                 var depId = module._isAnonymous ? _joinPath(_getPathname(module._id), _fixPath(dep)) : dep;
 
                 if (!modules[depId]) {
-                    throw 'can not found module `' + depId + '`, require in `' + module._id + '`';
+                    throw 'can not found module `' + depId + '`, but required in `' + module._id + '`';
                 }
 
                 return modules[depId]._exec();
@@ -408,6 +403,30 @@
 
 
     /**
+     * 加载脚本并回调
+     * @param url
+     * @param callback
+     * @param [id]
+     * @private
+     */
+    function _loadScript(url, callback, id) {
+        var script = document.createElement('script');
+        script.id = id;
+        script.src = url;
+        script.async = true;
+        script.defer = true;
+        containerNode.appendChild(script);
+        script.onload = script.onerror = function () {
+            containerNode.removeChild(script);
+
+            if (_isFunction(callback)) {
+                callback.apply(this, arguments);
+            }
+        };
+    }
+
+
+    /**
      * 异步加载并执行脚本
      * @param src {String} 脚本完整路径
      * @private
@@ -415,11 +434,9 @@
      * @example
      * // src为相对、绝对路径的都会被加载，如“./”、“../”、“/”、“//”或“http://”
      */
-    function _loadScript(src) {
+    function _loadModule(src) {
         src = _fixPath(src);
 
-        var script;
-        var complete;
         var srcType = _getPathType(src);
         var time = Date.now();
         var url = _addRequestVersion(src);
@@ -438,25 +455,15 @@
             }, 1);
         }
 
-        script = document.createElement('script');
-        complete = function (eve) {
-            containerNode.removeChild(script);
-
+        _loadScript(url, function (eve) {
             if (eve.type === 'error') {
                 console.groupEnd('coolie modules');
             } else {
                 console.log('script module', url, (Date.now() - time) + 'ms');
                 doneLength++;
-                _saveModule(script);
+                _saveModule(this);
             }
-        };
-
-        script.id = src;
-        script.async = true;
-        script.defer = true;
-        script.src = url;
-        script.onload = script.onerror = complete;
-        containerNode.appendChild(script);
+        }, src);
     }
 
 
@@ -470,17 +477,21 @@
 
         var xhr = new XMLHttpRequest();
         var time = Date.now();
+        var hasComplete;
         var complete = function () {
-            if (xhr.status === 200 || xhr.status === 304) {
-                console.log('text module', url, (Date.now() - time) + 'ms');
-                doneLength++;
-                _saveModule(xhr, url);
-            } else {
-                throw 'can not ajax ' + url + ', response status is ' + xhr.status;
+            if (xhr.readyState === 4 && !hasComplete) {
+                hasComplete = true;
+                if (xhr.status === 200 || xhr.status === 304) {
+                    console.log('text module', url, (Date.now() - time) + 'ms');
+                    doneLength++;
+                    _saveModule(xhr, url);
+                } else {
+                    throw 'can not ajax ' + url + ', response status is ' + xhr.status;
+                }
             }
         };
 
-        xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
+        xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
         xhr.open('GET', url);
         xhr.send(null);
     }
@@ -500,14 +511,18 @@
     /**
      * 获取路径类型
      * @param path
-     * @returns {String} 返回值有 “./”、“/”、“../”和“”（空字符串）
+     * @returns {String} 返回值有 “./”、“/”、“../”、“http:”、“https:”、“//”和“”（空字符串）
      * @private
      */
     function _getPathType(path) {
-        return (path
-            .replace(REG_TEXT, '')
-            .replace(REG_HOST, '')
-            .match(REG_BEGIN_TYPE) || [''])[0];
+        var ret;
+
+        if (REG_HOST.test(path)) {
+            ret = path.match(REG_HOST);
+            return (ret[1] || '//');
+        }
+
+        return (path.replace(REG_TEXT, '').match(REG_BEGIN_TYPE) || [''])[0];
     }
 
 
@@ -529,6 +544,10 @@
         var toDepth = 0;
         var from2 = from.replace(REG_HOST, '');
         var to2 = to;
+
+        if (REG_HOST.test(toBeginType)) {
+            return REG_SCHEMA.test(to) ? to : location.protocol + to;
+        }
 
         if (!fromBeiginType) {
             from2 = './' + from2;
@@ -697,26 +716,6 @@
 
         return scripts[scripts.length - 1];
     }
-
-
-    /**
-     * 获得当前运行的脚本
-     * @returns {*}
-     * @private
-     */
-    //function _getRunScript() {
-    //    var scripts = containerNode.getElementsByTagName('script');
-    //    var length = scripts.length;
-    //    var node;
-    //
-    //    while (length--) {
-    //        node = scripts[length];
-    //
-    //        if (node.readyState === 'interactive') {
-    //            return node;
-    //        }
-    //    }
-    //}
 
 
     /**
