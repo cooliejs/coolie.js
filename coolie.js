@@ -30,6 +30,7 @@
     var execModule;
     // 当前脚本
     var currentScript = _getCurrentScript();
+    var supportOnload = 'onload' in currentScript;
     var containerNode = currentScript.parentNode;
     //var mePath = location.protocol + '//' + location.host + _getPathname(_joinPath(_getPathname(location.pathname), currentScript.getAttribute('src')));
     //var pagePath = _getPathname(location.href);
@@ -51,6 +52,25 @@
     // 依赖数组
     var dependencyModules = [];
     var beginTime;
+    var console = (function () {
+        var ret = {};
+        var hasConsole = window.console;
+        var arr = ['log', 'warn', 'group', 'groupEnd'];
+
+        _each(arr, function (index, key) {
+            ret[key] = function () {
+                if (hasConsole && hasConsole[key]) {
+                    try {
+                        hasConsole[key].apply(hasConsole, arguments);
+                    } catch (err) {
+                        //ignore
+                    }
+                }
+            };
+        });
+
+        return ret;
+    })();
 
 
     /**
@@ -411,18 +431,31 @@
      */
     function _loadScript(url, callback, id) {
         var script = document.createElement('script');
-        script.id = id;
-        script.src = url;
-        script.async = true;
-        script.defer = true;
-        containerNode.appendChild(script);
-        script.onload = script.onerror = function () {
+        var onload = function () {
             containerNode.removeChild(script);
 
             if (_isFunction(callback)) {
                 callback.apply(this, arguments);
             }
         };
+
+        script.id = id;
+        script.src = url;
+        script.async = true;
+        script.defer = true;
+        containerNode.appendChild(script);
+
+        if (supportOnload) {
+            script.onload = onload;
+        } else {
+            script.onreadystatechange = function () {
+                if (/loaded|complete/.test(script.readyState)) {
+                    onload.call(this, arguments)
+                }
+            };
+        }
+
+        script.onerror = onload;
     }
 
 
