@@ -198,7 +198,7 @@
             }
 
             mainFile = _joinPath(config.base, main);
-            beginTime = Date.now();
+            beginTime = _now();
             console.group('coolie modules');
             _loadModule(mainFile);
 
@@ -208,7 +208,7 @@
 
 
     if (meConfig) {
-        _loadScript(_joinPath(mePath, meConfig) + '?_=' + Date.now());
+        _loadScript(_joinPath(mePath, meConfig) + '?_=' + _now());
     }
 
 
@@ -371,7 +371,7 @@
             throw 'can not found module `' + module + '`';
         }
 
-        console.log('past ' + (Date.now() - beginTime) + ' ms');
+        console.log('past ' + (_now() - beginTime) + ' ms');
         console.groupEnd('coolie modules');
         modules[module]._exec();
 
@@ -471,7 +471,7 @@
         src = _fixPath(src);
 
         var srcType = _getPathType(src);
-        var time = Date.now();
+        var time = _now();
         var url = _addRequestVersion(src);
 
         requireLength++;
@@ -482,7 +482,7 @@
             // 1. 与 onload 有相同效果了
             // 2. 不再是同步函数了，不会递归执行，导致计数错误
             return setTimeout(function () {
-                console.log('local module', url, (Date.now() - time) + 'ms');
+                console.log('local module', url, (_now() - time) + 'ms');
                 doneLength++;
                 _saveModule();
             }, 1);
@@ -492,7 +492,7 @@
             if (eve.type === 'error') {
                 console.groupEnd('coolie modules');
             } else {
-                console.log('script module', url, (Date.now() - time) + 'ms');
+                console.log('script module', url, (_now() - time) + 'ms');
                 doneLength++;
                 _saveModule(this);
             }
@@ -509,13 +509,13 @@
         requireLength++;
 
         var xhr = new XMLHttpRequest();
-        var time = Date.now();
+        var time = _now();
         var hasComplete;
         var complete = function () {
             if (xhr.readyState === 4 && !hasComplete) {
                 hasComplete = true;
                 if (xhr.status === 200 || xhr.status === 304) {
-                    console.log('text module', url, (Date.now() - time) + 'ms');
+                    console.log('text module', url, (_now() - time) + 'ms');
                     doneLength++;
                     _saveModule(xhr, url);
                 } else {
@@ -775,5 +775,14 @@
         return node.getAttribute('data-' + dataName);
     }
 
+
+    /**
+     * 获取当前时间戳
+     * @returns {number}
+     * @private
+     */
+    function _now() {
+        return new Date().getTime();
+    }
 })();
 
