@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.5.0
+ * @version 0.5.1
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.5.0';
+    var version = '0.5.1';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -124,6 +124,9 @@
         deps = isAnonymous ? _parseRequires(factory.toString()) : deps;
         defineModules.push([id, deps, factory]);
     };
+
+    window.define.amd = true;
+    window.define.cmd = true;
 
 
     /**
