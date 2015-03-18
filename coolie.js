@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.5.1
+ * @version 0.5.2
  * @license MIT
  */
 
@@ -125,8 +125,8 @@
         defineModules.push([id, deps, factory]);
     };
 
-    window.define.amd = true;
-    window.define.cmd = true;
+    window.define.amd = {};
+    window.define.cmd = {};
 
 
     /**
