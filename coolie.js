@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.5.2
+ * @version 0.5.5
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.5.1';
+    var version = '0.5.5';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -28,6 +28,7 @@
     // 入口模块ID，构建之后情况
     var mainID;
     var execModule;
+    var mainIsAnonymous = true;
     // 当前脚本
     var currentScript = _getCurrentScript();
     var supportOnload = 'onload' in currentScript;
@@ -86,6 +87,8 @@
 
         // 第一个运行 define 的为入口模块（？）
         if (!execModule) {
+            mainIsAnonymous = isAnonymous;
+
             if (isAnonymous) {
                 execModule = mainFile;
             } else {
@@ -99,8 +102,9 @@
 
         // define(fn);
         if (isAnonymous) {
-            factory = args[0];
             id = '';
+            deps = [];
+            factory = args[0];
         } else {
             if (!_isString(id)) {
                 throw 'module id must be a string';
@@ -121,7 +125,12 @@
             throw 'module factory must be a function';
         }
 
-        deps = isAnonymous ? _parseRequires(factory.toString()) : deps;
+        // 入口是匿名的
+        if (mainIsAnonymous) {
+            id = '';
+            deps = _parseRequires(factory.toString());
+        }
+
         defineModules.push([id, deps, factory]);
     };
 

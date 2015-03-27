@@ -4,7 +4,8 @@ define(function (require) {
     var c = require('../libs/c.js');
     var text = require('text!../text/some.txt');
     var wx = require('../libs/wx.js');
-    
+    var jquery = require('../libs/path1/jquery.min.js');
+
     console.log('456');
     console.log(text);
     a();
