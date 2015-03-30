@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.5.5
+ * @version 0.6.0
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.5.5';
+    var version = '0.6.0';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -23,7 +23,8 @@
     var REG_HOST = /^(.*)\/\/[^/]*/;
     var REG_TEXT = /^(css|html|text)!/i;
     var REG_JS = /\.js$/i;
-    // 入口文件
+    //var REG_URL_CACHE = /^(.*)(\?|&)(_=.*?)($|\?|&)(.*)$/;
+    //入口文件
     var mainFile;
     // 入口模块ID，构建之后情况
     var mainID;
@@ -39,9 +40,7 @@
     var meMain = _getData(currentScript, 'main');
     var meConfig = _getData(currentScript, 'config');
     // 配置
-    var config = {
-        base: mePath
-    };
+    var config = {};
     var moduleDepsMap = {};
     var modules = {};
     // 依赖长度
@@ -178,6 +177,7 @@
 
             config.base = cnf.base ? _joinPath(mePath, cnf.base) : mePath;
             config.version = cnf.version;
+            config.cache = !!cnf.cache;
 
             return this;
         },
@@ -220,7 +220,7 @@
 
 
     if (meConfig) {
-        _loadScript(_joinPath(mePath, meConfig) + '?_=' + _now());
+        _loadScript(_cacheURL(_joinPath(mePath, meConfig), true));
     }
 
 
@@ -452,7 +452,7 @@
         };
 
         script.id = id;
-        script.src = url;
+        script.src = _cacheURL(url);
         script.async = true;
         script.defer = true;
         containerNode.appendChild(script);
@@ -537,7 +537,7 @@
         };
 
         xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
-        xhr.open('GET', url);
+        xhr.open('GET', _cacheURL(url));
         xhr.send(null);
     }
 
@@ -795,6 +795,22 @@
      */
     function _now() {
         return new Date().getTime();
+    }
+
+
+    /**
+     * 构建无缓存 URL
+     * @param url {String}
+     * @param [isIgnoreConfig=false] {Boolean}
+     * @returns {String}
+     * @private
+     */
+    function _cacheURL(url, isIgnoreConfig) {
+        if (config.cache && !isIgnoreConfig) {
+            return url;
+        }
+
+        return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + _now();
     }
 })();
 

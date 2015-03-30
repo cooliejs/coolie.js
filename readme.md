@@ -1,4 +1,4 @@
-# Coolie@0.5.0 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
+# Coolie@0.6.0 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
 
 苦力——一个纯净、易用的模块加载器。
 
@@ -13,6 +13,14 @@
 模块的参考路径。该值参考于`coolie.js`。
 
 
+## `cache`
+是否缓存模块 URL，默认false。
+
+
+## `version`
+模块版本。留空，构建之后会自动生成。
+
+
 ## `use`
 启用模块加载器
 ```
@@ -21,11 +29,12 @@ coolie.config({
 }).use();
 ```
 
+## `callback`
+模块全部加载完毕后回调。常用于测试项目。
+
+
 ## 帮助
-- [前端构建工具](https://github.com/cloudcome/nodejs-coolie)
-- [coolie wiki帮助](https://github.com/cloudcome/coolie/wiki)
-- [版本更新历史记录](https://github.com/cloudcome/coolie/blob/master/version.md)
-- [AMDJS 规范](https://github.com/amdjs/amdjs-api)
+- <http://frontenddev.org/column/introduce-coolie/>
 
 
 
