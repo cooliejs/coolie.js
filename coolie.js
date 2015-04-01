@@ -1,14 +1,14 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.6.0
+ * @version 0.6.1
  * @license MIT
  */
 
 (function () {
     'use strict';
 
-    var version = '0.6.0';
+    var version = '0.6.1';
     // 该正则取自 seajs
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
@@ -220,7 +220,7 @@
 
 
     if (meConfig) {
-        _loadScript(_cacheURL(_joinPath(mePath, meConfig), true));
+        _loadScript(_cacheURL(_joinPath(mePath, meConfig)));
     }
 
 
@@ -452,7 +452,7 @@
         };
 
         script.id = id;
-        script.src = _cacheURL(url);
+        script.src = url;
         script.async = true;
         script.defer = true;
         containerNode.appendChild(script);
@@ -537,7 +537,7 @@
         };
 
         xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
-        xhr.open('GET', _cacheURL(url));
+        xhr.open('GET', url);
         xhr.send(null);
     }
 
@@ -801,15 +801,10 @@
     /**
      * 构建无缓存 URL
      * @param url {String}
-     * @param [isIgnoreConfig=false] {Boolean}
      * @returns {String}
      * @private
      */
-    function _cacheURL(url, isIgnoreConfig) {
-        if (config.cache && !isIgnoreConfig) {
-            return url;
-        }
-
+    function _cacheURL(url) {
         return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + _now();
     }
 })();
