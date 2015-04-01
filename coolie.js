@@ -734,7 +734,7 @@
 
         switch (type) {
             case 'string':
-                return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + encodeURIComponent(config.version);
+                return _cacheURL(url, encodeURIComponent(config.version));
 
             case 'object':
                 relative = url.replace(config.base, '');
@@ -804,8 +804,8 @@
      * @returns {String}
      * @private
      */
-    function _cacheURL(url) {
-        return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + _now();
+    function _cacheURL(url, version) {
+        return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' +(version || _now());
     }
 })();
 
