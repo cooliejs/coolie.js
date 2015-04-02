@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.6.2
+ * @version 0.6.3
  * @license MIT
  */
 
@@ -13,8 +13,9 @@
     var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
     var REG_SLASH = /\\\\/g;
     var REG_UP_PATH = /\.\.\//g;
+    var REG_THIS_PATH = /^.\//;
     var REG_FILE_BASENAME = /\/([^\/]+)$/;
-    var REG_BEGIN_TYPE = /^.*?\//;
+    var REG_BEGIN_TYPE = /(\.{1,2}|^)\//;
     var REG_END_PART = /[^\/]+\/$/;
     var REG_SEARCH = /\?.*$/;
     var REG_SEARCH_HASH = /[?#].*$/;
@@ -583,6 +584,10 @@
      * =>   /de.js
      */
     function _joinPath(from, to) {
+        while (REG_THIS_PATH.test(to)) {
+            to = to.replace(REG_THIS_PATH, '');
+        }
+
         var fromHost = (from.match(REG_HOST) || [''])[0];
         var fromBeiginType = _getPathType(from);
         var toBeginType = _getPathType(to);
@@ -805,7 +810,7 @@
      * @private
      */
     function _cacheURL(url, version) {
-        return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' +(version || _now());
+        return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + (version || _now());
     }
 })();
 
