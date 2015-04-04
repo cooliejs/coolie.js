@@ -13,6 +13,23 @@
      */
     var version = '0.7.0';
 
+
+    /**
+     * 获取当前时间戳
+     * @returns {Number}
+     */
+    var now = function () {
+        return new Date().getTime();
+    };
+
+
+    /**
+     * 当前时间
+     * @type {Number}
+     */
+    var timeNow = 0;
+
+
     /**
      * window
      * @type {Window}
@@ -132,15 +149,6 @@
 
         return ret;
     })();
-
-
-    /**
-     * 获取当前时间戳
-     * @returns {Number}
-     */
-    var now = function () {
-        return new Date().getTime();
-    };
 
 
     /**
@@ -405,7 +413,6 @@
                 if (xhr.status === 200 || xhr.status === 304) {
                     defineModule({
                         _isAn: mainModule._isAn,
-                        _time: now(),
                         id: url,
                         deps: [],
                         factory: function () {
@@ -552,13 +559,6 @@
 
 
     /**
-     * 是否可以执行入口模块
-     * @type {boolean}
-     */
-    var canExecuteMain = false;
-
-
-    /**
      * 是否已经执行了入口模块
      * @type {boolean}
      */
@@ -600,7 +600,6 @@
     coolie.config = function (config) {
         coolieConfig = config;
         mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
-
         coolieConfig.version = coolieConfig.version || {};
 
         if (isString(coolieConfig.version)) {
@@ -612,10 +611,9 @@
             });
         }
 
-        var mainModuleId = mainModule.id = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
+        var mainModuleId = mainModule.url = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
 
         mainModule._defined = false;
-        mainModule._time = now();
         dependenceModules[mainModuleId] = mainModule;
 
         return coolie;
@@ -626,21 +624,14 @@
      * 开始执行入口模块
      */
     coolie.use = function () {
-        canExecuteMain = true;
-    };
-
-
-    /**
-     * 执行入口模块
-     */
-    var executeMain = function () {
         if (hasExecuteMain) {
             return;
         }
 
         hasExecuteMain = true;
-
-        loadScript(mainModule.id);
+        timeNow = now();
+        loadScript(mainModule.url);
+        console.group('coolie modules');
     };
 
 
@@ -723,10 +714,10 @@
 
         defineModules[id] = module;
         defineLength++;
-        console.log(id, now() - dependenceModules[id]._time + 'ms');
+        console.log(id);
 
         if (defineLength === dependenceLength) {
-            console.log('past', now() - mainModule._time + 'ms');
+            console.log('past', now() - timeNow + 'ms');
             console.groupEnd('coolie modules');
             mainModule._execute();
         }
@@ -765,16 +756,21 @@
 
         id = mainModule._defined && mainModule._isAn ? interactiveScriptURL : id || interactiveScriptURL;
 
+
         var module = {
             _isAn: isAn,
             _path: interactiveScriptPath,
-            _time: now(),
             id: id,
             deps: deps,
             factory: factory
         };
 
-        if (interactiveScriptURL === mainModule.id) {
+        if (!mainModule.id) {
+            // 具名模块
+            if (!isAn) {
+                dependenceModules[id] = dependenceModules[mainModule.url];
+            }
+
             mainModule = module;
             mainModule._defined = true;
         }
@@ -782,24 +778,28 @@
         var deps2 = [];
 
         each(deps, function (index, dep) {
-            var isTextModule = REG_TEXT_MODULE.test(dep);
+            var depId = dep;
 
-            dep = dep.replace(REG_TEXT_MODULE, '');
+            if (mainModule._isAn) {
+                var isTextModule = REG_TEXT_MODULE.test(dep);
 
-            var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
-            var depId = cleanURL(currentScriptHost + path, isTextModule);
+                dep = dep.replace(REG_TEXT_MODULE, '');
+
+                var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
+                depId = cleanURL(currentScriptHost + path, isTextModule);
+            }
 
             if (!dependenceModules[depId]) {
                 deps2.push(depId);
-                dependenceModules[depId] = {
-                    _time: now()
-                };
+                dependenceModules[depId] = true;
                 dependenceLength++;
 
-                if (isTextModule) {
-                    ajaxText(depId);
-                } else {
-                    loadScript(depId);
+                if (mainModule._isAn) {
+                    if (isTextModule) {
+                        ajaxText(depId);
+                    } else {
+                        loadScript(depId);
+                    }
                 }
             }
         });
@@ -811,8 +811,7 @@
 
     // 加载配置脚本
     if (currentScriptConfigURL) {
-        console.group('coolie modules');
-        loadScript(currentScriptConfigURL, executeMain);
+        loadScript(currentScriptConfigURL);
     }
 
 
