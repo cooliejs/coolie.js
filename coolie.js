@@ -49,10 +49,18 @@
     /**
      * coolie 配置
      * @property base {String} 模块入口基准路径
+     * @property host {String} 模块入口 host
      * @property version {Object} 入口模块版本 map
      * @type {Object}
      */
     var coolieConfig = {};
+
+
+    /**
+     * coolie 回调列表
+     * @type {Array}
+     */
+    var coolieCallbacks = [];
 
 
     /**
@@ -648,6 +656,21 @@
         timeNow = now();
         loadScript(mainModule.url);
         console.group('coolie modules');
+
+        return coolie;
+    };
+
+
+    /**
+     * 添加模块加载器回调
+     * @param callback
+     */
+    coolie.callback = function (callback) {
+        if (isFunction(callback)) {
+            coolieCallbacks.push(callback);
+        }
+
+        return coolie;
     };
 
 
@@ -730,12 +753,15 @@
 
         defineModules[id] = module;
         defineLength++;
-        console.log(module._isMain ? 'main module' : 'require module', module._isMain ? module.url : id);
+        console.log(module._isMain ? 'main' : 'require', module._isMain ? module.url : id);
 
         if (defineLength === dependenceLength) {
             console.log('past', now() - timeNow + 'ms');
             console.groupEnd('coolie modules');
             mainModule._execute();
+            each(coolieCallbacks, function (index, callback) {
+                callback.call(coolie);
+            });
         }
     };
 
@@ -852,6 +878,7 @@
      */
     window.coolie = coolie;
     window.coolie.modules = defineModules;
+    window.coolie.configs = coolieConfig;
 
     /**
      * @namespace define
