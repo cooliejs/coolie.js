@@ -612,7 +612,7 @@
         } else {
             coolieConfig._v = {};
             each(coolieConfig.version, function (path, version) {
-                coolieConfig._v[cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, path))] = version;
+                coolieConfig._v[currentScriptHost + getPathJoin(mainModuleBaseDir, path)] = version;
             });
         }
 
