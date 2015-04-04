@@ -765,6 +765,9 @@
     var define = function (id, deps, factory) {
         var args = arguments;
         var isAn = true;
+        var interactiveScript = getInteractiveScript();
+        var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
+        var interactiveScriptPath = getPathDir(interactiveScriptURL);
 
         // define(id, deps, factory);
         if (isFunction(args[2])) {
@@ -783,13 +786,6 @@
             id = null;
         }
 
-        var interactiveScript = getInteractiveScript();
-        var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
-        var interactiveScriptPath = getPathDir(interactiveScriptURL);
-
-        id = id ? id : interactiveScriptURL;
-        defineLength++;
-
         var module = {
             _isAn: isAn,
             _path: interactiveScriptPath,
@@ -803,6 +799,7 @@
         }
 
         defineModules[id] = wrapModule(module);
+        defineLength++;
 
         each(deps, function (index, dep) {
             var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
