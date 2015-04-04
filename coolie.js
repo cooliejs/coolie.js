@@ -379,7 +379,7 @@
             eve = eve || win.event;
 
             if (eve && eve.type === 'error') {
-                throw 'load script error: ' + url2;
+                throw 'load script error\n' + url2;
             }
 
             if (isFunction(callback)) {
@@ -425,7 +425,7 @@
                         }
                     });
                 } else {
-                    throw 'ajax error: ' + url2;
+                    throw 'ajax error\n' + url2;
                 }
             }
         };
@@ -695,7 +695,7 @@
                 var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule) : dep;
 
                 if (!defineModules[depId]) {
-                    throw 'can not found module `' + depId + '`, but required in `' + module.id + '`';
+                    throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;
                 }
 
                 return defineModules[depId]._execute();
@@ -792,7 +792,20 @@
                 dep = dep.replace(REG_TEXT_MODULE, '');
 
                 var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
+
                 depId = cleanURL(currentScriptHost + path, isTextModule);
+            }
+
+            if (id === depId) {
+                throw 'required oneself: \n' + id;
+            }
+
+            if (defineModules[depId]) {
+                each(defineModules[depId].deps, function (index, dep) {
+                    if (dep === id) {
+                        throw 'required circle: \n' + depId + '\n' + id;
+                    }
+                });
             }
 
             if (!dependenceModules[depId]) {
