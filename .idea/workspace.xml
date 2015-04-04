@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d128451a-32a4-4b89-a0b0-1cc98d2c08f0" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/examples/a.js" afterPath="$PROJECT_DIR$/examples/a.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/coolie.js" afterPath="$PROJECT_DIR$/coolie.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/examples/anonymous/index.js" afterPath="$PROJECT_DIR$/examples/anonymous/index.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="coolie.iws" />
@@ -28,8 +30,20 @@
       <file leaf-file-name="coolie.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/coolie.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.2813008">
-              <caret line="786" column="9" selection-start-line="786" selection-start-column="9" selection-end-line="786" selection-end-column="9" />
+            <state vertical-scroll-proportion="0.47479674">
+              <caret line="844" column="18" selection-start-line="844" selection-start-column="18" selection-end-line="844" selection-end-column="18" />
+              <folding>
+                <element signature="n#!!doc" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="coolie-old.js" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/coolie-old.js">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0">
+              <caret line="77" column="9" selection-start-line="59" selection-start-column="4" selection-end-line="77" selection-end-column="9" />
               <folding>
                 <element signature="n#!!doc" expanded="true" />
               </folding>
@@ -46,7 +60,6 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/example/anonymous/index.html" />
-        <option value="$PROJECT_DIR$/examples/a.js" />
         <option value="$PROJECT_DIR$/test/coolie.js" />
         <option value="$PROJECT_DIR$/examples/libs/path1/jquery.min.js" />
         <option value="$PROJECT_DIR$/examples/anonymous/coolie-config.js" />
@@ -60,6 +73,7 @@
         <option value="$PROJECT_DIR$/examples/anonymous/2.html" />
         <option value="$PROJECT_DIR$/coolie.min.js" />
         <option value="$PROJECT_DIR$/examples/anonymous/index.js" />
+        <option value="$PROJECT_DIR$/examples/a.js" />
         <option value="$PROJECT_DIR$/coolie.js" />
       </list>
     </option>
@@ -412,7 +426,13 @@
       <option name="project" value="LOCAL" />
       <updated>1428161890418</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="优化 coolie">
+      <created>1428162039644</created>
+      <option name="number" value="00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1428162039644</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
@@ -730,13 +750,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/a.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.027642276">
-          <caret line="1" column="41" selection-start-line="1" selection-start-column="41" selection-end-line="1" selection-end-column="41" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/examples/anonymous/coolie-config.js">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.08265802">
@@ -858,28 +871,36 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/examples/a.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.110569105">
+          <caret line="4" column="22" selection-start-line="4" selection-start-column="22" selection-end-line="4" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/examples/anonymous/index.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.41463414">
+          <caret line="15" column="8" selection-start-line="15" selection-start-column="8" selection-end-line="15" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/coolie-old.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.08943089">
-          <caret line="364" column="21" selection-start-line="364" selection-start-column="21" selection-end-line="364" selection-end-column="21" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="77" column="9" selection-start-line="59" selection-start-column="4" selection-end-line="77" selection-end-column="9" />
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/anonymous/index.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.055284552">
-          <caret line="2" column="28" selection-start-line="2" selection-start-column="28" selection-end-line="2" selection-end-column="28" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/coolie.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.2813008">
-          <caret line="786" column="9" selection-start-line="786" selection-start-column="9" selection-end-line="786" selection-end-column="9" />
+        <state vertical-scroll-proportion="0.47479674">
+          <caret line="844" column="18" selection-start-line="844" selection-start-column="18" selection-end-line="844" selection-end-column="18" />
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>

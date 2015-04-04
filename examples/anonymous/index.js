@@ -13,5 +13,5 @@ define(function (require) {
     //
     //console.log('456');
     //console.log(text);
-    //a();
+    a();
 });

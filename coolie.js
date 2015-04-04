@@ -91,6 +91,30 @@
 
 
     /**
+     * 定义 console，防止出错
+     */
+    var console = (function () {
+        var ret = {};
+        var hasConsole = win.console;
+        var arr = ['log', 'warn', 'group', 'groupEnd'];
+
+        each(arr, function (index, key) {
+            ret[key] = function () {
+                if (hasConsole && hasConsole[key]) {
+                    try {
+                        hasConsole[key].apply(hasConsole, arguments);
+                    } catch (err) {
+                        //ignore
+                    }
+                }
+            };
+        });
+
+        return ret;
+    })();
+
+
+    /**
      * 目录结尾
      * @type {RegExp}
      */
@@ -456,6 +480,7 @@
         coolieConfig = config;
         mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
         mainModule.id = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
+        mainModule._defined = false;
 
         return coolie;
     };
@@ -786,16 +811,21 @@
             id = null;
         }
 
+        id = mainModule._defined && mainModule._isAn ? interactiveScriptURL : id || interactiveScriptURL;
+
+        console.log('define module', id);
+
         var module = {
             _isAn: isAn,
             _path: interactiveScriptPath,
-            id: id ? id : interactiveScriptURL,
+            id: id,
             deps: deps,
             factory: factory
         };
 
-        if (id === mainModule.id) {
+        if (interactiveScriptURL === mainModule.id) {
             mainModule = module;
+            mainModule._defined = true;
         }
 
         defineModules[id] = wrapModule(module);
@@ -809,13 +839,17 @@
             id = id + (REG_JS.test(id) ? '' : '.js');
 
             if (!dependenceModules[id]) {
-                dependenceModules[id] = true;
+                dependenceModules[id] = {
+                    loaded: true,
+                    time: new Date().getTime()
+                };
                 dependenceLength++;
                 loadScript(id);
             }
         });
 
         if (defineLength === dependenceLength) {
+            console.groupEnd('coolie modules');
             mainModule._execute();
         }
     };
@@ -823,6 +857,7 @@
 
     // 加载配置脚本
     if (currentScriptConfigURL) {
+        console.group('coolie modules');
         loadScript(currentScriptConfigURL, executeMain);
     }
 
@@ -832,6 +867,7 @@
      * @type {Object}
      */
     window.coolie = coolie;
+    window.coolie.modules = defineModules;
 
     /**
      * @namespace define
