@@ -1,12 +1,12 @@
 define(function (require) {
-    console.log('123');
+    //console.log('123');
     var a = require('../a');
     var c = require('../libs/c.js');
-    var text = require('text!../text/some.txt');
+    //var text = require('text!../text/some.txt');
     var wx = require('../libs/wx.js');
     var jquery = require('../libs/path1/jquery.min.js');
-
-    console.log('456');
-    console.log(text);
-    a();
+    //
+    //console.log('456');
+    //console.log(text);
+    //a();
 });

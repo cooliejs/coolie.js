@@ -1,667 +1,40 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.6.3
+ * @version 0.7.0
  * @license MIT
  */
 
+
 (function () {
-    'use strict';
-
-    var version = '0.6.3';
-    // 该正则取自 seajs
-    var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
-    var REG_SLASH = /\\\\/g;
-    var REG_UP_PATH = /\.\.\//g;
-    var REG_THIS_PATH = /^.\//;
-    var REG_FILE_BASENAME = /\/([^\/]+)$/;
-    var REG_BEGIN_TYPE = /(\.{1,2}|^)\//;
-    var REG_END_PART = /[^\/]+\/$/;
-    var REG_SEARCH = /\?.*$/;
-    var REG_SEARCH_HASH = /[?#].*$/;
-    var REG_SUFFIX = /(\.[^.]*)$/;
-    var REG_SCHEMA = /^https?:/i;
-    var REG_HOST = /^(.*)\/\/[^/]*/;
-    var REG_TEXT = /^(css|html|text)!/i;
-    var REG_JS = /\.js$/i;
-    //var REG_URL_CACHE = /^(.*)(\?|&)(_=.*?)($|\?|&)(.*)$/;
-    //入口文件
-    var mainFile;
-    // 入口模块ID，构建之后情况
-    var mainID;
-    var execModule;
-    var mainIsAnonymous = true;
-    // 当前脚本
-    var currentScript = _getCurrentScript();
-    var supportOnload = 'onload' in currentScript;
-    var containerNode = currentScript.parentNode;
-    //var mePath = location.protocol + '//' + location.host + _getPathname(_joinPath(_getPathname(location.pathname), currentScript.getAttribute('src')));
-    //var pagePath = _getPathname(location.href);
-    var mePath = _getPathname(_getScriptAbsoluteSrc(currentScript));
-    var meMain = _getData(currentScript, 'main');
-    var meConfig = _getData(currentScript, 'config');
-    // 配置
-    var config = {};
-    var moduleDepsMap = {};
-    var modules = {};
-    // 依赖长度
-    var requireLength = 0;
-    // 完成加载长度
-    var doneLength = 0;
-    // 加载依赖队列
-    var defineModules = [];
-    // 依赖数组
-    var dependencyModules = [];
-    var beginTime;
-    var console = (function () {
-        var ret = {};
-        var hasConsole = window.console;
-        var arr = ['log', 'warn', 'group', 'groupEnd'];
-
-        _each(arr, function (index, key) {
-            ret[key] = function () {
-                if (hasConsole && hasConsole[key]) {
-                    try {
-                        hasConsole[key].apply(hasConsole, arguments);
-                    } catch (err) {
-                        //ignore
-                    }
-                }
-            };
-        });
-
-        return ret;
-    })();
-
-
     /**
-     * 定义一个模块
-     * @namespace define
-     * @param {String} [id] 模块id
-     * @param {Array} [deps] 模块依赖
-     * @param {Function} factory 模块方法
+     * coolie 版本号
+     * @type {string}
      */
-    window.define = function (id, deps, factory) {
-        var args = arguments;
-        var isAnonymous = args.length === 1;
-
-        // 第一个运行 define 的为入口模块（？）
-        if (!execModule) {
-            mainIsAnonymous = isAnonymous;
-
-            if (isAnonymous) {
-                execModule = mainFile;
-            } else {
-                // define('0', ['1','2'], fn);
-                // id = 0
-                mainID = execModule = id;
-                moduleDepsMap = {};
-                moduleDepsMap[mainID] = {};
-            }
-        }
-
-        // define(fn);
-        if (isAnonymous) {
-            id = '';
-            deps = [];
-            factory = args[0];
-        } else {
-            if (!_isString(id)) {
-                throw 'module id must be a string';
-            }
-
-            // define(id, fn);
-            if (_isFunction(args[1])) {
-                factory = args[1];
-                deps = [];
-            }
-
-            if (!_isArray(deps)) {
-                throw 'module defineModules must be an array';
-            }
-        }
-
-        if (!_isFunction(factory)) {
-            throw 'module factory must be a function';
-        }
-
-        // 入口是匿名的
-        if (mainIsAnonymous) {
-            id = '';
-            deps = _parseRequires(factory.toString());
-        }
-
-        defineModules.push([id, deps, factory]);
-    };
-
-    window.define.amd = {};
-    window.define.cmd = {};
-
+    var version = '0.7.0';
 
     /**
-     * @namespace coolie
-     * @type {{version: String, config: Function, use: Function}}
+     * window
+     * @type {Window}
      */
-    window.coolie = {
-        /**
-         * 版本号
-         * @name version
-         * @type String
-         */
-        version: version,
-
-        /**
-         * 模块出口
-         * @name modules
-         * @type Object
-         */
-        modules: modules,
-
-
-        /**
-         * 模块全部加载完成进行回调
-         * @name callback
-         * @type Function|Null
-         */
-        callback: null,
-
-
-        /**
-         * 配置 coolie
-         * @param [cnf] {Object} 配置
-         * @param [cnf.base] {String} 基础路径，相对于`coolie.js`
-         * @param [cnf.version] {String|Object} 版本号，字符串修改的是所有请求模块的querystring，而对象值修改的是某个模块的版本号（推荐）
-         * @returns {coolie}
-         */
-        config: function (cnf) {
-            cnf = cnf || {};
-
-            config.base = cnf.base ? _joinPath(mePath, cnf.base) : mePath;
-            config.version = cnf.version;
-            config.cache = !!cnf.cache;
-
-            return this;
-        },
-
-
-        /**
-         * 执行入口模块
-         * @param [main] {String} 入口模块ID，为空时读取`data-main`
-         * @returns {coolie}
-         */
-        use: function (main) {
-            if (mainFile) {
-                throw new Error('can not  execute `coolie.use` twice more');
-            }
-
-            if (!_isString(config.base)) {
-                throw new Error('coolie config `base` property must be a string');
-            }
-
-            if (main && !_isString(main)) {
-                throw new Error('main module must be a string');
-            }
-
-            if (meMain && meMain !== main) {
-                if (main) {
-                    console.warn('attribute main is `' + meMain + '`, but use main is `' + main + '`');
-                }
-
-                main = meMain;
-            }
-
-            mainFile = _joinPath(config.base, main);
-            beginTime = _now();
-            console.group('coolie modules');
-            _loadModule(mainFile);
-
-            return this;
-        }
-    };
-
-
-    if (meConfig) {
-        _loadScript(_cacheURL(_joinPath(mePath, meConfig)));
-    }
+    var win = window;
 
 
     /**
-     * 脚本加载完毕保存模块
-     * @param [scriptORxhr] script对象或xhr对象
-     * @param [id] xhr 请求的地址
-     * @private
+     * document
+     * @type {HTMLDocument}
      */
-    function _saveModule(scriptORxhr, id) {
-        var module = {};
-        var meta;
-        var script;
-        var xhr;
-
-        // ajax text
-        if (arguments.length === 2) {
-            xhr = scriptORxhr;
-            // 是否命名
-            module._isAnonymous = false;
-            // 模块ID
-            module._id = id;
-            // 模块类型
-            module._type = 'ajax';
-            // 模块目录
-            module._path = _getPathname(id);
-            // 模块依赖
-            module._deps = [];
-            // 模块原始方法
-            module._factory = function (require, exports, module) {
-                module.exports = xhr.responseText || '';
-                xhr = null;
-            };
-            // 包装
-            // 添加 module._exec 执行函数
-            _wrapModule(module);
-            modules[module._id] = module;
-            moduleDepsMap[module._id] = {};
-        }
-        // load/local script
-        else if (defineModules.length) {
-            script = scriptORxhr;
-            // 总是按照添加的脚本顺序执行，因此这里取出依赖的第0个元素
-            meta = defineModules.shift();
-
-            // 是否为匿名模块
-            module._isAnonymous = meta[0] === '';
-
-            // 模块ID
-            // 匿名：模块加载的路径
-            // 具名：模块的ID
-            module._id = meta[0] || script.id;
-            module._type = meta[0] ? 'local' : 'script';
-            script = null;
-
-            // 模块所在路径
-            module._path = module._isAnonymous ? _getPathname(module._id) : '';
-
-            // 模块依赖数组
-            module._deps = meta[1];
-
-            // 模块出厂函数
-            module._factory = meta[2];
-
-            // 包装
-            // 添加 module._exec 执行函数
-            _wrapModule(module);
-
-            modules[module._id] = module;
-            moduleDepsMap[module._id] = {};
-
-            if (module._deps.length) {
-                _each(module._deps, function (i, dep) {
-                    // 匿名模块：依赖采用相对路径方式
-                    // 具名模块：依赖采用绝对路径方式
-                    var relDep = dep.replace(REG_TEXT, '');
-                    var depId = module._isAnonymous ? _joinPath(module._path, relDep) : relDep;
-
-                    if (moduleDepsMap[depId] && moduleDepsMap[depId][module._id]) {
-                        throw 'module `' + module._id + '` and module `' + depId + '` make up a circular dependency relationship';
-                    }
-
-                    module._deps[i] = depId;
-                    moduleDepsMap[module._id][depId] = 1;
-                    dependencyModules.push({
-                        id: depId,
-                        by: module._id
-                    });
-
-                    if (!moduleDepsMap[depId]) {
-                        moduleDepsMap[depId] = {};
-
-                        if (REG_TEXT.test(dep)) {
-                            _ajaxText(depId);
-                        } else {
-                            _loadModule(depId);
-                        }
-                    }
-                });
-            }
-        }
-
-        // 依赖全部加载完成
-        if (requireLength === doneLength && !defineModules.length && execModule && modules[execModule]) {
-            _each(dependencyModules, function (i, module) {
-                if (!moduleDepsMap[module.id]) {
-                    throw 'can not found module `' + module.id + '`, but module `' + module.by + '` dependence on it';
-                }
-            });
-
-            _execModule(execModule);
-            moduleDepsMap = null;
-            defineModules = null;
-            dependencyModules = null;
-        }
-    }
+    var doc = win.document;
 
 
     /**
-     * 模块入栈
-     * @param module 模块
-     * @private
-     */
-    function _wrapModule(module) {
-        module.exports = {};
-        module._exec = (function () {
-            var require = function (dep) {
-                var depId = module._isAnonymous ? _joinPath(_getPathname(module._id), _fixPath(dep)) : dep;
-
-                if (!modules[depId]) {
-                    throw 'can not found module `' + depId + '`, but required in `' + module._id + '`';
-                }
-
-                return modules[depId]._exec();
-            };
-
-            return function () {
-                var id = module._id;
-
-                if (module._hasExport) {
-                    return modules[id].exports;
-                } else {
-                    module._hasExport = true;
-                    modules[id].exports = module._factory.call(window, require, module.exports, module) || module.exports;
-
-                    return modules[id].exports;
-                }
-            };
-        })();
-    }
-
-
-    /**
-     * 模块入口执行
-     * @param module
-     * @private
-     */
-    function _execModule(module) {
-        if (!modules[module]) {
-            throw 'can not found module `' + module + '`';
-        }
-
-        console.log('past ' + (_now() - beginTime) + ' ms');
-        console.groupEnd('coolie modules');
-        modules[module]._exec();
-
-        if (_isFunction(coolie.callback)) {
-            coolie.callback(modules[module].exports);
-        }
-    }
-
-
-    /**
-     * 修正路径
-     * @param path {String} 原始路径
-     * @private
-     *
-     * @example
-     * "text!path/to/a.css" => "path/to/a.css"
-     * "text!path/to/a.css?abc123" => "path/to/a.css"
-     * "text!path/to/a.css#abc123" => "path/to/a.css"
-     * "text!path/to/a.css?abc123#abc123" => "path/to/a.css"
-     * "path/to/a.min.js?abc123" => "path/to/a.min.js"
-     * "path/to/a" => "path/to/a.js"
-     * "path/to/a.php#" => "path/to/a.php"
-     * "path/to/a/" => "path/to/a/index.js"
-     * "path/to/a.js" => "path/to/a.js"
-     */
-    function _fixPath(path) {
-        // 文本路径
-        if (REG_TEXT.test(path)) {
-            return path.replace(REG_SEARCH_HASH, '').replace(REG_TEXT, '');
-        }
-
-        if (path.indexOf('?') > -1) {
-            return path;
-        }
-
-        var lastChar = path.slice(-1);
-
-        switch (lastChar) {
-            case '#':
-                return path.slice(0, -1);
-
-            case '/':
-                return path + 'index.js';
-
-            default :
-                return REG_JS.test(path) ? path : path + '.js';
-        }
-    }
-
-
-    /**
-     * 加载脚本并回调
-     * @param url
-     * @param callback
-     * @param [id]
-     * @private
-     */
-    function _loadScript(url, callback, id) {
-        var script = document.createElement('script');
-        var onload = function () {
-            containerNode.removeChild(script);
-
-            if (_isFunction(callback)) {
-                callback.apply(this, arguments);
-            }
-        };
-
-        script.id = id;
-        script.src = url;
-        script.async = true;
-        script.defer = true;
-        containerNode.appendChild(script);
-
-        if (supportOnload) {
-            script.onload = onload;
-        } else {
-            script.onreadystatechange = function () {
-                if (/loaded|complete/.test(script.readyState)) {
-                    onload.call(this, arguments)
-                }
-            };
-        }
-
-        script.onerror = onload;
-    }
-
-
-    /**
-     * 异步加载并执行脚本
-     * @param src {String} 脚本完整路径
-     * @private
-     *
-     * @example
-     * // src为相对、绝对路径的都会被加载，如“./”、“../”、“/”、“//”或“http://”
-     */
-    function _loadModule(src) {
-        src = _fixPath(src);
-
-        var srcType = _getPathType(src);
-        var time = _now();
-        var url = _addRequestVersion(src);
-
-        requireLength++;
-
-        // 非路径型地址，主动触发 _saveModule
-        if (!srcType) {
-            // 这里使用延迟函数原因：
-            // 1. 与 onload 有相同效果了
-            // 2. 不再是同步函数了，不会递归执行，导致计数错误
-            return setTimeout(function () {
-                console.log('local module', url, (_now() - time) + 'ms');
-                doneLength++;
-                _saveModule();
-            }, 1);
-        }
-
-        _loadScript(url, function (eve) {
-            if (eve.type === 'error') {
-                console.groupEnd('coolie modules');
-            } else {
-                console.log('script module', url, (_now() - time) + 'ms');
-                doneLength++;
-                _saveModule(this);
-            }
-        }, src);
-    }
-
-
-    /**
-     * 异步加载文本内容
-     * @param url
-     * @private
-     */
-    function _ajaxText(url) {
-        requireLength++;
-
-        var xhr = new XMLHttpRequest();
-        var time = _now();
-        var hasComplete;
-        var complete = function () {
-            if (xhr.readyState === 4 && !hasComplete) {
-                hasComplete = true;
-                if (xhr.status === 200 || xhr.status === 304) {
-                    console.log('text module', url, (_now() - time) + 'ms');
-                    doneLength++;
-                    _saveModule(xhr, url);
-                } else {
-                    throw 'can not ajax ' + url + ', response status is ' + xhr.status;
-                }
-            }
-        };
-
-        xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = complete;
-        xhr.open('GET', url);
-        xhr.send(null);
-    }
-
-
-    /**
-     * 或者文件路径的文件层级
-     * @param filepath
-     * @returns {*|string}
-     * @private
-     */
-    function _getPathname(filepath) {
-        return filepath.replace(REG_FILE_BASENAME, '/');
-    }
-
-
-    /**
-     * 获取路径类型
-     * @param path
-     * @returns {String} 返回值有 “./”、“/”、“../”、“http:”、“https:”、“//”和“”（空字符串）
-     * @private
-     */
-    function _getPathType(path) {
-        var ret;
-
-        if (REG_HOST.test(path)) {
-            ret = path.match(REG_HOST);
-            return (ret[1] || '//');
-        }
-
-        return (path.replace(REG_TEXT, '').match(REG_BEGIN_TYPE) || [''])[0];
-    }
-
-
-    /**
-     * 切换路径，必须是路径
-     * @param {String} from 文件夹起始路径，路径结尾是文件夹名
-     * @param {String} to 文件终点路径
-     * @private
-     *
-     * @example
-     * from /ab/cd.js
-     * to   ../de.js
-     * =>   /de.js
-     */
-    function _joinPath(from, to) {
-        while (REG_THIS_PATH.test(to)) {
-            to = to.replace(REG_THIS_PATH, '');
-        }
-
-        var fromHost = (from.match(REG_HOST) || [''])[0];
-        var fromBeiginType = _getPathType(from);
-        var toBeginType = _getPathType(to);
-        var toDepth = 0;
-        var from2 = from.replace(REG_HOST, '');
-        var to2 = to;
-
-        if (REG_HOST.test(toBeginType)) {
-            return REG_SCHEMA.test(to) ? to : location.protocol + to;
-        }
-
-        if (!fromBeiginType) {
-            from2 = './' + from2;
-        }
-
-        if (from2.slice(-1) !== '/') {
-            from2 += '/';
-        }
-
-        if (!toBeginType) {
-            to2 = './' + to2;
-            toBeginType = './';
-        }
-
-        switch (toBeginType) {
-            case './':
-                return fromHost + from2 + to2.slice(2);
-
-            case '../':
-                toDepth = to2.match(REG_UP_PATH).length;
-
-                while (toDepth-- > 0) {
-                    if (!REG_END_PART.test(from2)) {
-                        throw 'can not change path from `' + from + '` to `' + to + '`';
-                    }
-
-                    from2 = from2.replace(REG_END_PART, '');
-                }
-
-                return fromHost + from2 + to2.replace(REG_UP_PATH, '');
-
-            default:
-                return fromHost + to2;
-        }
-    }
-
-
-    /**
-     * 解析出当前文本中的依赖信息，返回依赖数组
-     * @param code {String} 源码
-     * @returns {Array}
-     * @private
-     */
-    function _parseRequires(code) {
-        var requires = [];
-
-        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function (m, m1, m2) {
-            if (m2) {
-                requires.push(m2);
-            }
-        });
-
-        return requires;
-    }
-
-
-    /**
-     * 类型判断
+     * 判断数据类型
      * @param obj
      * @returns {string}
      */
-    function _typeis(obj) {
+    var typeis = function (obj) {
         return Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
-    }
+    };
 
 
     /**
@@ -670,9 +43,9 @@
      * @returns {Boolean}
      * @private
      */
-    function _isArray(obj) {
-        return _typeis(obj) === 'array';
-    }
+    var isArray = function (obj) {
+        return typeis(obj) === 'array';
+    };
 
 
     /**
@@ -681,39 +54,31 @@
      * @returns {Boolean}
      * @private
      */
-    function _isFunction(obj) {
-        return _typeis(obj) === 'function';
-    }
-
-
-    /**
-     * 判断是否为字符串
-     * @param obj
-     * @returns {Boolean}
-     * @private
-     */
-    function _isString(obj) {
-        return _typeis(obj) === 'string';
-    }
+    var isFunction = function (obj) {
+        return typeis(obj) === 'function';
+    };
 
 
     /**
      * 遍历
      * @param list
      * @param callback {Function} 返回 false，中断当前循环
+     * @param [isReverse=false] {Boolean} 是否反序
      * @private
      */
-    function _each(list, callback) {
+    var each = function (list, callback, isReverse) {
         var i;
         var j;
 
-        if (_isArray(list)) {
-            for (i = 0, j = list.length; i < j; i++) {
+        if (isArray(list)) {
+            for (i = isReverse ? list.length - 1 : 0, j = isReverse ? 0 : list.length;
+                 isReverse ? i > j : i < j;
+                 isReverse ? i-- : i++) {
                 if (callback(i, list[i]) === false) {
                     break;
                 }
             }
-        } else if (typeof list === 'object') {
+        } else if (typeof(list) === 'object') {
             for (i in list) {
                 if (list.hasOwnProperty(i)) {
                     if (callback(i, list[i]) === false) {
@@ -722,95 +87,654 @@
                 }
             }
         }
-    }
+    };
 
 
     /**
-     * 添加请求版本号
-     * @param url {String} 请求地址
-     * @returns {String}
-     * @private
+     * 目录结尾
+     * @type {RegExp}
      */
-    function _addRequestVersion(url) {
-        var type = _typeis(config.version);
-        var relative;
-        var version;
-        var search;
+    var REG_PATH_DIR = /\/[^/]+$/;
 
-        switch (type) {
-            case 'string':
-                return _cacheURL(url, encodeURIComponent(config.version));
 
-            case 'object':
-                relative = url.replace(config.base, '');
-                search = (url.match(REG_SEARCH) || [''])[0];
-                version = config.version[relative] || config.version['./' + relative];
+    /**
+     * 获取路径所在的目录
+     * @param path {String} 路径或目录
+     * @returns {*}
+     */
+    var getPathDir = function (path) {
+        path = path.replace(REG_HOST, '');
 
-                return version ?
-                url.replace(REG_SEARCH, '').replace(REG_SUFFIX, '.' + version + '$1') + search :
-                    url;
-
-            default :
-                return url;
+        if (path === '/') {
+            return path;
         }
-    }
+
+        return REG_PATH_DIR.test(path) ? path.replace(REG_PATH_DIR, '/') : path;
+    };
 
 
     /**
-     * 获取当前脚本
-     * @returns {Node}
-     * @private
+     * 判断是否为绝对路径
+     * @type {RegExp}
      */
-    function _getCurrentScript() {
-        var scripts = document.getElementsByTagName('script');
-
-        return scripts[scripts.length - 1];
-    }
+    var REG_PATH_ABSOLUTE = /^\//;
 
 
     /**
-     * 获取 script 标签的绝对路径
+     * 判断是否相对路径
+     * @type {RegExp}
+     */
+    var REG_PATH_RELATIVE = /^(\.{1,2})\//;
+
+
+    /**
+     * 路径结尾
+     * @type {RegExp}
+     */
+    var REG_PATH_END = /\/[^/]+?\/$/;
+
+
+    /**
+     * 路径合并
+     * @param from {String} 标准的起始目录
+     * @param to {String} 标准的目标路径
+     * @returns {string} 标准的合并路径
+     *
+     * @example
+     * path.j('/', '/');
+     * // => '/'
+     *
+     * path.j('/a/b/c/', '/d/e/f');
+     * // => '/d/e/f'
+     *
+     * path.j('/a/b/c/', './d/e/f');
+     * // => '/a/b/c/d/e/f'
+     *
+     * path.j('/a/b/c/', '../../d/e/f');
+     * // => '/a/d/e/f'
+     */
+    var getPathJoin = function (from, to) {
+        if (REG_PATH_ABSOLUTE.test(to)) {
+            return to;
+        }
+
+        var mathes;
+
+        to = './' + to;
+
+        while (mathes = to.match(REG_PATH_RELATIVE)) {
+            to = to.replace(REG_PATH_RELATIVE, '');
+
+            if (mathes[1].length === 2) {
+                from = from.replace(REG_PATH_END, '/');
+            }
+        }
+
+        return from + to;
+    };
+
+
+    /**
+     * 获取标签列表
+     * @param tagName {String} 标签名称
+     * @param [parent] {Node|HTMLElement} 父节点
+     * @returns {NodeList|*}
+     */
+    var getNodeList = function (tagName, parent) {
+        return (parent || doc).getElementsByTagName(tagName);
+    };
+
+
+    /**
+     * 获取 script 的绝对路径
+     * @param script
+     * @returns {*}
+     */
+    var getScriptAbsolutelyPath = function (script) {
+        return script.hasAttribute ?
+            // non-IE6/7
+            script.src :
+            // @see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
+            script.getAttribute('src', 4);
+    };
+
+
+    /**
+     * 获取 node 的 dataset 值
      * @param node
-     * @returns {string|CSSStyleDeclaration.src|*|src}
+     * @param dataKey
+     * @returns {string}
      */
-    function _getScriptAbsoluteSrc(node) {
-        return node.hasAttribute ? // non-IE6/7
-            node.src :
-            // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            node.getAttribute('src', 4);
+    var getNodeDataset = function (node, dataKey) {
+        return node.getAttribute('data-' + dataKey);
+    };
+
+
+    /**
+     * 是否加载完毕
+     * @type {RegExp}
+     */
+    var REG_LOAD_COMPLETE = /loaded|complete/;
+
+
+    /**
+     * 头部标签
+     * @type {HTMLHeadElement|*}
+     */
+    var docHead = doc.head || getNodeList('head', doc)[0];
+
+
+    /**
+     * 当前插入的脚本
+     * @type {null|HTMLScriptElement|Node}
+     */
+    var curentAppendScript = null;
+
+
+    /**
+     * 加载的脚本列表
+     * @type {Array}
+     */
+    var loadScriptList = [];
+
+
+    /**
+     * 脚本后缀
+     * @type {RegExp}
+     */
+    var REG_JS = /\.js$/i;
+
+
+    /**
+     * 加载脚本
+     * @param url {String} 脚本 URL
+     * @param [callback] {Function} 加载完毕回调
+     */
+    var loadScript = function (url, callback) {
+        var script = doc.createElement('script');
+        var onready = function (eve) {
+            eve = eve || win.event;
+
+            if (eve && eve.type === 'error') {
+                throw 'load script error: ' + url;
+            }
+
+            if (isFunction(callback)) {
+                callback();
+            }
+        };
+
+        loadScriptList.push(script);
+        script.src = url;
+        script.async = true;
+        script.defer = true;
+        script.onload = onready;
+        script.onreadystatechange = function (eve) {
+            if (REG_LOAD_COMPLETE.test(script.readyState)) {
+                onready(eve);
+            }
+        };
+        script.onerror = onready;
+        curentAppendScript = script;
+        docHead.appendChild(script);
+        curentAppendScript = null;
+    };
+
+
+    /**
+     * 活动脚本
+     * @type {RegExp}
+     */
+    var REG_INTERACTIVE = /interactive/;
+
+
+    /**
+     * 获取当前正在执行的脚本路径
+     * @returns {HTMLScriptElement}
+     * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js#L439
+     */
+    var getInteractiveScript = function () {
+        // direct
+        if (curentAppendScript) {
+            return curentAppendScript;
+        }
+
+        // chrome
+        if (doc.currentScript) {
+            return doc.currentScript;
+        }
+
+        var interactiveScript = null;
+
+        // IE6-10 得到当前正在执行的script标签
+        var scripts = doc.scripts || getNodeList('script', docHead);
+
+        each(scripts, function (index, script) {
+            if (REG_INTERACTIVE.test(script.readyState)) {
+                interactiveScript = script;
+                return false;
+            }
+        }, true);
+
+        if (interactiveScript) {
+            return interactiveScript;
+        }
+
+        // 脚本的执行顺序与添加到 DOM 里的顺序一致
+        return loadScriptList.shift();
+    };
+
+
+    /**
+     * 当前运行的脚本
+     * @type {Node}
+     */
+    var currentScript = getInteractiveScript();
+
+
+    /**
+     * 当前脚本的绝对路径
+     * @type {String}
+     */
+    var currentScriptAbsolutelyPath = getScriptAbsolutelyPath(currentScript);
+
+
+    /**
+     * host
+     * @type {RegExp}
+     */
+    var REG_HOST = /https?:\/\/[^/]*/;
+
+
+    /**
+     * 当前脚本所在运行的 host
+     */
+    var currentScriptHost = currentScriptAbsolutelyPath.match(REG_HOST)[0];
+
+
+    /**
+     * 当前脚本的 data-config
+     * @type {string}
+     */
+    var currentScriptDataConfig = getNodeDataset(currentScript, 'config');
+
+
+    /**
+     * 当前脚本的 data-main
+     * @type {string}
+     */
+    var currentScriptDataMain = getNodeDataset(currentScript, 'main');
+
+
+    /**
+     * 当前运行脚本的绝对目录
+     * @type {String}
+     */
+    var currentScriptAbsolutelyDir = getPathDir(currentScriptAbsolutelyPath);
+
+
+    /**
+     * 当前运行脚本配置文件路径
+     * @type {string}
+     */
+    var currentScriptConfigPath = getPathJoin(currentScriptAbsolutelyDir, currentScriptDataConfig);
+
+
+    /**
+     * 当前运行脚本配置文件 URL
+     * @type {string}
+     */
+    var currentScriptConfigURL = currentScriptHost + currentScriptConfigPath;
+
+
+    /**
+     * 当前运行脚本入口文件路径
+     * @type {string}
+     */
+    var currentScriptMainPath = getPathJoin(currentScriptAbsolutelyDir, currentScriptDataMain);
+
+
+    /**
+     * 当前运行脚本入口文件 URL
+     * @type {string}
+     */
+    var currentScriptMainURL = currentScriptHost + currentScriptMainPath;
+
+
+    /**
+     * coolie 配置
+     * @property base {String} 模块入口基准路径
+     * @property version {Object} 入口模块版本 map
+     * @type {Object}
+     */
+    var coolieConfig = {};
+
+
+    /**
+     * coolie
+     * @type {Object}
+     */
+    var coolie = {};
+
+
+    /**
+     * coolie 版本号
+     * @type {string}
+     */
+    coolie.version = version;
+
+
+    /**
+     * 入口模块的基准路径
+     * @type {null|String}
+     */
+    var mainModuleBaseDir = null;
+
+
+    /**
+     * coolie 配置
+     * @param config
+     */
+    coolie.config = function (config) {
+        coolieConfig = config;
+        mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
+
+
+        return coolie;
+    };
+
+
+    /**
+     * 是否可以执行入口模块
+     * @type {boolean}
+     */
+    var canExecuteMain = false;
+
+
+    ///**
+    // * 是否已经执行了配置
+    // * @type {boolean}
+    // */
+    //var hasExecuteConfig = false;
+
+
+    /**
+     * 是否已经执行了入口模块
+     * @type {boolean}
+     */
+    var hasExecuteMain = false;
+
+
+    /**
+     * 开始执行入口模块
+     */
+    coolie.use = function () {
+        canExecuteMain = true;
+    };
+
+
+    /**
+     * 执行入口模块
+     */
+    var executeMain = function () {
+        if (hasExecuteMain) {
+            return;
+        }
+
+        hasExecuteMain = true;
+
+        var mainURL = currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain);
+        loadScript(mainURL);
+    };
+
+
+    /**
+     * 解析代码里的依赖信息
+     * @param s {String} 代码
+     * @link: https://github.com/seajs/searequire
+     */
+    var parseDependencies = function parseDependencies(s) {
+        if (s.indexOf('require') == -1) {
+            return []
+        }
+        var index = 0, peek = '', length = s.length, isReg = 1, modName = 0, parentheseState = 0, parentheseStack = [], res = [];
+        while (index < length) {
+            readch();
+            if (isBlank()) {
+            }
+            else if (isQuote()) {
+                dealQuote();
+                isReg = 1;
+            }
+            else if (peek == '/') {
+                readch();
+                if (peek == '/') {
+                    index = s.indexOf('\n', index);
+                    if (index == -1) {
+                        index = s.length
+                    }
+                }
+                else if (peek == '*') {
+                    index = s.indexOf('*/', index);
+                    if (index == -1) {
+                        index = length
+                    }
+                    else {
+                        index += 2
+                    }
+                }
+                else if (isReg) {
+                    dealReg();
+                    isReg = 0
+                }
+                else {
+                    index--;
+                    isReg = 1
+                }
+            }
+            else if (isWord()) {
+                dealWord()
+            }
+            else if (isNumber()) {
+                dealNumber()
+            }
+            else if (peek == '(') {
+                parentheseStack.push(parentheseState);
+                isReg = 1
+            }
+            else if (peek == ')') {
+                isReg = parentheseStack.pop()
+            }
+            else {
+                isReg = peek != ']';
+                modName = 0
+            }
+        }
+        return res;
+        function readch() {
+            peek = s.charAt(index++)
+        }
+
+        function isBlank() {
+            return /\s/.test(peek)
+        }
+
+        function isQuote() {
+            return peek == '"' || peek == "'"
+        }
+
+        function dealQuote() {
+            var start = index;
+            var c = peek;
+            var end = s.indexOf(c, start);
+            if (end == -1) {
+                index = length
+            }
+            else if (s.charAt(end - 1) != '\\') {
+                index = end + 1
+            }
+            else {
+                while (index < length) {
+                    readch();
+                    if (peek == '\\') {
+                        index++
+                    }
+                    else if (peek == c) {
+                        break
+                    }
+                }
+            }
+            if (modName) {
+                res.push(s.slice(start, index - 1));
+                modName = 0
+            }
+        }
+
+        function dealReg() {
+            index--;
+            while (index < length) {
+                readch();
+                if (peek == '\\') {
+                    index++
+                }
+                else if (peek == '/') {
+                    break
+                }
+                else if (peek == '[') {
+                    while (index < length) {
+                        readch();
+                        if (peek == '\\') {
+                            index++
+                        }
+                        else if (peek == ']') {
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        function isWord() {
+            return /[a-z_$]/i.test(peek)
+        }
+
+        function dealWord() {
+            var s2 = s.slice(index - 1);
+            var r = /^[\w$]+/.exec(s2)[0];
+            parentheseState = {
+                'if': 1,
+                'for': 1,
+                'while': 1,
+                'with': 1
+            }[r];
+            isReg = {
+                'break': 1,
+                'case': 1,
+                'continue': 1,
+                'debugger': 1,
+                'delete': 1,
+                'do': 1,
+                'else': 1,
+                'false': 1,
+                'if': 1,
+                'in': 1,
+                'instanceof': 1,
+                'return': 1,
+                'typeof': 1,
+                'void': 1
+            }[r];
+            modName = /^require\s*\(\s*(['"]).+?\1\s*\)/.test(s2);
+            if (modName) {
+                r = /^require\s*\(\s*['"]/.exec(s2)[0];
+                index += r.length - 2
+            }
+            else {
+                index += /^[\w$]+(?:\s*\.\s*[\w$]+)*/.exec(s2)[0].length - 1
+            }
+        }
+
+        function isNumber() {
+            return /\d/.test(peek)
+                || peek == '.' && /\d/.test(s.charAt(index))
+        }
+
+        function dealNumber() {
+            var s2 = s.slice(index - 1);
+            var r;
+            if (peek == '.') {
+                r = /^\.\d+(?:E[+-]?\d*)?\s*/i.exec(s2)[0]
+            }
+            else if (/^0x[\da-f]*/i.test(s2)) {
+                r = /^0x[\da-f]*\s*/i.exec(s2)[0]
+            }
+            else {
+                r = /^\d+\.?\d*(?:E[+-]?\d*)?\s*/i.exec(s2)[0]
+            }
+            index += r.length - 1;
+            isReg = 0
+        }
+    };
+
+
+    /**
+     * 定义一个模块
+     * @param {String} [id] 模块id
+     * @param {Array} [deps] 模块依赖
+     * @param {Function} factory 模块方法
+     */
+    var define = function (id, deps, factory) {
+        var args = arguments;
+
+        // define(id, fn);
+        if (isFunction(args[1])) {
+            id = null;
+            deps = [];
+            factory = args[1];
+        }
+        // define(fn);
+        else if (isFunction(args[0])) {
+            factory = args[0];
+            deps = parseDependencies(factory.toString());
+            id = null;
+        }
+
+        var interactiveScript = getInteractiveScript();
+        var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
+        var interactiveScriptPath = getPathDir(interactiveScriptURL);
+
+        each(deps, function (index, dep) {
+            var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
+            var url = currentScriptHost + path;
+
+            loadScript(url);
+        });
+
+        var meta = {
+            path: interactiveScriptPath,
+            id: id ? id : interactiveScriptURL,
+            deps: deps,
+            factory: factory
+        };
+
+        console.log(meta);
+    };
+
+
+    // 加载配置脚本
+    if (currentScriptConfigURL) {
+        loadScript(currentScriptConfigURL, executeMain);
     }
 
 
     /**
-     * 获取 data-main 属性值
-     * @param node
-     * @param dataName
-     * @returns {String}
-     * @private
+     * @namespace coolie
+     * @type {Object}
      */
-    function _getData(node, dataName) {
-        return node.getAttribute('data-' + dataName);
-    }
-
+    window.coolie = coolie;
 
     /**
-     * 获取当前时间戳
-     * @returns {number}
-     * @private
+     * @namespace define
+     * @type {define}
      */
-    function _now() {
-        return new Date().getTime();
-    }
-
-
-    /**
-     * 构建无缓存 URL
-     * @param url {String}
-     * @returns {String}
-     * @private
-     */
-    function _cacheURL(url, version) {
-        return url + (url.indexOf('?') > -1 ? '&' : '?') + '_=' + (version || _now());
-    }
+    window.define = define;
 })();
-
