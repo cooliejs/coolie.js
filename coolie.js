@@ -7,6 +7,8 @@
 
 
 (function () {
+    'use strict';
+
     /**
      * coolie 版本号
      * @type {string}
@@ -273,14 +275,18 @@
     /**
      * 清理 url
      * @param url {String} 原始 URL
-     * @param [isNotScript=false] 是否为非脚本
+     * @param [isTextURL=false] 是否为文本 URL
      * @returns {String}
      */
-    var cleanURL = function (url, isNotScript) {
+    var cleanURL = function (url, isTextURL) {
         url = url.replace(REG_SUFFIX, '');
 
-        if (isNotScript) {
+        if (isTextURL) {
             return url;
+        }
+
+        if (REG_PATH_END.test(url)) {
+            url += 'index';
         }
 
         return url + (REG_JS.test(url) ? '' : '.js');

@@ -1,6 +1,7 @@
 define(function (require) {
     //console.log('123');
     var a = require('../a');
+    var b = require('./b/');
     var c = require('../libs/c.js?a=312');
     var c = require('../libs/c.js?a=312');
     var c = require('../libs/c.js?a=312');
