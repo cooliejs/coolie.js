@@ -732,7 +732,6 @@
 
         id = id ? id : interactiveScriptURL;
         defineLength++;
-        console.log('>>', id);
         modules[id] = {
             path: interactiveScriptPath,
             id: id ? id : interactiveScriptURL,
@@ -750,13 +749,12 @@
             if (!modules[id]) {
                 modules[id] = true;
                 DependenceLength++;
-                console.log('<<', id);
                 loadScript(id);
             }
         });
 
-        //console.log(defineLength);
-        //console.log(DependenceLength);
+        console.log(defineLength);
+        console.log(DependenceLength);
     };
 
 
@@ -777,4 +775,6 @@
      * @type {define}
      */
     window.define = define;
+    window.define.amd = {};
+    window.define.cmd = {};
 })();
