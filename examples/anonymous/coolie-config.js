@@ -1,6 +1,6 @@
 coolie.config({
-    base: '/examples/',
-    cache: false,
+    base: './coolie/examples/',
+    host: 'http://localhost:19093',
     version: {
         './text/some.txt': '123',
         'libs/c.js': 'abc123',

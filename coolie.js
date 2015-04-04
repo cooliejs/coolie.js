@@ -419,6 +419,7 @@
                     defineModule({
                         _isAn: mainModule._isAn,
                         id: url,
+                        url: url2,
                         deps: [],
                         factory: function () {
                             return xhr.responseText;
@@ -607,6 +608,10 @@
         mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, getPathDir(coolieConfig.base, true));
         coolieConfig.version = coolieConfig.version || {};
 
+        if (coolieConfig.host) {
+            currentScriptHost = coolieConfig.host;
+        }
+
         if (isString(coolieConfig.version)) {
             coolieConfig._v = coolieConfig.version;
         } else {
@@ -739,8 +744,9 @@
         var args = arguments;
         var isAn = true;
         var interactiveScript = getInteractiveScript();
-        var interactiveScriptURL = interactiveScript.id;
-        var interactiveScriptPath = getPathDir(interactiveScriptURL);
+        var interactiveScriptId = interactiveScript.id;
+        var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
+        var interactiveScriptPath = getPathDir(interactiveScriptId);
 
         // define(id, deps, factory);
         if (isFunction(args[2])) {
@@ -759,7 +765,7 @@
             id = null;
         }
 
-        id = mainModule._defined && mainModule._isAn ? interactiveScriptURL : id || interactiveScriptURL;
+        id = mainModule._defined && mainModule._isAn ? interactiveScriptId : id || interactiveScriptId;
 
         var module = {
             _isAn: isAn,
