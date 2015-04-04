@@ -868,7 +868,7 @@
 
     // 加载配置脚本
     if (currentScriptDataConfig) {
-        loadScript(currentScriptConfigURL);
+        loadScript(currentScriptConfigURL + '?' + now());
     }
 
 
