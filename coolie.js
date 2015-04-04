@@ -152,7 +152,7 @@
 
 
     /**
-     * 目录结尾
+     * 非目录结尾
      * @type {RegExp}
      */
     var REG_PATH_DIR = /\/[^/]+$/;
@@ -161,16 +161,19 @@
     /**
      * 获取路径所在的目录
      * @param path {String} 路径或目录
+     * @param [isDir=false] {Boolean} 本身是目录
      * @returns {*}
      */
-    var getPathDir = function (path) {
+    var getPathDir = function (path, isDir) {
         path = path.replace(REG_HOST, '');
 
         if (path === '/') {
             return path;
         }
 
-        return REG_PATH_DIR.test(path) ? path.replace(REG_PATH_DIR, '/') : path;
+        return REG_PATH_DIR.test(path)
+            ? (isDir ? path + '/' : path.replace(REG_PATH_DIR, '/'))
+            : path;
     };
 
 
@@ -215,7 +218,7 @@
      * // => '/a/d/e/f'
      */
     var getPathJoin = function (from, to) {
-        if (REG_PATH_ABSOLUTE.test(to)) {
+        if (!to || REG_PATH_ABSOLUTE.test(to)) {
             return to;
         }
 
@@ -370,12 +373,13 @@
      * @param [callback] {Function} 加载完毕回调
      */
     var loadScript = function (url, callback) {
+        var url2 = buildVersionURL(url);
         var script = doc.createElement('script');
         var onready = function (eve) {
             eve = eve || win.event;
 
             if (eve && eve.type === 'error') {
-                throw 'load script error: ' + url;
+                throw 'load script error: ' + url2;
             }
 
             if (isFunction(callback)) {
@@ -384,7 +388,7 @@
         };
 
         loadScriptList.push(script);
-        script.src = buildVersionURL(url);
+        script.src = url2;
         script.id = url;
         script.async = true;
         script.defer = true;
@@ -405,6 +409,7 @@
      * @param url {String} 文本 URL
      */
     var ajaxText = function (url) {
+        var url2 = buildVersionURL(url);
         var xhr = new XMLHttpRequest();
         var hasComplete;
         var onready = function () {
@@ -420,13 +425,13 @@
                         }
                     });
                 } else {
-                    throw 'ajax error: ' + url;
+                    throw 'ajax error: ' + url2;
                 }
             }
         };
 
         xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
-        xhr.open('GET', buildVersionURL(url));
+        xhr.open('GET', url2);
         xhr.send(null);
     };
 
@@ -599,7 +604,7 @@
      */
     coolie.config = function (config) {
         coolieConfig = config;
-        mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
+        mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, getPathDir(coolieConfig.base, true));
         coolieConfig.version = coolieConfig.version || {};
 
         if (isString(coolieConfig.version)) {
@@ -714,7 +719,7 @@
 
         defineModules[id] = module;
         defineLength++;
-        console.log(id);
+        console.log(module._isMain ? 'main module' : 'require module', module._isMain ? module.url : id);
 
         if (defineLength === dependenceLength) {
             console.log('past', now() - timeNow + 'ms');
@@ -756,11 +761,11 @@
 
         id = mainModule._defined && mainModule._isAn ? interactiveScriptURL : id || interactiveScriptURL;
 
-
         var module = {
             _isAn: isAn,
             _path: interactiveScriptPath,
             id: id,
+            url: interactiveScriptURL,
             deps: deps,
             factory: factory
         };
@@ -771,6 +776,7 @@
                 dependenceModules[id] = dependenceModules[mainModule.url];
             }
 
+            module._isMain = true;
             mainModule = module;
             mainModule._defined = true;
         }
@@ -810,7 +816,7 @@
 
 
     // 加载配置脚本
-    if (currentScriptConfigURL) {
+    if (currentScriptDataConfig) {
         loadScript(currentScriptConfigURL);
     }
 
