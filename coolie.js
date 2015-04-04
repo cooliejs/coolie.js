@@ -193,16 +193,47 @@
 
 
     /**
+     * host
+     * @type {RegExp}
+     */
+    var REG_HOST = /https?:\/\/[^/]*/;
+
+
+    /**
+     * 脚本后缀
+     * @type {RegExp}
+     */
+    var REG_JS = /\.js($|\?)/i;
+
+
+    /**
+     * 清理 url
+     * @param url {String} 原始 URL
+     * @param [isNotScript=false] 是否为非脚本
+     * @returns {String}
+     */
+    var cleanURL = function (url, isNotScript) {
+        url = url.replace(REG_SUFFIX, '');
+
+        if (isNotScript) {
+            return url;
+        }
+
+        return url + (REG_JS.test(url) ? '' : '.js');
+    };
+
+
+    /**
      * 获取 script 的绝对路径
      * @param script
      * @returns {*}
      */
     var getScriptAbsolutelyPath = function (script) {
-        return (script.hasAttribute ?
+        return cleanURL(script.hasAttribute ?
             // non-IE6/7
             script.src :
             // @see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            script.getAttribute('src', 4)).replace(REG_SUFFIX, '');
+            script.getAttribute('src', 4));
     };
 
 
@@ -340,13 +371,6 @@
 
 
     /**
-     * host
-     * @type {RegExp}
-     */
-    var REG_HOST = /https?:\/\/[^/]*/;
-
-
-    /**
      * 当前脚本所在运行的 host
      */
     var currentScriptHost = currentScriptAbsolutelyPath.match(REG_HOST)[0];
@@ -388,20 +412,6 @@
 
 
     /**
-     * 当前运行脚本入口文件路径
-     * @type {string}
-     */
-    var currentScriptMainPath = getPathJoin(currentScriptAbsolutelyDir, currentScriptDataMain);
-
-
-    /**
-     * 当前运行脚本入口文件 URL
-     * @type {string}
-     */
-    var currentScriptMainURL = currentScriptHost + currentScriptMainPath;
-
-
-    /**
      * coolie 配置
      * @property base {String} 模块入口基准路径
      * @property version {Object} 入口模块版本 map
@@ -432,13 +442,20 @@
 
 
     /**
+     * 入口模块
+     * @type {Object}
+     */
+    var mainModule = {};
+
+
+    /**
      * coolie 配置
      * @param config
      */
     coolie.config = function (config) {
         coolieConfig = config;
         mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
-
+        mainModule.id = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
 
         return coolie;
     };
@@ -483,8 +500,7 @@
 
         hasExecuteMain = true;
 
-        var mainURL = currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain);
-        loadScript(mainURL);
+        loadScript(mainModule.id);
     };
 
 
@@ -677,31 +693,67 @@
 
 
     /**
-     * 脚本后缀
-     * @type {RegExp}
+     * 依赖的模块
+     * @type {{}}
      */
-    var REG_JS = /\.js($|\?)/i;
+    var dependenceModules = {};
 
 
     /**
      * 注册的模块
      * @type {{}}
      */
-    var modules = {};
+    var defineModules = {};
 
 
     /**
      * 依赖长度，包括入口模块
      * @type {number}
      */
-    var DependenceLength = 1;
+    var dependenceLength = 1;
 
 
     /**
-     * 定义长度，包括入口模块
+     * 注册长度，包括入口模块
      * @type {number}
      */
     var defineLength = 0;
+
+
+    /**
+     * module 包装
+     * @param module
+     * @returns module
+     */
+    var wrapModule = function (module) {
+        module.exports = {};
+        module._execute = (function () {
+            var require = function (dep) {
+                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep)) : dep;
+
+                if (!defineModules[depId]) {
+                    throw 'can not found module `' + depId + '`, but required in `' + module.id + '`';
+                }
+
+                return defineModules[depId]._execute();
+            };
+
+            return function () {
+                var id = module.id;
+
+                if (module._executed) {
+                    return defineModules[id].exports;
+                } else {
+                    module._executed = true;
+                    defineModules[id].exports = module.factory.call(window, require, module.exports, module) || module.exports;
+
+                    return defineModules[id].exports;
+                }
+            };
+        })();
+
+        return module;
+    };
 
 
     /**
@@ -712,14 +764,19 @@
      */
     var define = function (id, deps, factory) {
         var args = arguments;
+        var isAn = true;
 
-        // define(id, fn);
-        if (isFunction(args[1])) {
+        // define(id, deps, factory);
+        if (isFunction(args[2])) {
+            isAn = false;
+        }
+        // define(id, factory);
+        else if (isFunction(args[1])) {
             id = null;
             deps = [];
             factory = args[1];
         }
-        // define(fn);
+        // define(factory);
         else if (isFunction(args[0])) {
             factory = args[0];
             deps = parseDependencies(factory.toString());
@@ -732,12 +789,20 @@
 
         id = id ? id : interactiveScriptURL;
         defineLength++;
-        modules[id] = {
-            path: interactiveScriptPath,
+
+        var module = {
+            _isAn: isAn,
+            _path: interactiveScriptPath,
             id: id ? id : interactiveScriptURL,
             deps: deps,
             factory: factory
         };
+
+        if (id === mainModule.id) {
+            mainModule = module;
+        }
+
+        defineModules[id] = wrapModule(module);
 
         each(deps, function (index, dep) {
             var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
@@ -746,15 +811,16 @@
 
             id = id + (REG_JS.test(id) ? '' : '.js');
 
-            if (!modules[id]) {
-                modules[id] = true;
-                DependenceLength++;
+            if (!dependenceModules[id]) {
+                dependenceModules[id] = true;
+                dependenceLength++;
                 loadScript(id);
             }
         });
 
-        console.log(defineLength);
-        console.log(DependenceLength);
+        if (defineLength === dependenceLength) {
+            mainModule._execute();
+        }
     };
 
 
