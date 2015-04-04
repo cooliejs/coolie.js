@@ -28,6 +28,15 @@
 
 
     /**
+     * coolie 配置
+     * @property base {String} 模块入口基准路径
+     * @property version {Object} 入口模块版本 map
+     * @type {Object}
+     */
+    var coolieConfig = {};
+
+
+    /**
      * 判断数据类型
      * @param obj
      * @returns {string}
@@ -56,6 +65,17 @@
      */
     var isFunction = function (obj) {
         return typeis(obj) === 'function';
+    };
+
+
+    /**
+     * 判断是否为字符串
+     * @param obj
+     * @returns {Boolean}
+     * @private
+     */
+    var isString = function (obj) {
+        return typeis(obj) === 'string';
     };
 
 
@@ -112,6 +132,15 @@
 
         return ret;
     })();
+
+
+    /**
+     * 获取当前时间戳
+     * @returns {Number}
+     */
+    var now = function () {
+        return new Date().getTime();
+    };
 
 
     /**
@@ -301,6 +330,33 @@
 
 
     /**
+     * 文件后缀
+     * @type {RegExp}
+     */
+    var REG_EXT = /\.[^.]*$/;
+
+
+    /**
+     * 构造版本 URL
+     * @param url
+     * @returns {*}
+     */
+    var buildVersionURL = function (url) {
+        if (!coolieConfig._v) {
+            return url;
+        }
+
+        var version = isString(coolieConfig._v) ? coolieConfig._v : coolieConfig._v[url];
+
+        if (!version) {
+            return url;
+        }
+
+        return url.replace(REG_EXT, '.' + version + '$&');
+    };
+
+
+    /**
      * 加载脚本
      * @param url {String} 脚本 URL
      * @param [callback] {Function} 加载完毕回调
@@ -320,19 +376,51 @@
         };
 
         loadScriptList.push(script);
-        script.src = url;
+        script.src = buildVersionURL(url);
+        script.id = url;
         script.async = true;
         script.defer = true;
-        script.onload = onready;
         script.onreadystatechange = function (eve) {
             if (REG_LOAD_COMPLETE.test(script.readyState)) {
                 onready(eve);
             }
         };
-        script.onerror = onready;
+        script.onload = script.onerror = onready;
         curentAppendScript = script;
         docHead.appendChild(script);
         curentAppendScript = null;
+    };
+
+
+    /**
+     * 加载文本模块
+     * @param url {String} 文本 URL
+     */
+    var ajaxText = function (url) {
+        var xhr = new XMLHttpRequest();
+        var hasComplete;
+        var onready = function () {
+            if (xhr.readyState === 4 && !hasComplete) {
+                hasComplete = true;
+                if (xhr.status === 200 || xhr.status === 304) {
+                    defineModule({
+                        _isAn: mainModule._isAn,
+                        _time: now(),
+                        id: url,
+                        deps: [],
+                        factory: function () {
+                            return xhr.responseText;
+                        }
+                    });
+                } else {
+                    throw 'ajax error: ' + url;
+                }
+            }
+        };
+
+        xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
+        xhr.open('GET', buildVersionURL(url));
+        xhr.send(null);
     };
 
 
@@ -436,15 +524,6 @@
 
 
     /**
-     * coolie 配置
-     * @property base {String} 模块入口基准路径
-     * @property version {Object} 入口模块版本 map
-     * @type {Object}
-     */
-    var coolieConfig = {};
-
-
-    /**
      * coolie
      * @type {Object}
      */
@@ -473,31 +552,10 @@
 
 
     /**
-     * coolie 配置
-     * @param config
-     */
-    coolie.config = function (config) {
-        coolieConfig = config;
-        mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
-        mainModule.id = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
-        mainModule._defined = false;
-
-        return coolie;
-    };
-
-
-    /**
      * 是否可以执行入口模块
      * @type {boolean}
      */
     var canExecuteMain = false;
-
-
-    ///**
-    // * 是否已经执行了配置
-    // * @type {boolean}
-    // */
-    //var hasExecuteConfig = false;
 
 
     /**
@@ -505,216 +563,6 @@
      * @type {boolean}
      */
     var hasExecuteMain = false;
-
-
-    /**
-     * 开始执行入口模块
-     */
-    coolie.use = function () {
-        canExecuteMain = true;
-    };
-
-
-    /**
-     * 执行入口模块
-     */
-    var executeMain = function () {
-        if (hasExecuteMain) {
-            return;
-        }
-
-        hasExecuteMain = true;
-
-        loadScript(mainModule.id);
-    };
-
-
-    /**
-     * 解析代码里的依赖信息
-     * @param s {String} 代码
-     * @link: https://github.com/seajs/searequire
-     */
-    var parseDependencies = function parseDependencies(s) {
-        if (s.indexOf('require') == -1) {
-            return []
-        }
-        var index = 0, peek = '', length = s.length, isReg = 1, modName = 0, parentheseState = 0, parentheseStack = [], res = [];
-        while (index < length) {
-            readch();
-            if (isBlank()) {
-            }
-            else if (isQuote()) {
-                dealQuote();
-                isReg = 1;
-            }
-            else if (peek == '/') {
-                readch();
-                if (peek == '/') {
-                    index = s.indexOf('\n', index);
-                    if (index == -1) {
-                        index = s.length
-                    }
-                }
-                else if (peek == '*') {
-                    index = s.indexOf('*/', index);
-                    if (index == -1) {
-                        index = length
-                    }
-                    else {
-                        index += 2
-                    }
-                }
-                else if (isReg) {
-                    dealReg();
-                    isReg = 0
-                }
-                else {
-                    index--;
-                    isReg = 1
-                }
-            }
-            else if (isWord()) {
-                dealWord()
-            }
-            else if (isNumber()) {
-                dealNumber()
-            }
-            else if (peek == '(') {
-                parentheseStack.push(parentheseState);
-                isReg = 1
-            }
-            else if (peek == ')') {
-                isReg = parentheseStack.pop()
-            }
-            else {
-                isReg = peek != ']';
-                modName = 0
-            }
-        }
-        return res;
-        function readch() {
-            peek = s.charAt(index++)
-        }
-
-        function isBlank() {
-            return /\s/.test(peek)
-        }
-
-        function isQuote() {
-            return peek == '"' || peek == "'"
-        }
-
-        function dealQuote() {
-            var start = index;
-            var c = peek;
-            var end = s.indexOf(c, start);
-            if (end == -1) {
-                index = length
-            }
-            else if (s.charAt(end - 1) != '\\') {
-                index = end + 1
-            }
-            else {
-                while (index < length) {
-                    readch();
-                    if (peek == '\\') {
-                        index++
-                    }
-                    else if (peek == c) {
-                        break
-                    }
-                }
-            }
-            if (modName) {
-                res.push(s.slice(start, index - 1));
-                modName = 0
-            }
-        }
-
-        function dealReg() {
-            index--;
-            while (index < length) {
-                readch();
-                if (peek == '\\') {
-                    index++
-                }
-                else if (peek == '/') {
-                    break
-                }
-                else if (peek == '[') {
-                    while (index < length) {
-                        readch();
-                        if (peek == '\\') {
-                            index++
-                        }
-                        else if (peek == ']') {
-                            break
-                        }
-                    }
-                }
-            }
-        }
-
-        function isWord() {
-            return /[a-z_$]/i.test(peek)
-        }
-
-        function dealWord() {
-            var s2 = s.slice(index - 1);
-            var r = /^[\w$]+/.exec(s2)[0];
-            parentheseState = {
-                'if': 1,
-                'for': 1,
-                'while': 1,
-                'with': 1
-            }[r];
-            isReg = {
-                'break': 1,
-                'case': 1,
-                'continue': 1,
-                'debugger': 1,
-                'delete': 1,
-                'do': 1,
-                'else': 1,
-                'false': 1,
-                'if': 1,
-                'in': 1,
-                'instanceof': 1,
-                'return': 1,
-                'typeof': 1,
-                'void': 1
-            }[r];
-            modName = /^require\s*\(\s*(['"]).+?\1\s*\)/.test(s2);
-            if (modName) {
-                r = /^require\s*\(\s*['"]/.exec(s2)[0];
-                index += r.length - 2
-            }
-            else {
-                index += /^[\w$]+(?:\s*\.\s*[\w$]+)*/.exec(s2)[0].length - 1
-            }
-        }
-
-        function isNumber() {
-            return /\d/.test(peek)
-                || peek == '.' && /\d/.test(s.charAt(index))
-        }
-
-        function dealNumber() {
-            var s2 = s.slice(index - 1);
-            var r;
-            if (peek == '.') {
-                r = /^\.\d+(?:E[+-]?\d*)?\s*/i.exec(s2)[0]
-            }
-            else if (/^0x[\da-f]*/i.test(s2)) {
-                r = /^0x[\da-f]*\s*/i.exec(s2)[0]
-            }
-            else {
-                r = /^\d+\.?\d*(?:E[+-]?\d*)?\s*/i.exec(s2)[0]
-            }
-            index += r.length - 1;
-            isReg = 0
-        }
-    };
 
 
     /**
@@ -746,15 +594,109 @@
 
 
     /**
-     * module 包装
+     * coolie 配置
+     * @param config
+     */
+    coolie.config = function (config) {
+        coolieConfig = config;
+        mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, coolieConfig.base);
+
+        coolieConfig.version = coolieConfig.version || {};
+
+        if (isString(coolieConfig.version)) {
+            coolieConfig._v = coolieConfig.version;
+        } else {
+            coolieConfig._v = {};
+            each(coolieConfig.version, function (path, version) {
+                coolieConfig._v[cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, path))] = version;
+            });
+        }
+
+        var mainModuleId = mainModule.id = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
+
+        mainModule._defined = false;
+        mainModule._time = now();
+        dependenceModules[mainModuleId] = mainModule;
+
+        return coolie;
+    };
+
+
+    /**
+     * 开始执行入口模块
+     */
+    coolie.use = function () {
+        canExecuteMain = true;
+    };
+
+
+    /**
+     * 执行入口模块
+     */
+    var executeMain = function () {
+        if (hasExecuteMain) {
+            return;
+        }
+
+        hasExecuteMain = true;
+
+        loadScript(mainModule.id);
+    };
+
+
+    /**
+     * require 正则
+     * @type {RegExp}
+     * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js
+     */
+    var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
+
+
+    /**
+     * 反斜杠
+     * @type {RegExp}
+     */
+    var REG_SLASH = /\\\\/g;
+
+
+    /**
+     * 解析代码里的依赖信息
+     * @param code {String} 代码
+     */
+    var parseDependencies = function (code) {
+        var requires = [];
+
+        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function (m, m1, m2) {
+            if (m2) {
+                requires.push(m2);
+            }
+        });
+
+        return requires;
+    };
+
+
+    /**
+     * 文本模块
+     * @type {RegExp}
+     */
+    var REG_TEXT_MODULE = /^(css|html|text)!/i;
+
+
+    /**
+     * 注册 module
      * @param module
      * @returns module
      */
-    var wrapModule = function (module) {
+    var defineModule = function (module) {
         module.exports = {};
         module._execute = (function () {
             var require = function (dep) {
-                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep)) : dep;
+                var isTextModule = REG_TEXT_MODULE.test(dep);
+
+                dep = dep.replace(REG_TEXT_MODULE, '');
+
+                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule) : dep;
 
                 if (!defineModules[depId]) {
                     throw 'can not found module `' + depId + '`, but required in `' + module.id + '`';
@@ -777,7 +719,17 @@
             };
         })();
 
-        return module;
+        var id = module.id;
+
+        defineModules[id] = module;
+        defineLength++;
+        console.log(id, now() - dependenceModules[id]._time + 'ms');
+
+        if (defineLength === dependenceLength) {
+            console.log('past', now() - mainModule._time + 'ms');
+            console.groupEnd('coolie modules');
+            mainModule._execute();
+        }
     };
 
 
@@ -791,7 +743,7 @@
         var args = arguments;
         var isAn = true;
         var interactiveScript = getInteractiveScript();
-        var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
+        var interactiveScriptURL = interactiveScript.id;
         var interactiveScriptPath = getPathDir(interactiveScriptURL);
 
         // define(id, deps, factory);
@@ -813,11 +765,10 @@
 
         id = mainModule._defined && mainModule._isAn ? interactiveScriptURL : id || interactiveScriptURL;
 
-        console.log('define module', id);
-
         var module = {
             _isAn: isAn,
             _path: interactiveScriptPath,
+            _time: now(),
             id: id,
             deps: deps,
             factory: factory
@@ -828,30 +779,33 @@
             mainModule._defined = true;
         }
 
-        defineModules[id] = wrapModule(module);
-        defineLength++;
+        var deps2 = [];
 
         each(deps, function (index, dep) {
+            var isTextModule = REG_TEXT_MODULE.test(dep);
+
+            dep = dep.replace(REG_TEXT_MODULE, '');
+
             var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
-            var url = currentScriptHost + path;
-            var id = url.replace(REG_SUFFIX, '');
+            var depId = cleanURL(currentScriptHost + path, isTextModule);
 
-            id = id + (REG_JS.test(id) ? '' : '.js');
-
-            if (!dependenceModules[id]) {
-                dependenceModules[id] = {
-                    loaded: true,
-                    time: new Date().getTime()
+            if (!dependenceModules[depId]) {
+                deps2.push(depId);
+                dependenceModules[depId] = {
+                    _time: now()
                 };
                 dependenceLength++;
-                loadScript(id);
+
+                if (isTextModule) {
+                    ajaxText(depId);
+                } else {
+                    loadScript(depId);
+                }
             }
         });
 
-        if (defineLength === dependenceLength) {
-            console.groupEnd('coolie modules');
-            mainModule._execute();
-        }
+        module.deps = deps2;
+        defineModule(module);
     };
 
 

@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d128451a-32a4-4b89-a0b0-1cc98d2c08f0" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/examples/a.js" afterPath="$PROJECT_DIR$/examples/a.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/coolie.js" afterPath="$PROJECT_DIR$/coolie.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/examples/anonymous/index.js" afterPath="$PROJECT_DIR$/examples/anonymous/index.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -30,20 +29,8 @@
       <file leaf-file-name="coolie.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/coolie.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.47479674">
-              <caret line="844" column="18" selection-start-line="844" selection-start-column="18" selection-end-line="844" selection-end-column="18" />
-              <folding>
-                <element signature="n#!!doc" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="coolie-old.js" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/coolie-old.js">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="77" column="9" selection-start-line="59" selection-start-column="4" selection-end-line="77" selection-end-column="9" />
+            <state vertical-scroll-proportion="0.36260164">
+              <caret line="732" column="6" selection-start-line="732" selection-start-column="6" selection-end-line="732" selection-end-column="6" />
               <folding>
                 <element signature="n#!!doc" expanded="true" />
               </folding>
@@ -68,12 +55,12 @@
         <option value="$PROJECT_DIR$/readme.md" />
         <option value="$PROJECT_DIR$/package.json" />
         <option value="$PROJECT_DIR$/examples/anonymous/index.html" />
-        <option value="$PROJECT_DIR$/coolie-old.js" />
         <option value="$PROJECT_DIR$/version.md" />
         <option value="$PROJECT_DIR$/examples/anonymous/2.html" />
         <option value="$PROJECT_DIR$/coolie.min.js" />
-        <option value="$PROJECT_DIR$/examples/anonymous/index.js" />
         <option value="$PROJECT_DIR$/examples/a.js" />
+        <option value="$PROJECT_DIR$/examples/anonymous/index.js" />
+        <option value="$PROJECT_DIR$/coolie-old.js" />
         <option value="$PROJECT_DIR$/coolie.js" />
       </list>
     </option>
@@ -162,25 +149,7 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="libs" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="coolie" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="coolie" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="examples" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="anonymous" />
+              <option name="myItemId" value="sign" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -432,7 +401,13 @@
       <option name="project" value="LOCAL" />
       <updated>1428162039644</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="优化 coolie">
+      <created>1428162642077</created>
+      <option name="number" value="00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1428162642077</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
@@ -750,13 +725,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/anonymous/coolie-config.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.08265802">
-          <caret line="3" column="14" selection-start-line="3" selection-start-column="14" selection-end-line="3" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/examples/async/index.js">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.16531605">
@@ -879,28 +847,36 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/anonymous/index.js">
+    <entry file="file://$PROJECT_DIR$/examples/anonymous/coolie-config.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.41463414">
-          <caret line="15" column="8" selection-start-line="15" selection-start-column="8" selection-end-line="15" selection-end-column="8" />
+        <state vertical-scroll-proportion="0.19349593">
+          <caret line="7" column="9" selection-start-line="7" selection-start-column="9" selection-end-line="7" selection-end-column="9" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/coolie-old.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="77" column="9" selection-start-line="59" selection-start-column="4" selection-end-line="77" selection-end-column="9" />
+        <state vertical-scroll-proportion="0.1691057">
+          <caret line="747" column="21" selection-start-line="747" selection-start-column="21" selection-end-line="747" selection-end-column="21" />
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/examples/anonymous/index.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.110569105">
+          <caret line="4" column="19" selection-start-line="4" selection-start-column="19" selection-end-line="4" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/coolie.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.47479674">
-          <caret line="844" column="18" selection-start-line="844" selection-start-column="18" selection-end-line="844" selection-end-column="18" />
+        <state vertical-scroll-proportion="0.36260164">
+          <caret line="732" column="6" selection-start-line="732" selection-start-column="6" selection-end-line="732" selection-end-column="6" />
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>
