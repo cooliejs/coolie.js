@@ -186,16 +186,23 @@
 
 
     /**
+     * 文件后缀
+     * @type {RegExp}
+     */
+    var REG_SUFFIX = /[\?#].*?$/;
+
+
+    /**
      * 获取 script 的绝对路径
      * @param script
      * @returns {*}
      */
     var getScriptAbsolutelyPath = function (script) {
-        return script.hasAttribute ?
+        return (script.hasAttribute ?
             // non-IE6/7
             script.src :
             // @see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            script.getAttribute('src', 4);
+            script.getAttribute('src', 4)).replace(REG_SUFFIX, '');
     };
 
 
@@ -236,13 +243,6 @@
      * @type {Array}
      */
     var loadScriptList = [];
-
-
-    /**
-     * 脚本后缀
-     * @type {RegExp}
-     */
-    var REG_JS = /\.js$/i;
 
 
     /**
@@ -677,6 +677,34 @@
 
 
     /**
+     * 脚本后缀
+     * @type {RegExp}
+     */
+    var REG_JS = /\.js($|\?)/i;
+
+
+    /**
+     * 注册的模块
+     * @type {{}}
+     */
+    var modules = {};
+
+
+    /**
+     * 依赖长度，包括入口模块
+     * @type {number}
+     */
+    var DependenceLength = 1;
+
+
+    /**
+     * 定义长度，包括入口模块
+     * @type {number}
+     */
+    var defineLength = 0;
+
+
+    /**
      * 定义一个模块
      * @param {String} [id] 模块id
      * @param {Array} [deps] 模块依赖
@@ -702,21 +730,33 @@
         var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
         var interactiveScriptPath = getPathDir(interactiveScriptURL);
 
-        each(deps, function (index, dep) {
-            var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
-            var url = currentScriptHost + path;
-
-            loadScript(url);
-        });
-
-        var meta = {
+        id = id ? id : interactiveScriptURL;
+        defineLength++;
+        console.log('>>', id);
+        modules[id] = {
             path: interactiveScriptPath,
             id: id ? id : interactiveScriptURL,
             deps: deps,
             factory: factory
         };
 
-        console.log(meta);
+        each(deps, function (index, dep) {
+            var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
+            var url = currentScriptHost + path;
+            var id = url.replace(REG_SUFFIX, '');
+
+            id = id + (REG_JS.test(id) ? '' : '.js');
+
+            if (!modules[id]) {
+                modules[id] = true;
+                DependenceLength++;
+                console.log('<<', id);
+                loadScript(id);
+            }
+        });
+
+        //console.log(defineLength);
+        //console.log(DependenceLength);
     };
 
 
