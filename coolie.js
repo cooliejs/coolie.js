@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.7.0
+ * @version 0.7.1
  * @license MIT
  */
 
@@ -13,7 +13,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.7.0';
+    var version = '0.7.1';
 
 
     /**
@@ -127,10 +127,8 @@
             }
         } else if (typeof(list) === 'object') {
             for (i in list) {
-                if (list.hasOwnProperty(i)) {
-                    if (callback(i, list[i]) === false) {
-                        break;
-                    }
+                if (callback(i, list[i]) === false) {
+                    break;
                 }
             }
         }
@@ -337,7 +335,14 @@
      * 头部标签
      * @type {HTMLHeadElement|*}
      */
-    var docHead = doc.head || getNodeList('head', doc)[0];
+    var $docHead = doc.head || getNodeList('head', doc)[0];
+
+
+    /**
+     * 头部 base 标签
+     * @type {HTMLBaseElement|*}
+     */
+    var $docBase = getNodeList('base', $docHead)[0];
 
 
     /**
@@ -388,9 +393,14 @@
      */
     var loadScript = function (url, callback) {
         var url2 = buildVersionURL(url);
-        var script = doc.createElement('script');
+        var $script = doc.createElement('script');
+        var hasReady = false;
         var onready = function (eve) {
-            eve = eve || win.event;
+            if (hasReady) {
+                return;
+            }
+
+            hasReady = true;
 
             if (eve && eve.type === 'error') {
                 throw 'load script error\n' + url2;
@@ -401,19 +411,32 @@
             }
         };
 
-        loadScriptList.push(script);
-        script.src = url2;
-        script.id = url;
-        script.async = true;
-        script.defer = true;
-        script.onreadystatechange = function (eve) {
-            if (REG_LOAD_COMPLETE.test(script.readyState)) {
-                onready(eve);
-            }
-        };
-        script.onload = script.onerror = onready;
-        curentAppendScript = script;
-        docHead.appendChild(script);
+        loadScriptList.push($script);
+        $script.src = url2;
+        $script.id = url;
+        $script.async = true;
+        $script.defer = true;
+
+        if (supportOnloadInScript) {
+            $script.onload = $script.onerror = onready;
+        } else {
+            $script.onreadystatechange = function (eve) {
+                if (REG_LOAD_COMPLETE.test($script.readyState)) {
+                    eve = eve || win.event;
+                    onready(eve);
+                }
+            };
+        }
+
+        curentAppendScript = $script;
+
+        // ref: #185 & http://dev.jquery.com/ticket/2709
+        if ($docBase) {
+            $docHead.insertBefore($script, $docBase);
+        } else {
+            $docHead.appendChild($script);
+        }
+
         curentAppendScript = null;
     };
 
@@ -477,7 +500,7 @@
         var interactiveScript = null;
 
         // IE6-10 得到当前正在执行的script标签
-        var scripts = doc.scripts || getNodeList('script', docHead);
+        var scripts = doc.scripts || getNodeList('script', $docHead);
 
         each(scripts, function (index, script) {
             if (REG_INTERACTIVE.test(script.readyState)) {
@@ -500,6 +523,13 @@
      * @type {Node}
      */
     var currentScript = getInteractiveScript();
+
+
+    /**
+     * 是否支持 onload
+     * @type {boolean}
+     */
+    var supportOnloadInScript = 'onload' in currentScript;
 
 
     /**
@@ -753,10 +783,10 @@
 
         defineModules[id] = module;
         defineLength++;
-        console.log(module._isMain ? 'main' : 'require', module._isMain ? module.url : id);
+        console.log((module._isMain ? 'main' : 'require') + ' ' + (module._isMain ? module.url : id));
 
         if (defineLength === dependenceLength) {
-            console.log('past', now() - timeNow + 'ms');
+            console.log('past ' + ( now() - timeNow) + 'ms');
             console.groupEnd('coolie modules');
             mainModule._execute();
             each(coolieCallbacks, function (index, callback) {
