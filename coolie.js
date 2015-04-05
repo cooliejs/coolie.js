@@ -409,6 +409,9 @@
             if (isFunction(callback)) {
                 callback();
             }
+
+            $docHead.removeChild($script);
+            $script = null;
         };
 
         loadScriptList.push($script);
