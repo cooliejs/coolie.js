@@ -352,20 +352,6 @@
 
 
     /**
-     * 当前插入的脚本
-     * @type {null|HTMLScriptElement|Node}
-     */
-    var curentAppendScript = null;
-
-
-    /**
-     * 加载的脚本列表
-     * @type {Array}
-     */
-    var loadScriptList = [];
-
-
-    /**
      * 文件后缀
      * @type {RegExp}
      */
@@ -392,12 +378,15 @@
     };
 
 
+    var $lastScript = null;
+
+
     /**
      * 加载脚本
      * @param url {String} 脚本 URL
-     * @param [callback] {Function} 加载完毕回调
+     * @param [isNotModule=false] {Boolean} 是否为模块
      */
-    var loadScript = function (url, callback) {
+    var loadScript = function (url, isNotModule) {
         var url2 = buildVersionURL(url);
         var $script = doc.createElement('script');
         var hasReady = false;
@@ -412,15 +401,15 @@
                 throw 'load script error\n' + url2;
             }
 
-            if (isFunction(callback)) {
-                callback();
+            if (isNotModule !== true) {
+                $lastScript = $script;
+                analyScriptModule($script);
             }
 
             $docHead.removeChild($script);
             $script = null;
         };
 
-        loadScriptList.push($script);
         $script.src = url2;
         $script.id = url;
         $script.async = true;
@@ -437,16 +426,12 @@
             };
         }
 
-        curentAppendScript = $script;
-
         // ref: #185 & http://dev.jquery.com/ticket/2709
         if ($docBase) {
             $docHead.insertBefore($script, $docBase);
         } else {
             $docHead.appendChild($script);
         }
-
-        curentAppendScript = null;
     };
 
 
@@ -484,54 +469,14 @@
 
 
     /**
-     * 活动脚本
-     * @type {RegExp}
-     */
-    var REG_INTERACTIVE = /interactive/;
-
-
-    /**
-     * 获取当前正在执行的脚本路径
-     * @returns {HTMLScriptElement}
-     * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js#L439
-     */
-    var getInteractiveScript = function () {
-        // direct
-        if (curentAppendScript) {
-            return curentAppendScript;
-        }
-
-        // chrome
-        if (doc.currentScript) {
-            return doc.currentScript;
-        }
-
-        var interactiveScript = null;
-
-        // IE6-10 得到当前正在执行的script标签
-        var scripts = doc.scripts || getNodeList('script', $docHead);
-
-        each(scripts, function (index, script) {
-            if (REG_INTERACTIVE.test(script.readyState)) {
-                interactiveScript = script;
-                return false;
-            }
-        }, true);
-
-        if (interactiveScript) {
-            return interactiveScript;
-        }
-
-        // 脚本的执行顺序与添加到 DOM 里的顺序一致
-        return loadScriptList.shift();
-    };
-
-
-    /**
      * 当前运行的脚本
      * @type {Node}
      */
-    var currentScript = getInteractiveScript();
+    var currentScript = (function () {
+        var scripts = getNodeList('script');
+
+        return scripts[scripts.length - 1];
+    })();
 
 
     /**
@@ -625,10 +570,17 @@
 
 
     /**
-     * 注册的模块
+     * 定义模块数组
+     * @type {Array}
+     */
+    var defineList = [];
+
+
+    /**
+     * 模块
      * @type {{}}
      */
-    var defineModules = {};
+    var modules = {};
 
 
     /**
@@ -687,6 +639,7 @@
         hasExecuteMain = true;
         timeNow = now();
         loadScript(mainModule.url);
+
         console.group('coolie modules');
 
         return coolie;
@@ -746,70 +699,17 @@
 
 
     /**
-     * 注册 module
-     * @param module
-     * @returns module
+     * 分析脚本模块
+     * @param $interactiveScript {Object} 当前活动的脚本
      */
-    var defineModule = function (module) {
-        module.exports = {};
-        module._execute = (function () {
-            var require = function (dep) {
-                var isTextModule = REG_TEXT_MODULE.test(dep);
-
-                dep = dep.replace(REG_TEXT_MODULE, '');
-
-                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule) : dep;
-
-                if (!defineModules[depId]) {
-                    throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;
-                }
-
-                return defineModules[depId]._execute();
-            };
-
-            return function () {
-                var id = module.id;
-
-                if (module._executed) {
-                    return defineModules[id].exports;
-                } else {
-                    module._executed = true;
-                    defineModules[id].exports = module.factory.call(window, require, module.exports, module) || module.exports;
-
-                    return defineModules[id].exports;
-                }
-            };
-        })();
-
-        var id = module.id;
-
-        defineModules[id] = module;
-        defineLength++;
-        console.log((module._isMain ? 'main' : 'require') + ' ' + (module._isMain ? module.url : id));
-
-        if (defineLength === dependenceLength) {
-            console.log('past ' + ( now() - timeNow) + 'ms');
-            console.groupEnd('coolie modules');
-            mainModule._execute();
-            each(coolieCallbacks, function (index, callback) {
-                callback.call(coolie);
-            });
-        }
-    };
-
-
-    /**
-     * 定义一个模块
-     * @param {String} [id] 模块id
-     * @param {Array} [deps] 模块依赖
-     * @param {Function} factory 模块方法
-     */
-    var define = function (id, deps, factory) {
-        var args = arguments;
+    var analyScriptModule = function ($interactiveScript) {
         var isAn = true;
-        var interactiveScript = getInteractiveScript();
-        var interactiveScriptId = interactiveScript.id;
-        var interactiveScriptURL = getScriptAbsolutelyPath(interactiveScript);
+        var args = defineList.shift();
+        var id = args[0];
+        var deps = args[1];
+        var factory = args[2];
+        var interactiveScriptId = $interactiveScript.id;
+        var interactiveScriptURL = getScriptAbsolutelyPath($interactiveScript);
         var interactiveScriptPath = getPathDir(interactiveScriptId);
 
         // define(id, deps, factory);
@@ -834,6 +734,7 @@
         var module = {
             _isAn: isAn,
             _path: interactiveScriptPath,
+            _node: $interactiveScript,
             id: id,
             url: interactiveScriptURL,
             deps: deps,
@@ -870,8 +771,8 @@
                 throw 'required oneself: \n' + id;
             }
 
-            if (defineModules[depId]) {
-                each(defineModules[depId].deps, function (index, dep) {
+            if (modules[depId]) {
+                each(modules[depId].deps, function (index, dep) {
                     if (dep === id) {
                         throw 'required circle: \n' + depId + '\n' + id;
                     }
@@ -889,6 +790,8 @@
                     } else {
                         loadScript(depId);
                     }
+                } else {
+                    analyScriptModule($lastScript);
                 }
             }
         });
@@ -898,9 +801,70 @@
     };
 
 
+    /**
+     * 定义 module
+     * @param module
+     * @returns module
+     */
+    var defineModule = function (module) {
+        module.exports = {};
+        module._execute = (function () {
+            var require = function (dep) {
+                var isTextModule = REG_TEXT_MODULE.test(dep);
+
+                dep = dep.replace(REG_TEXT_MODULE, '');
+
+                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule) : dep;
+
+                if (!modules[depId]) {
+                    throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;
+                }
+
+                return modules[depId]._execute();
+            };
+
+            return function () {
+                var id = module.id;
+
+                if (module._executed) {
+                    return modules[id].exports;
+                } else {
+                    module._executed = true;
+                    modules[id].exports = module.factory.call(window, require, module.exports, module) || module.exports;
+
+                    return modules[id].exports;
+                }
+            };
+        })();
+        modules[module.id] = module;
+        defineLength++;
+        console.log('module ' + module.id);
+
+        if (defineLength === dependenceLength) {
+            console.log('past ' + ( now() - timeNow) + 'ms');
+            console.groupEnd('coolie modules');
+            mainModule._execute();
+            each(coolieCallbacks, function (index, callback) {
+                callback.call(coolie);
+            });
+        }
+    };
+
+
+    /**
+     * 定义一个模块
+     * @param {String} [id] 模块id
+     * @param {Array} [deps] 模块依赖
+     * @param {Function} factory 模块方法
+     */
+    var define = function (id, deps, factory) {
+        defineList.push(arguments);
+    };
+
+
     // 加载配置脚本
     if (currentScriptDataConfig) {
-        loadScript(currentScriptConfigURL + '?' + now());
+        loadScript(currentScriptConfigURL + '?' + now(), true);
     }
 
 
@@ -909,7 +873,7 @@
      * @type {Object}
      */
     window.coolie = coolie;
-    window.coolie.modules = defineModules;
+    window.coolie.modules = modules;
     window.coolie.configs = coolieConfig;
 
     /**

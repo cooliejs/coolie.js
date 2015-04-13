@@ -88,9 +88,9 @@
     window.define = function (id, deps, factory) {
         var args = arguments;
         var isAnonymous = args.length === 1;
-        var c = _getInteractiveScript();
-
-        console.log(c);
+        //var c = _getInteractiveScript();
+        //
+        //console.log(c);
 
         // 第一个运行 define 的为入口模块（？）
         if (!execModule) {
