@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.7.1
+ * @version 0.7.2
  * @license MIT
  */
 
@@ -13,7 +13,13 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.7.1';
+    var version = '0.7.2';
+
+
+    /**
+     * @type {undefined}
+     */
+    var udf;
 
 
     /**
@@ -420,7 +426,7 @@
         $script.async = true;
         $script.defer = true;
 
-        if (supportOnloadInScript) {
+        if ($script.onload !== udf) {
             $script.onload = $script.onerror = onready;
         } else {
             $script.onreadystatechange = function (eve) {
@@ -526,13 +532,6 @@
      * @type {Node}
      */
     var currentScript = getInteractiveScript();
-
-
-    /**
-     * 是否支持 onload
-     * @type {boolean}
-     */
-    var supportOnloadInScript = 'onload' in currentScript;
 
 
     /**
