@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.7.2
+ * @version 0.7.5
  * @license MIT
  */
 
@@ -13,7 +13,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.7.2';
+    var version = '0.7.5';
 
 
     /**
@@ -858,7 +858,7 @@
      * @param {Function} factory 模块方法
      */
     var define = function (id, deps, factory) {
-        defineList.push(arguments);
+        defineList.push([id, deps, factory]);
     };
 
 
