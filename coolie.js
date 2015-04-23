@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.7.5
+ * @version 0.7.6
  * @license MIT
  */
 
@@ -13,7 +13,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.7.5';
+    var version = '0.7.6';
 
 
     /**
@@ -619,10 +619,12 @@
             });
         }
 
-        var mainModuleId = mainModule.url = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
+        if (currentScriptDataMain) {
+            var mainModuleId = mainModule.url = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
 
-        mainModule._defined = false;
-        dependenceModules[mainModuleId] = mainModule;
+            mainModule._defined = false;
+            dependenceModules[mainModuleId] = mainModule;
+        }
 
         return coolie;
     };
@@ -630,14 +632,26 @@
 
     /**
      * 开始执行入口模块
+     * @param [main] 手动指定入口模块地址
+     * @returns {Object}
      */
-    coolie.use = function () {
+    coolie.use = function (main) {
         if (hasExecuteMain) {
-            return;
+            return coolie;
         }
 
         hasExecuteMain = true;
         timeNow = now();
+
+        if (main) {
+            mainModule.url = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, main));
+            dependenceModules[mainModule.url] = mainModule;
+        }
+
+        if (!mainModule.url) {
+            return coolie;
+        }
+
         loadScript(mainModule.url);
 
         console.group('coolie modules');
@@ -845,7 +859,7 @@
             console.groupEnd('coolie modules');
             mainModule._execute();
             each(coolieCallbacks, function (index, callback) {
-                callback.call(coolie);
+                callback.call(coolie, mainModule.exports);
             });
         }
     };

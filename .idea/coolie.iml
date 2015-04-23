@@ -6,5 +6,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="coolie node_modules" level="project" />
     <orderEntry type="library" name="coolie node_modules" level="project" />
+    <orderEntry type="library" name="mocha-DefinitelyTyped" level="application" />
   </component>
 </module>

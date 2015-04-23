@@ -9,15 +9,15 @@
 
 describe('modules', function () {
     coolie.config({
-        base: './',
-        version: 'abc123'
+        base: './test/modules/'
     });
 
     it('module1 + module2', function (done) {
-        coolie.callback = function (exports) {
-            exports.should.be.equal(579);
+        coolie.callback(function (main) {
+            main.should.be.equal(579);
             done();
-        };
-        coolie.use('./test/modules/main.js');
+        });
     });
+
+    coolie.use('./main.js');
 });
