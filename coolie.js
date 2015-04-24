@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.7.6
+ * @version 0.7.7
  * @license MIT
  */
 
@@ -13,7 +13,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.7.6';
+    var version = '0.7.7';
 
 
     /**
@@ -665,6 +665,12 @@
      * @param callback
      */
     coolie.callback = function (callback) {
+        if (mainModule._executed && isFunction(callback)) {
+            callback.call(coolie, mainModule.exports);
+
+            return coolie;
+        }
+
         if (isFunction(callback)) {
             coolieCallbacks.push(callback);
         }

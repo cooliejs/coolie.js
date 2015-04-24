@@ -3,10 +3,9 @@
 
 苦力——一个纯净、易用的模块加载器。
 
-`coolie`遵守AMD规范中的部分条款（[如何开发模块？](https://github.com/cloudcome/coolie/wiki/development)），
-[配套的前端构建工具](https://github.com/cloudcome/nodejs-coolie)，
-与之对应（[如何构建模块？](https://github.com/cloudcome/coolie/wiki/production)），
-[更多内容可以查看WIKI](https://github.com/cloudcome/coolie/wiki)。
+
+入门及文档：<http://frontenddev.org/column/introduce-coolie/>
+
 
 
 # 接口
@@ -33,10 +32,6 @@ coolie.config({
 
 ## `coolie.callback`
 模块全部加载完毕后回调。常用于测试项目。
-
-
-## 帮助
-- <http://frontenddev.org/column/introduce-coolie/>
 
 
 

@@ -12,6 +12,8 @@ describe('测试组', function () {
             base: './test/modules/'
         });
 
+
+
         coolie.use('./404.js');
     });
 });
