@@ -10,7 +10,7 @@ module.exports = function (config) {
 
         // frameworks to use
         // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-        frameworks: ['mocha'],
+        frameworks: ['jasmine'],
 
 
         client: {
@@ -23,8 +23,6 @@ module.exports = function (config) {
 
         // list of files / patterns to load in the browser
         files: [
-            'node_modules/mocha/mocha.js',
-            'node_modules/should/should.js',
             './coolie.js',
             {
                 pattern: './test/modules/**/*.js',

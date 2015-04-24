@@ -1,5 +1,5 @@
 /*!
- * 文件描述
+ * 主测试文件
  * @author ydr.me
  * @create 2014-11-17 15:04
  */
@@ -14,12 +14,6 @@ describe('main', function () {
 
     it('main', function (done) {
         coolie.callback(function (main) {
-            //main.should.be.equal(579);
-            //Object.keys(coolie.modules).length.should.be.equal(3);
-            //coolie.configs.should.be.not.equal(undefined);
-            //define.should.be.not.equal(undefined);
-            //define.amd.should.be.not.equal(undefined);
-            //define.cmd.should.be.not.equal(undefined);
             done();
         });
     });
