@@ -1,4 +1,4 @@
-# Coolie@0.6.0 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
+# Coolie@0.7.6 苦力 [![Build Status][travis-img]][travis-url] [![Test Coverage][coverage-img]][coverage-url]
 
 苦力——一个纯净、易用的模块加载器。
 
