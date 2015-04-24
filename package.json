@@ -5,7 +5,7 @@
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
     "test": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS",
-    "coverage": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters coverage"
+    "coverage": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters coverage,coveralls"
   },
   "preferGlobal": false,
   "bin": {},
@@ -37,6 +37,7 @@
     "karma": "^0.12.31",
     "karma-chrome-launcher": "^0.1.8",
     "karma-coverage": "^0.3.1",
+    "karma-coveralls": "^0.1.5",
     "karma-jasmine": "^0.3.5",
     "karma-junit-reporter": "^0.2.2",
     "karma-mocha": "^0.1.10",
