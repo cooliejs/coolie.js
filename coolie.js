@@ -895,6 +895,7 @@
     window.coolie = coolie;
     window.coolie.modules = modules;
     window.coolie.configs = coolieConfig;
+    window.coolie.each = each;
 
     /**
      * @namespace define

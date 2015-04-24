@@ -11,7 +11,20 @@ describe('main', function () {
 
 
     it('main', function (done) {
-        coolie.callback(function (main) {
+        coolie.callback(function () {
+            expect(coolie.modules).toBeDefined();
+            expect(coolie.configs).toBeDefined();
+
+            var list = [1,2,3];
+
+            coolie.each(list, function (index, value) {
+                expect(value).toBe(list[index]);
+            });
+
+            coolie.each(list, function (index, value) {
+                expect(value).toBe(list[index]);
+            }, true);
+
             done();
         });
     });
@@ -21,6 +34,5 @@ describe('main', function () {
         version: {
             './module5.js': 'abc123'
         }
-    });
-    coolie.use('./main.js');
+    }).use('./main.js');
 });
