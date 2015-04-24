@@ -25,10 +25,10 @@ module.exports = function (config) {
         files: [
             './coolie.js',
             {
-                pattern: './test/modules/**/*.js',
+                pattern: './test/modules/**/*',
                 included: false
             },
-            './test/unit/main.test.js'
+            './test/unit/*.js'
         ],
 
 
@@ -75,7 +75,7 @@ module.exports = function (config) {
 
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['phantomjs'],
+        browsers: ['phantomjs', 'chrome'],
 
 
         // Continuous Integration mode

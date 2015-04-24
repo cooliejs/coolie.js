@@ -9,7 +9,10 @@
 
 describe('main', function () {
     coolie.config({
-        base: './test/modules/'
+        base: './test/modules/',
+        version: {
+            './module5.js': 'abc123'
+        }
     });
 
     it('main', function (done) {

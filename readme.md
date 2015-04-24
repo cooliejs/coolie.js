@@ -1,4 +1,4 @@
-# Coolie@0.7.6 苦力 [![Build Status][travis-img]][travis-url] [![Coverage Status](https://coveralls.io/repos/cloudcome/coolie/badge.svg)](https://coveralls.io/r/cloudcome/coolie)
+# Coolie@0.7.6 苦力 [![Build Status][travis-img]][travis-url] [![Coverage Status][coveralls-img]][coveralls-url]
 
 
 苦力——一个纯净、易用的模块加载器。
@@ -42,3 +42,5 @@ coolie.config({
 
 [travis-img]: https://travis-ci.org/cloudcome/coolie.svg?branch=master
 [travis-url]: https://travis-ci.org/cloudcome/coolie
+[coveralls-img]: https://coveralls.io/repos/cloudcome/coolie/badge.svg
+[coveralls-url]: https://coveralls.io/r/cloudcome/coolie
