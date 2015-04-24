@@ -4,7 +4,7 @@
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
-    "test": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS"
+    "test": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters progress"
   },
   "preferGlobal": false,
   "bin": {},
