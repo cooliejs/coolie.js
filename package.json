@@ -10,11 +10,15 @@
   "bin": {},
   "main": "coolie.js",
   "keywords": [
+    "ydr.me",
     "cloudcome",
     "AMD",
     "CMD",
     "module",
     "coolie",
+    "require.js",
+    "ndoejs",
+    "commonJS",
     "seajs"
   ],
   "author": {
