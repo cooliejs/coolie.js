@@ -8,7 +8,12 @@
 
 
 describe('main', function () {
-
+    coolie.config({
+        base: './test/modules/',
+        version: {
+            './module5.js': 'abc123'
+        }
+    }).use('./main.js');
 
     it('main', function (done) {
         coolie.callback(function () {
@@ -28,11 +33,4 @@ describe('main', function () {
             done();
         });
     });
-
-    coolie.config({
-        base: './test/modules/',
-        version: {
-            './module5.js': 'abc123'
-        }
-    }).use('./main.js');
 });
