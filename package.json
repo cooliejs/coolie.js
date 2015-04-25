@@ -10,6 +10,7 @@
   "bin": {},
   "main": "coolie.js",
   "keywords": [
+    "module loader",
     "ydr.me",
     "cloudcome",
     "AMD",
