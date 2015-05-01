@@ -1,29 +1,21 @@
 <component name="InspectionProjectProfileManager">
-  <profile version="1.0" is_locked="false">
+  <profile version="1.0">
     <option name="myName" value="Project Default" />
-    <option name="myLocal" value="false" />
-    <inspection_tool class="CoffeeScriptInfiniteLoop" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="CoffeeScriptSillyAssignment" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="CoffeeScriptSwitchStatementWithNoDefaultBranch" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="CoffeeScriptUnusedLocalSymbols" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="CucumberExamplesColon" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="CucumberMissedExamples" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="CucumberTableInspection" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="CucumberUndefinedStep" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="DartDeprecatedApiUsage" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
-    <inspection_tool class="DartGlobalInspectionTool" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="DartSdkIsNotConfigured" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="DartUnresolvedImport" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="EjsUnresolvedInclude" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="GherkinBrokenTableInspection" enabled="false" level="ERROR" enabled_by_default="false" />
+    <option name="myLocal" value="true" />
+    <inspection_tool class="IncompatibleMask" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="JSHint" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="LoggerInitializedWithForeignClass" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="loggerClassName" value="org.apache.log4j.Logger,org.slf4j.LoggerFactory,org.apache.commons.logging.LogFactory,java.util.logging.Logger" />
+      <option name="loggerFactoryMethodName" value="getLogger,getLogger,getLog,getLogger" />
+    </inspection_tool>
+    <inspection_tool class="PointlessBitwiseExpression" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="m_ignoreExpressionsContainingConstants" value="false" />
+    </inspection_tool>
+    <inspection_tool class="ShiftOutOfRange" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
       <option name="processCode" value="true" />
       <option name="processLiterals" value="true" />
       <option name="processComments" value="true" />
     </inspection_tool>
-    <inspection_tool class="XsltDeclarations" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="XsltTemplateInvocation" enabled="false" level="ERROR" enabled_by_default="false" />
-    <inspection_tool class="XsltUnusedDeclaration" enabled="false" level="WARNING" enabled_by_default="false" />
-    <inspection_tool class="XsltVariableShadowing" enabled="false" level="WARNING" enabled_by_default="false" />
   </profile>
 </component>
