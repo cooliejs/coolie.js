@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.7.7
+ * @version 0.8.0
  * @license MIT
  */
 
@@ -13,7 +13,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.7.7';
+    var version = '0.8.0';
 
 
     /**
@@ -715,7 +715,7 @@
      * 文本模块
      * @type {RegExp}
      */
-    var REG_TEXT_MODULE = /^(css|html|text)!/i;
+    var REG_TEXT_MODULE = /^(css|html|text|jsx)!/i;
 
 
     /**
