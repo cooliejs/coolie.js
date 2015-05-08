@@ -1,4 +1,6 @@
 define(function (require) {
+    'use strict';
+
     var text1 = require('text!./some.txt?abc');
     var text2 = require('./some.js?abc');
 

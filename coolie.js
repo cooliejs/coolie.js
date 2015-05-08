@@ -185,9 +185,7 @@
             return path;
         }
 
-        return REG_PATH_DIR.test(path)
-            ? (isDir ? path + '/' : path.replace(REG_PATH_DIR, '/'))
-            : path;
+        return REG_PATH_DIR.test(path) ? (isDir ? path + '/' : path.replace(REG_PATH_DIR, '/')) : path;
     };
 
 
@@ -240,7 +238,7 @@
 
         to = './' + to;
 
-        while (mathes = to.match(REG_PATH_RELATIVE)) {
+        while ((mathes = to.match(REG_PATH_RELATIVE))) {
             to = to.replace(REG_PATH_RELATIVE, '');
 
             if (mathes[1].length === 2) {
@@ -465,6 +463,23 @@
         xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
         xhr.open('GET', url2);
         xhr.send(null);
+    };
+
+
+    /**
+     * 包裹图片模块
+     * @param id
+     */
+    var wrapImageModule = function (id) {
+        defineModule({
+            _isAn: mainModule._isAn,
+            id: id,
+            url: buildVersionURL(id),
+            deps: [],
+            factory: function () {
+                return id;
+            }
+        });
     };
 
 
@@ -719,6 +734,13 @@
 
 
     /**
+     * 图片模块
+     * @type {RegExp}
+     */
+    var REG_IMAGE_MODULE = /^(image)!/i;
+
+
+    /**
      * 分析脚本模块
      * @param $interactiveScript {Object} 当前活动的脚本
      */
@@ -773,18 +795,22 @@
         }
 
         var deps2 = [];
+        var isTextModule;
+        var isImageModule;
 
         each(deps, function (index, dep) {
             var depId = dep;
 
             if (mainModule._isAn) {
-                var isTextModule = REG_TEXT_MODULE.test(dep);
+                isTextModule = REG_TEXT_MODULE.test(dep);
+                isImageModule = REG_IMAGE_MODULE.test(dep);
 
                 dep = dep.replace(REG_TEXT_MODULE, '');
+                dep = dep.replace(REG_IMAGE_MODULE, '');
 
                 var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
 
-                depId = cleanURL(currentScriptHost + path, isTextModule);
+                depId = cleanURL(currentScriptHost + path, isTextModule || isImageModule);
             }
 
             if (id === depId) {
@@ -807,6 +833,8 @@
                 if (mainModule._isAn) {
                     if (isTextModule) {
                         ajaxText(depId);
+                    } else if (isImageModule) {
+                        wrapImageModule(depId);
                     } else {
                         loadScript(depId);
                     }
@@ -831,10 +859,12 @@
         module._execute = (function () {
             var require = function (dep) {
                 var isTextModule = REG_TEXT_MODULE.test(dep);
+                var isImageModule = REG_IMAGE_MODULE.test(dep);
 
                 dep = dep.replace(REG_TEXT_MODULE, '');
+                dep = dep.replace(REG_IMAGE_MODULE, '');
 
-                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule) : dep;
+                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule || isImageModule) : dep;
 
                 if (!modules[depId]) {
                     throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;

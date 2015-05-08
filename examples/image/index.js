@@ -6,13 +6,9 @@
 
 
 define(function (require, exports, module) {
-    /**
-     * @module parent/index
-     */
-
     'use strict';
 
-    var abc = require('./abc.js');
+    var arrow = require('image!./arrow.png');
 
-    module.exports = {};
+    console.log(arrow);
 });
