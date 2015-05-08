@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="c4ddbaab-77f1-4b4d-80e7-133434f3a011" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/coolie.js" afterPath="$PROJECT_DIR$/coolie.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/package.json" afterPath="$PROJECT_DIR$/package.json" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="coolie.iws" />
@@ -42,8 +41,8 @@
       <file leaf-file-name="coolie.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/coolie.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.41248098">
-              <caret line="862" column="13" selection-start-line="862" selection-start-column="13" selection-end-line="862" selection-end-column="13" />
+            <state vertical-scroll-proportion="0.3850837">
+              <caret line="924" column="0" selection-start-line="924" selection-start-column="0" selection-end-line="924" selection-end-column="0" />
               <folding>
                 <element signature="n#!!doc" expanded="true" />
               </folding>
@@ -336,12 +335,6 @@
       <workItem from="1427860286746" duration="212000" />
       <workItem from="1427860585231" duration="1737000" />
     </task>
-    <task id="LOCAL-00016" summary="模块缓存。">
-      <created>1427860680451</created>
-      <option name="number" value="00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1427860680451</updated>
-    </task>
     <task id="LOCAL-00017" summary="相对 + 向上路径解析错误">
       <created>1428005367564</created>
       <option name="number" value="00017" />
@@ -630,7 +623,13 @@
       <option name="project" value="LOCAL" />
       <updated>1431066993035</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="0.8.0 + require image">
+      <created>1431067642668</created>
+      <option name="number" value="00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1431067642668</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
@@ -698,7 +697,8 @@
     <MESSAGE value="update test" />
     <MESSAGE value="update readme" />
     <MESSAGE value="0.9.0 + require image" />
-    <option name="LAST_COMMIT_MESSAGE" value="0.9.0 + require image" />
+    <MESSAGE value="0.8.0 + require image" />
+    <option name="LAST_COMMIT_MESSAGE" value="0.8.0 + require image" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -817,8 +817,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/coolie.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.41248098">
-          <caret line="862" column="13" selection-start-line="862" selection-start-column="13" selection-end-line="862" selection-end-column="13" />
+        <state vertical-scroll-proportion="0.3850837">
+          <caret line="924" column="0" selection-start-line="924" selection-start-column="0" selection-end-line="924" selection-end-column="0" />
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>

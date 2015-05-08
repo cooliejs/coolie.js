@@ -718,24 +718,24 @@
 
     /**
      * 解析依赖类型
-     * @param id
+     * @param name
      * @returns {Object}
      */
-    var parseIDType = function (id) {
-        if (REG_TEXT_MODULE.test(id)) {
+    var parseNameType = function (name) {
+        if (REG_TEXT_MODULE.test(name)) {
             return {
-                name: cleanURL(id.replace(REG_TEXT_MODULE, ''), true),
+                name: cleanURL(name.replace(REG_TEXT_MODULE, ''), true),
                 type: 'text'
             };
-        } else if (REG_IMAGE_MODULE.test(id)) {
+        } else if (REG_IMAGE_MODULE.test(name)) {
             return {
-                name: cleanURL(id.replace(REG_IMAGE_MODULE, ''), true),
+                name: cleanURL(name.replace(REG_IMAGE_MODULE, ''), true),
                 type: 'image'
             };
         }
 
         return {
-            name: cleanURL(id),
+            name: cleanURL(name),
             type: 'js'
         };
     };
@@ -774,7 +774,7 @@
                 }
                 // require('abc');
                 else {
-                    dep = parseIDType(matches[1]);
+                    dep = parseNameType(matches[1]);
                 }
 
                 requires.push(dep);
@@ -920,7 +920,7 @@
                         type: type
                     };
                 }else{
-                    dep = parseIDType(id);
+                    dep = parseNameType(id);
                 }
 
                 var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep.id), dep.type !== 'js') : dep.id;
