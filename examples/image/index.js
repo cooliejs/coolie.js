@@ -8,7 +8,9 @@
 define(function (require, exports, module) {
     'use strict';
 
-    var arrow = require('image!./arrow.png');
+    var arrow1 = require('./arrow1.png', 'image');
+    var arrow2 = require('image!./arrow2.png');
 
-    console.log(arrow);
+    console.log(arrow1);
+    console.log(arrow2);
 });

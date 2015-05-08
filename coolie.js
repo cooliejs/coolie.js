@@ -285,13 +285,13 @@
     /**
      * 清理 url
      * @param url {String} 原始 URL
-     * @param [isTextURL=false] 是否为文本 URL
+     * @param [isSingleURL=false] 是否为独立 URL
      * @returns {String}
      */
-    var cleanURL = function (url, isTextURL) {
+    var cleanURL = function (url, isSingleURL) {
         url = url.replace(REG_SUFFIX, '');
 
-        if (isTextURL) {
+        if (isSingleURL) {
             return url;
         }
 
@@ -710,6 +710,45 @@
 
 
     /**
+     * require 类型
+     * @type {RegExp}
+     */
+    var REG_REQUIRE_TYPE = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
+
+
+    var parseIDType = function (id) {
+        if (REG_TEXT_MODULE.test(id)) {
+            return {
+                id: cleanURL(id.replace(REG_TEXT_MODULE, ''), true),
+                type: 'text'
+            };
+        } else if (REG_IMAGE_MODULE.test(id)) {
+            return {
+                id: cleanURL(id.replace(REG_IMAGE_MODULE, ''), true),
+                type: 'image'
+            };
+        }
+
+        return {
+            id: cleanURL(id),
+            type: 'js'
+        };
+    };
+
+
+    /**
+     * 模块类型别名
+     * @type {{image: string, text: string, html: string, css: string}}
+     */
+    var moduleTypeMap = {
+        image: 'image',
+        text: 'text',
+        html: 'text',
+        css: 'text'
+    };
+
+
+    /**
      * 解析代码里的依赖信息
      * @param code {String} 代码
      */
@@ -718,7 +757,22 @@
 
         code.replace(REG_SLASH, '').replace(REG_REQUIRE, function (m, m1, m2) {
             if (m2) {
-                requires.push(m2);
+                var matches = m2.match(REG_REQUIRE_TYPE);
+                var dep;
+
+                // require('abc', 'image');
+                if (matches[2]) {
+                    dep = {
+                        id: cleanURL(matches[1], true),
+                        type: moduleTypeMap[matches[2].toLowerCase()]
+                    };
+                }
+                // require('abc');
+                else {
+                    dep = parseIDType(matches[1]);
+                }
+
+                requires.push(dep);
             }
         });
 
@@ -730,7 +784,7 @@
      * 文本模块
      * @type {RegExp}
      */
-    var REG_TEXT_MODULE = /^(css|html|text|jsx)!/i;
+    var REG_TEXT_MODULE = /^(css|html|text)!/i;
 
 
     /**
@@ -795,48 +849,43 @@
         }
 
         var deps2 = [];
-        var isTextModule;
-        var isImageModule;
 
         each(deps, function (index, dep) {
-            var depId = dep;
-
             if (mainModule._isAn) {
-                isTextModule = REG_TEXT_MODULE.test(dep);
-                isImageModule = REG_IMAGE_MODULE.test(dep);
+                var path = getPathJoin(interactiveScriptPath, dep.id);
 
-                dep = dep.replace(REG_TEXT_MODULE, '');
-                dep = dep.replace(REG_IMAGE_MODULE, '');
-
-                var path = deps[index] = getPathJoin(interactiveScriptPath, dep);
-
-                depId = cleanURL(currentScriptHost + path, isTextModule || isImageModule);
+                dep.id = cleanURL(currentScriptHost + path, dep.type !== 'js');
             }
 
-            if (id === depId) {
-                throw 'required oneself: \n' + id;
+            if (id === dep.id) {
+                throw 'required myself: \n' + id;
             }
 
-            if (modules[depId]) {
-                each(modules[depId].deps, function (index, dep) {
+            if (modules[dep.id]) {
+                each(modules[dep.id].deps, function (index, dep) {
                     if (dep === id) {
-                        throw 'required circle: \n' + depId + '\n' + id;
+                        throw 'required circle: \n' + dep.id + '\n' + id;
                     }
                 });
             }
 
-            if (!dependenceModules[depId]) {
-                deps2.push(depId);
-                dependenceModules[depId] = true;
+            if (!dependenceModules[dep.id]) {
+                deps2.push(dep.id);
+                dependenceModules[dep.id] = true;
                 dependenceLength++;
 
                 if (mainModule._isAn) {
-                    if (isTextModule) {
-                        ajaxText(depId);
-                    } else if (isImageModule) {
-                        wrapImageModule(depId);
-                    } else {
-                        loadScript(depId);
+                    switch (dep.type) {
+                        case 'text':
+                            ajaxText(dep.id);
+                            break;
+
+                        case 'image':
+                            wrapImageModule(dep.id);
+                            break;
+
+                        default :
+                            loadScript(dep.id);
                     }
                 } else {
                     analyScriptModule($lastScript);
@@ -857,14 +906,19 @@
     var defineModule = function (module) {
         module.exports = {};
         module._execute = (function () {
-            var require = function (dep) {
-                var isTextModule = REG_TEXT_MODULE.test(dep);
-                var isImageModule = REG_IMAGE_MODULE.test(dep);
+            var require = function (id, type) {
+                var dep;
 
-                dep = dep.replace(REG_TEXT_MODULE, '');
-                dep = dep.replace(REG_IMAGE_MODULE, '');
+                if(type){
+                    dep = {
+                        id: id,
+                        type: type
+                    };
+                }else{
+                    dep = parseIDType(id);
+                }
 
-                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep), isTextModule || isImageModule) : dep;
+                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep.id), dep.type !== 'js') : dep.id;
 
                 if (!modules[depId]) {
                     throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;
