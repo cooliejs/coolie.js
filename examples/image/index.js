@@ -10,7 +10,8 @@ define(function (require, exports, module) {
 
     var arrow1 = require('./arrow1.png', 'image');
     var arrow2 = require('image!./arrow2.png');
+    var img1 = '<img src="'+arrow1+'">';
+    var img2 = '<img src="'+arrow2+'">';
 
-    console.log(arrow1);
-    console.log(arrow2);
+    document.getElementById('body').innerHTML = img1 + img2;
 });

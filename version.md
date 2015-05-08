@@ -1,6 +1,7 @@
 # 0.8.0 2015年05月08日
 - 支持异步加载图片了 `require('image!./image.png')`
 - 推荐新写法`require('./image.png', 'image')`，后续版本会废除旧写法
+- 修正一个 reuqire 的 bug
 
 
 # 0.7.7 2015年04月23日

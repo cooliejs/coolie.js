@@ -1,10 +1,8 @@
-define('0', ['1'], function (r) {
-    var name = r('1');
-
-    alert(name);
+define('0', ['1', '2'], function (r) {
+    alert(r('1') + r('2'));
 });
 
-define('1', ['2'], function (r, e, m) {
+define('1', [], function (r, e, m) {
     m.exports = '1';
 });
 

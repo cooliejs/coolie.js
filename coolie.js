@@ -856,6 +856,13 @@
         var deps2 = [];
 
         each(deps, function (index, dep) {
+            // ['1', '2']
+            if (isString(dep)) {
+                dep = {
+                    id: dep
+                };
+            }
+
             if (mainModule._isAn) {
                 var path = getPathJoin(interactiveScriptPath, dep.name);
 
@@ -892,14 +899,16 @@
                         default :
                             loadScript(dep.id);
                     }
-                } else {
-                    analyScriptModule($lastScript);
                 }
             }
         });
 
         module.deps = deps2;
         defineModule(module);
+
+        if (defineList.length) {
+            analyScriptModule($lastScript);
+        }
     };
 
 
@@ -914,22 +923,24 @@
             var require = function (id, type) {
                 var dep;
 
-                if(type){
-                    dep = {
-                        name: id,
-                        type: type
-                    };
-                }else{
-                    dep = parseNameType(id);
+                if (mainModule._isAn) {
+                    if (type) {
+                        dep = {
+                            name: id,
+                            type: type
+                        };
+                    } else {
+                        dep = parseNameType(id);
+                    }
+
+                    id = currentScriptHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js');
                 }
 
-                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js') : dep.name;
-
-                if (!modules[depId]) {
-                    throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;
+                if (!modules[id]) {
+                    throw 'can not found module \n' + id + '\nbut required in\n' + module.id;
                 }
 
-                return modules[depId]._execute();
+                return modules[id]._execute();
             };
 
             return function () {
@@ -949,7 +960,7 @@
         defineLength++;
         console.log('module ' + module.id);
 
-        if (defineLength === dependenceLength) {
+        if (!defineList.length && defineLength === dependenceLength) {
             console.log('past ' + ( now() - timeNow) + 'ms');
             console.groupEnd('coolie modules');
             mainModule._execute();

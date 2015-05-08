@@ -1,3 +1,3 @@
 coolie.config({
-    base: './examples'
+    base: './examples/image/'
 }).use();
