@@ -1,4 +1,6 @@
-# Coolie@0.8.1 苦力 [![Build Status][travis-img]][travis-url] [![Coverage Status][coveralls-img]][coveralls-url]
+# coolie.js@0.8.1 苦力 
+[![Build Status][travis-img]][travis-url] 
+[![Coverage Status][coveralls-img]][coveralls-url]
 
 
 苦力——一个纯净、易用的模块加载器。
