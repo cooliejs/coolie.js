@@ -13,7 +13,8 @@ require('some.png', 'image')
 ```
 
 
-入门及文档：<http://frontenddev.org/column/introduce-coolie/>
+- 入门及文档：<http://frontenddev.org/column/introduce-coolie/>
+- 构建工具：<https://www.npmjs.com/package/coolie>
 
 
 
