@@ -716,21 +716,26 @@
     var REG_REQUIRE_TYPE = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
 
 
+    /**
+     * 解析依赖类型
+     * @param id
+     * @returns {Object}
+     */
     var parseIDType = function (id) {
         if (REG_TEXT_MODULE.test(id)) {
             return {
-                id: cleanURL(id.replace(REG_TEXT_MODULE, ''), true),
+                name: cleanURL(id.replace(REG_TEXT_MODULE, ''), true),
                 type: 'text'
             };
         } else if (REG_IMAGE_MODULE.test(id)) {
             return {
-                id: cleanURL(id.replace(REG_IMAGE_MODULE, ''), true),
+                name: cleanURL(id.replace(REG_IMAGE_MODULE, ''), true),
                 type: 'image'
             };
         }
 
         return {
-            id: cleanURL(id),
+            name: cleanURL(id),
             type: 'js'
         };
     };
@@ -755,15 +760,15 @@
     var parseDependencies = function (code) {
         var requires = [];
 
-        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function (m, m1, m2) {
-            if (m2) {
-                var matches = m2.match(REG_REQUIRE_TYPE);
+        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
+            if ($2) {
+                var matches = $2.match(REG_REQUIRE_TYPE);
                 var dep;
 
                 // require('abc', 'image');
                 if (matches[2]) {
                     dep = {
-                        id: cleanURL(matches[1], true),
+                        name: cleanURL(matches[1], true),
                         type: moduleTypeMap[matches[2].toLowerCase()]
                     };
                 }
@@ -852,7 +857,7 @@
 
         each(deps, function (index, dep) {
             if (mainModule._isAn) {
-                var path = getPathJoin(interactiveScriptPath, dep.id);
+                var path = getPathJoin(interactiveScriptPath, dep.name);
 
                 dep.id = cleanURL(currentScriptHost + path, dep.type !== 'js');
             }
