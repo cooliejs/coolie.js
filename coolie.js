@@ -151,6 +151,10 @@
 
         each(arr, function (index, key) {
             ret[key] = function () {
+                if (!coolieConfig.debug) {
+                    return;
+                }
+
                 if (hasConsole && hasConsole[key]) {
                     try {
                         hasConsole[key].apply(hasConsole, arguments);
@@ -641,9 +645,7 @@
             dependenceModules[mainModuleId] = mainModule;
         }
 
-        if(config.debug===false){
-            config.debug = true;
-        }
+        config.debug = config.debug !== false;
 
         return coolie;
     };
