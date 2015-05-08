@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.8.1
+ * @version 0.8.2
  * @license MIT
  */
 
@@ -211,7 +211,7 @@
      * 路径结尾
      * @type {RegExp}
      */
-    var REG_PATH_END = /\/[^/]+?\/$/;
+    var REG_PATH_END = /(\/[^/]+?)?\/$/;
 
 
     /**
