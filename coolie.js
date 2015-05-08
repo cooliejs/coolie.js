@@ -916,14 +916,14 @@
 
                 if(type){
                     dep = {
-                        id: id,
+                        name: id,
                         type: type
                     };
                 }else{
                     dep = parseNameType(id);
                 }
 
-                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep.id), dep.type !== 'js') : dep.id;
+                var depId = mainModule._isAn ? currentScriptHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js') : dep.name;
 
                 if (!modules[depId]) {
                     throw 'can not found module \n' + depId + '\nbut required in\n' + module.id;
