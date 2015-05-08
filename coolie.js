@@ -641,6 +641,10 @@
             dependenceModules[mainModuleId] = mainModule;
         }
 
+        if(config.debug===false){
+            config.debug = true;
+        }
+
         return coolie;
     };
 
