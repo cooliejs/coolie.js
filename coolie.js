@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.8.0
+ * @version 0.8.1
  * @license MIT
  */
 
@@ -276,7 +276,7 @@
      * host
      * @type {RegExp}
      */
-    var REG_HOST = /https?:\/\/[^/]*/;
+    var REG_HOST = /^(ftp|file|https?):\/\/[^\/]*/;
 
 
     /**
