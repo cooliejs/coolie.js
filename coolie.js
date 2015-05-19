@@ -512,7 +512,7 @@
      * @returns {*}
      */
     var getHost = function (url) {
-        return url.match(REG_HOST)[0];
+        return (url.match(REG_HOST) || [])[0];
     };
 
 
@@ -576,7 +576,18 @@
      * coolie-config.js host
      * @type {String}
      */
-    var coolieConfigJSHost = getHost(coolieConfigJSURL);
+    var coolieConfigJSHost = (function () {
+        var host = getHost(coolieConfigJSURL);
+
+        if (host) {
+            return host;
+        }
+
+        host = coolieJSHost;
+        coolieConfigJSURL = host + coolieConfigJSURL;
+
+        return host;
+    }());
 
 
     /**
