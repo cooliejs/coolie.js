@@ -20,16 +20,12 @@ require('some.png', 'image')
 
 # 接口
 ## `coolie.config.base`
-模块的参考路径。该值参考于`coolie.js`。
+模块的参考路径。该值参考于`coolie-config.js`。
 
 
 ## `coolie.config.version`
 - `String` 全部模块的版本号，不建议手动写。
 - `Object` 模块细粒度版本号，构建之后会自动生成。
-
-
-## `coolie.config.host`
-模块加载所在的 host（如`http://s.ydr.me`），默认为模块加载器脚本所在的 host。
 
 
 ## `coolie.use`

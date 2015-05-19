@@ -1,8 +1,16 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.8.3
+ * @version 0.9.0
  * @license MIT
+ */
+
+
+/**
+ * 路径关系
+ * coolie.js => page
+ * coolie-config.js => coolie.js
+ * base => coolie-config.js
  */
 
 
@@ -197,7 +205,7 @@
      * 判断是否为绝对路径
      * @type {RegExp}
      */
-    var REG_PATH_ABSOLUTE = /^\//;
+    var REG_PATH_ABSOLUTE = /^\/|((http|ftp)s?:\/\/)/;
 
 
     /**
@@ -499,65 +507,83 @@
 
 
     /**
-     * 当前脚本的绝对路径
+     * 获取 URL 的 host
+     * @param url
+     * @returns {*}
+     */
+    var getHost = function (url) {
+        return url.match(REG_HOST)[0];
+    };
+
+
+    /**
+     * coolie.js 绝对路径
      * @type {String}
      */
-    var currentScriptAbsolutelyPath = getScriptAbsolutelyPath(currentScript);
+    var coolieJSAbsolutelyPath = getScriptAbsolutelyPath(currentScript);
 
 
     /**
-     * 当前脚本所在运行的 host
-     */
-    var currentScriptHost = currentScriptAbsolutelyPath.match(REG_HOST)[0];
-
-
-    /**
-     * 当前脚本的 data-config
-     * @type {string}
-     */
-    var currentScriptDataConfig = getNodeDataset(currentScript, 'config');
-
-
-    /**
-     * 当前脚本的 data-main
-     * @type {string}
-     */
-    var currentScriptDataMain = getNodeDataset(currentScript, 'main');
-
-
-    /**
-     * 当前运行脚本的绝对目录
+     * coolie.js host
      * @type {String}
      */
-    var currentScriptAbsolutelyDir = getPathDir(currentScriptAbsolutelyPath);
+    var coolieJSHost = getHost(coolieJSAbsolutelyPath);
 
 
     /**
-     * 当前运行脚本配置文件路径
+     * coolie.js data-config
      * @type {string}
      */
-    var currentScriptConfigPath = getPathJoin(currentScriptAbsolutelyDir, currentScriptDataConfig);
+    var coolieJSDataConfig = getNodeDataset(currentScript, 'config');
 
 
     /**
-     * 当前运行脚本配置文件 URL
+     * coolie.js data-main
      * @type {string}
      */
-    var currentScriptConfigURL = currentScriptHost + currentScriptConfigPath;
+    var coolieJSDataMain = getNodeDataset(currentScript, 'main');
 
 
     /**
-     * coolie
-     * @type {Object}
+     * coolie.js 绝对目录
+     * @type {String}
      */
-    var coolie = {};
+    var coolieJSAbsolutelyDir = getPathDir(coolieJSAbsolutelyPath);
 
 
     /**
-     * coolie 版本号
+     * coolie-config.js 路径
      * @type {string}
      */
-    coolie.version = version;
+    var coolieConfigJSPath = getPathJoin(coolieJSAbsolutelyDir, coolieJSDataConfig);
+
+
+    /**
+     * coolie-config.js 路径
+     * @type {string}
+     */
+    var coolieConfigJSDir = getPathDir(coolieConfigJSPath);
+
+
+    /**
+     * coolie-config.js URL
+     * @type {string}
+     */
+    var coolieConfigJSURL = getPathJoin(coolieJSHost, coolieConfigJSPath);
+
+
+    /**
+     * coolie-config.js host
+     * @type {String}
+     */
+    var coolieConfigJSHost = getHost(coolieConfigJSURL);
+
+
+    /**
+     * module module base host
+     * @type {String}
+     */
+    var mainModuleBaseHost = coolieConfigJSHost;
 
 
     /**
@@ -574,6 +600,18 @@
     var mainModule = {};
 
 
+    /**
+     * coolie
+     * @type {Object}
+     */
+    var coolie = {};
+
+
+    /**
+     * coolie 版本号
+     * @type {string}
+     */
+    coolie.version = version;
     /**
      * 是否已经执行了入口模块
      * @type {boolean}
@@ -622,24 +660,20 @@
      */
     coolie.config = function (config) {
         coolieConfig = config;
-        mainModuleBaseDir = getPathJoin(currentScriptAbsolutelyDir, getPathDir(coolieConfig.base, true));
+        mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
         coolieConfig.version = coolieConfig.version || {};
-
-        if (coolieConfig.host) {
-            currentScriptHost = coolieConfig.host;
-        }
 
         if (isString(coolieConfig.version)) {
             coolieConfig._v = coolieConfig.version;
         } else {
             coolieConfig._v = {};
             each(coolieConfig.version, function (path, version) {
-                coolieConfig._v[currentScriptHost + getPathJoin(mainModuleBaseDir, path)] = version;
+                coolieConfig._v[mainModuleBaseHost + getPathJoin(mainModuleBaseDir, path)] = version;
             });
         }
 
-        if (currentScriptDataMain) {
-            var mainModuleId = mainModule.url = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, currentScriptDataMain));
+        if (coolieJSDataMain) {
+            var mainModuleId = mainModule.url = cleanURL(mainModuleBaseHost + getPathJoin(mainModuleBaseDir, coolieJSDataMain));
 
             mainModule._defined = false;
             dependenceModules[mainModuleId] = mainModule;
@@ -665,7 +699,7 @@
         timeNow = now();
 
         if (main) {
-            mainModule.url = cleanURL(currentScriptHost + getPathJoin(mainModuleBaseDir, main));
+            mainModule.url = cleanURL(coolieJSHost + getPathJoin(mainModuleBaseDir, main));
             dependenceModules[mainModule.url] = mainModule;
         }
 
@@ -872,7 +906,7 @@
             if (mainModule._isAn) {
                 var path = getPathJoin(interactiveScriptPath, dep.name);
 
-                dep.id = cleanURL(currentScriptHost + path, dep.type !== 'js');
+                dep.id = cleanURL(coolieConfigJSHost + path, dep.type !== 'js');
             }
 
             if (id === dep.id) {
@@ -939,7 +973,7 @@
                         dep = parseNameType(id);
                     }
 
-                    id = currentScriptHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js');
+                    id = coolieConfigJSHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js');
                 }
 
                 if (!modules[id]) {
@@ -989,8 +1023,8 @@
 
 
     // 加载配置脚本
-    if (currentScriptDataConfig) {
-        loadScript(currentScriptConfigURL, true);
+    if (coolieJSDataConfig) {
+        loadScript(coolieConfigJSURL, true);
     }
 
 
