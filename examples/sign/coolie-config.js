@@ -1,5 +1,5 @@
 coolie.config({
-    base: './examples/',
+    base: '../',
     version: {
         './sign/index.js': 'abc123'
     }
