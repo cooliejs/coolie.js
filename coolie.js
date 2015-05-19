@@ -21,7 +21,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.8.3';
+    var version = '0.9.0';
 
 
     /**
