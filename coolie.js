@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.8.2
+ * @version 0.8.3
  * @license MIT
  */
 
@@ -990,7 +990,7 @@
 
     // 加载配置脚本
     if (currentScriptDataConfig) {
-        loadScript(currentScriptConfigURL + '?' + now(), true);
+        loadScript(currentScriptConfigURL, true);
     }
 
 
