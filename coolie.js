@@ -920,7 +920,7 @@
             if (modules[dep.id]) {
                 each(modules[dep.id].deps, function (index, dep) {
                     if (dep === id) {
-                        throw 'required circle: \n' + dep.id + '\n' + id;
+                        throw 'required circle: \n' + dep + '\n' + id;
                     }
                 });
             }

@@ -1,3 +1,3 @@
 coolie.config({
-    base: './examples/circle/'
+    base: './'
 }).use();

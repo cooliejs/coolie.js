@@ -1,4 +1,4 @@
 coolie.config({
-    base: './examples/image/',
+    base: './',
     debug: false
 }).use();
