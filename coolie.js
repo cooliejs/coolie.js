@@ -185,6 +185,20 @@
 
 
     /**
+     * host
+     * @type {RegExp}
+     */
+    var REG_HOST = /^((ftp|file|https?):)?\/\/[^\/]*/;
+
+
+    /**
+     * 忽略协议
+     * @type {RegExp}
+     */
+    var REG_IGNORE_PROTOCOL = /^\/\//;
+
+
+    /**
      * 获取路径所在的目录
      * @param path {String} 路径或目录
      * @param [isDir=false] {Boolean} 本身是目录
@@ -278,13 +292,6 @@
      * @type {RegExp}
      */
     var REG_SUFFIX = /[\?#].*?$/;
-
-
-    /**
-     * host
-     * @type {RegExp}
-     */
-    var REG_HOST = /^(ftp|file|https?):\/\/[^\/]*/;
 
 
     /**
@@ -519,6 +526,10 @@
      * @returns {*}
      */
     var getHost = function (url) {
+        if (REG_IGNORE_PROTOCOL.test(url)) {
+            url = location.protocol + url;
+        }
+
         return (url.match(REG_HOST) || [])[0];
     };
 
