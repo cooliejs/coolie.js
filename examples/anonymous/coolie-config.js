@@ -1,5 +1,5 @@
 coolie.config({
-    base: './',
+    base: '../',
     version: {
         './text/some.txt': '123',
         'libs/c.js': 'abc123',

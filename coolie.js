@@ -580,17 +580,10 @@
 
 
     /**
-     * module module base host
+     * 入口模块的基准路径
      * @type {String}
      */
-    var mainModuleBaseHost = coolieConfigJSHost;
-
-
-    /**
-     * 入口模块的基准路径
-     * @type {null|String}
-     */
-    var mainModuleBaseDir = null;
+    var mainModuleBaseDir = coolieConfigJSDir;
 
 
     /**
@@ -668,12 +661,12 @@
         } else {
             coolieConfig._v = {};
             each(coolieConfig.version, function (path, version) {
-                coolieConfig._v[mainModuleBaseHost + getPathJoin(mainModuleBaseDir, path)] = version;
+                coolieConfig._v[coolieConfigJSHost + getPathJoin(mainModuleBaseDir, path)] = version;
             });
         }
 
         if (coolieJSDataMain) {
-            var mainModuleId = mainModule.url = cleanURL(mainModuleBaseHost + getPathJoin(mainModuleBaseDir, coolieJSDataMain));
+            var mainModuleId = mainModule.url = cleanURL(coolieConfigJSHost + getPathJoin(mainModuleBaseDir, coolieJSDataMain));
 
             mainModule._defined = false;
             dependenceModules[mainModuleId] = mainModule;
@@ -699,7 +692,7 @@
         timeNow = now();
 
         if (main) {
-            mainModule.url = cleanURL(coolieJSHost + getPathJoin(mainModuleBaseDir, main));
+            mainModule.url = coolieConfigJSHost + getPathJoin(mainModuleBaseDir, main);
             dependenceModules[mainModule.url] = mainModule;
         }
 
