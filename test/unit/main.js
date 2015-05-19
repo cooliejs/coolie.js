@@ -9,26 +9,15 @@
 
 describe('main', function () {
     coolie.config({
-        base: './test/modules/',
+        base: '../modules/',
         version: {
             './module5.js': 'abc123'
         }
     }).use('./main.js');
 
     it('main', function (done) {
-        coolie.callback(function () {
-            expect(coolie.modules).toBeDefined();
-            expect(coolie.configs).toBeDefined();
-
-            var list = [1,2,3];
-
-            coolie.each(list, function (index, value) {
-                expect(value).toBe(list[index]);
-            });
-
-            coolie.each(list, function (index, value) {
-                expect(value).toBe(list[index]);
-            }, true);
+        coolie.callback(function (ret) {
+            expect(ret).toEqual(123 + 456);
 
             done();
         });

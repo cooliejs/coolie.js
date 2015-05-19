@@ -496,14 +496,21 @@
 
 
     /**
-     * 当前运行的脚本
-     * @type {Node}
+     * 获取当前脚本
+     * @returns {*}
      */
-    var currentScript = (function () {
+    var getCurrentScript = function () {
         var scripts = getNodeList('script');
 
         return scripts[scripts.length - 1];
-    })();
+    };
+
+
+    /**
+     * 当前运行的脚本
+     * @type {Node}
+     */
+    var currentScript = getCurrentScript();
 
 
     /**
@@ -520,14 +527,14 @@
      * coolie.js 绝对路径
      * @type {String}
      */
-    var coolieJSAbsolutelyPath = getScriptAbsolutelyPath(currentScript);
+    var coolieJSURL = getScriptAbsolutelyPath(currentScript);
 
 
     /**
      * coolie.js host
      * @type {String}
      */
-    var coolieJSHost = getHost(coolieJSAbsolutelyPath);
+    var coolieJSHost = getHost(coolieJSURL);
 
 
     /**
@@ -548,28 +555,28 @@
      * coolie.js 绝对目录
      * @type {String}
      */
-    var coolieJSAbsolutelyDir = getPathDir(coolieJSAbsolutelyPath);
+    var coolieJSAbsolutelyDir = getPathDir(coolieJSURL);
 
 
     /**
      * coolie-config.js 路径
      * @type {string}
      */
-    var coolieConfigJSPath = getPathJoin(coolieJSAbsolutelyDir, coolieJSDataConfig);
+    var coolieConfigJSPath = coolieJSDataConfig ? getPathJoin(coolieJSAbsolutelyDir, coolieJSDataConfig) : null;
 
 
     /**
      * coolie-config.js 路径
      * @type {string}
      */
-    var coolieConfigJSDir = getPathDir(coolieConfigJSPath);
+    var coolieConfigJSDir = coolieJSDataConfig ? getPathDir(coolieConfigJSPath) : null;
 
 
     /**
      * coolie-config.js URL
      * @type {string}
      */
-    var coolieConfigJSURL = getPathJoin(coolieJSHost, coolieConfigJSPath);
+    var coolieConfigJSURL = coolieJSDataConfig ? getPathJoin(coolieJSHost, coolieConfigJSPath) : null;
 
 
     /**
@@ -577,6 +584,10 @@
      * @type {String}
      */
     var coolieConfigJSHost = (function () {
+        if (!coolieJSDataConfig) {
+            return null;
+        }
+
         var host = getHost(coolieConfigJSURL);
 
         if (host) {
@@ -663,6 +674,15 @@
      * @param config
      */
     coolie.config = function (config) {
+        var currentScript = getCurrentScript();
+        var coolieConfigJSURL = getScriptAbsolutelyPath(currentScript);
+
+        // 单独的 coolie-config.js
+        if (coolieJSURL !== coolieConfigJSURL) {
+            mainModuleBaseDir = coolieConfigJSDir = getPathDir(coolieConfigJSURL);
+            coolieConfigJSHost = getHost(coolieConfigJSURL);
+        }
+
         coolieConfig = config;
         mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
         coolieConfig.version = coolieConfig.version || {};
