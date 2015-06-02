@@ -703,7 +703,7 @@
         if (coolieJSDataMain) {
             var mainModuleId = mainModule.url = cleanURL(coolieConfigJSHost + getPathJoin(mainModuleBaseDir, coolieJSDataMain));
 
-            mainModule._defined = false;
+            mainModule._dfn = false;
             dependenceModules[mainModuleId] = mainModule;
         }
 
@@ -898,7 +898,7 @@
             id = null;
         }
 
-        id = mainModule._defined && mainModule._isAn ? interactiveScriptId : id || interactiveScriptId;
+        id = mainModule._dfn && mainModule._isAn ? interactiveScriptId : id || interactiveScriptId;
 
         var module = {
             _isAn: isAn,
@@ -918,7 +918,7 @@
 
             module._isMain = true;
             mainModule = module;
-            mainModule._defined = true;
+            mainModule._dfn = true;
         }
 
         var deps2 = [];
