@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.10.0
+ * @version 0.11.0
  * @license MIT
  */
 
@@ -14,14 +14,14 @@
  */
 
 
-(function () {
+(function (win) {
     'use strict';
 
     /**
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.10.0';
+    var version = '0.11.0';
 
 
     /**
@@ -44,13 +44,6 @@
      * @type {Number}
      */
     var timeNow = 0;
-
-
-    /**
-     * window
-     * @type {Window}
-     */
-    var win = window;
 
 
     /**
@@ -714,7 +707,7 @@
             dependenceModules[mainModuleId] = mainModule;
         }
 
-        config.debug = config.debug !== false;
+        win.DEBUG = config.debug = config.debug !== false;
 
         return coolie;
     };
@@ -1025,7 +1018,7 @@
                     return modules[id].exports;
                 } else {
                     module._executed = true;
-                    modules[id].exports = module.factory.call(window, require, module.exports, module) || module.exports;
+                    modules[id].exports = module.factory.call(win, require, module.exports, module) || module.exports;
 
                     return modules[id].exports;
                 }
@@ -1067,16 +1060,16 @@
      * @namespace coolie
      * @type {Object}
      */
-    window.coolie = coolie;
-    window.coolie.modules = modules;
-    window.coolie.configs = coolieConfig;
-    window.coolie.each = each;
+    win.coolie = coolie;
+    win.coolie.modules = modules;
+    win.coolie.configs = coolieConfig;
+    win.coolie.each = each;
 
     /**
      * @namespace define
      * @type {define}
      */
-    window.define = define;
-    window.define.amd = {};
-    window.define.cmd = {};
-})();
+    win.define = define;
+    win.define.amd = {};
+    win.define.cmd = {};
+}(this));
