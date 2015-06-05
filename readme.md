@@ -6,14 +6,15 @@
 苦力——一个纯净、易用的模块加载器。
 
 ```
-require('some.js')
-require('some.css', 'css')
-require('some.html', 'html')
-require('some.png', 'image')
+require('some.js');
+require('some.css', 'css');
+require('some.html', 'html');
+require('some.png', 'image');
+require('some.json', 'json');
 ```
 
 
-- 入门及文档：<http://frontenddev.org/column/introduce-coolie/>
+- coolie book：<http://coolie.ydr.me/>
 - 构建工具：<https://www.npmjs.com/package/coolie>
 
 
