@@ -839,9 +839,10 @@
         code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
             if ($2) {
                 var matches = $2.match(REG_REQUIRE_TYPE);
+                // require('1.js', 'js');
                 var dep = {
-                    name: cleanURL(matches[1], true),
-                    type: moduleTypeMap[matches[2].toLowerCase()]
+                    name: cleanURL(matches[1], !!matches[2]),
+                    type: matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js'
                 };
 
                 requires.push(dep);
@@ -985,7 +986,7 @@
                 if (mainModule._isAn) {
                     dep = {
                         name: id,
-                        type: type
+                        type: type || 'js'
                     };
 
                     id = coolieConfigJSHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js');
