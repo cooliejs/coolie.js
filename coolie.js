@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.11.1
+ * @version 0.12.0
  * @license MIT
  */
 
@@ -21,7 +21,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.11.1';
+    var version = '0.12.0';
 
 
     /**
@@ -446,10 +446,36 @@
 
 
     /**
+     * 解析字符串为 JSON 对象
+     * @param url {String} url 地址
+     * @param text {String} JSON 字符串
+     * @returns {{}}
+     */
+    var parseJSON = function (url, text) {
+        var json = {};
+
+        try {
+            json = JSON.parse(text);
+        } catch (err1) {
+            try {
+                /* jshint evil: true */
+                var fn = new Function('', 'return ' + text);
+                json = fn();
+            } catch (err2) {
+                throw 'parse json error ' + url;
+            }
+        }
+
+        return json;
+    };
+
+
+    /**
      * 加载文本模块
      * @param url {String} 文本 URL
+     * @param type {String} 文本类型
      */
-    var ajaxText = function (url) {
+    var ajaxText = function (url, type) {
         var url2 = buildVersionURL(url);
         var xhr = new XMLHttpRequest();
         var hasComplete;
@@ -463,7 +489,13 @@
                         url: url2,
                         deps: [],
                         factory: function () {
-                            return xhr.responseText;
+                            var code = xhr.responseText;
+
+                            if (code && type === 'json') {
+                                code = parseJSON(url, code);
+                            }
+
+                            return code;
                         }
                     });
                 } else {
@@ -681,11 +713,11 @@
         var currentScript = getCurrentScript();
         var coolieConfigJSURL = getScriptAbsolutelyPath(currentScript);
 
-        //// 单独的 coolie-config.js
-        //if (coolieJSURL !== coolieConfigJSURL) {
-        //    mainModuleBaseDir = coolieConfigJSDir = getPathDir(coolieConfigJSURL);
-        //    coolieConfigJSHost = getHost(coolieConfigJSURL);
-        //}
+        // 单独的 coolie-config.js
+        if (coolieJSURL !== coolieConfigJSURL) {
+            mainModuleBaseDir = coolieConfigJSDir = getPathDir(coolieConfigJSURL);
+            coolieConfigJSHost = getHost(coolieConfigJSURL);
+        }
 
         coolieConfig = config;
         mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
@@ -785,31 +817,6 @@
 
 
     /**
-     * 解析依赖类型
-     * @param name
-     * @returns {Object}
-     */
-    var parseNameType = function (name) {
-        if (REG_TEXT_MODULE.test(name)) {
-            return {
-                name: cleanURL(name.replace(REG_TEXT_MODULE, ''), true),
-                type: 'text'
-            };
-        } else if (REG_IMAGE_MODULE.test(name)) {
-            return {
-                name: cleanURL(name.replace(REG_IMAGE_MODULE, ''), true),
-                type: 'image'
-            };
-        }
-
-        return {
-            name: cleanURL(name),
-            type: 'js'
-        };
-    };
-
-
-    /**
      * 模块类型别名
      * @type {{image: string, text: string, html: string, css: string}}
      */
@@ -817,7 +824,7 @@
         image: 'image',
         text: 'text',
         html: 'text',
-        json: 'text',
+        json: 'json',
         css: 'text'
     };
 
@@ -832,19 +839,10 @@
         code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
             if ($2) {
                 var matches = $2.match(REG_REQUIRE_TYPE);
-                var dep;
-
-                // require('abc', 'image');
-                if (matches[2]) {
-                    dep = {
-                        name: cleanURL(matches[1], true),
-                        type: moduleTypeMap[matches[2].toLowerCase()]
-                    };
-                }
-                // require('abc');
-                else {
-                    dep = parseNameType(matches[1]);
-                }
+                var dep = {
+                    name: cleanURL(matches[1], true),
+                    type: moduleTypeMap[matches[2].toLowerCase()]
+                };
 
                 requires.push(dep);
             }
@@ -855,26 +853,17 @@
 
 
     /**
-     * 文本模块
-     * @type {RegExp}
-     */
-    var REG_TEXT_MODULE = /^(css|html|json|text)!/i;
-
-
-    /**
-     * 图片模块
-     * @type {RegExp}
-     */
-    var REG_IMAGE_MODULE = /^(image)!/i;
-
-
-    /**
      * 分析脚本模块
      * @param $interactiveScript {Object} 当前活动的脚本
      */
     var analyScriptModule = function ($interactiveScript) {
         var isAn = true;
         var args = defineList.shift();
+
+        if (!args) {
+            throw 'can not parse module ' + ($lastScript ? $lastScript.src : 'undefined');
+        }
+
         var id = args[0];
         var deps = args[1];
         var factory = args[2];
@@ -958,7 +947,8 @@
                 if (mainModule._isAn) {
                     switch (dep.type) {
                         case 'text':
-                            ajaxText(dep.id);
+                        case 'json':
+                            ajaxText(dep.id, dep.type);
                             break;
 
                         case 'image':
@@ -993,14 +983,10 @@
                 var dep;
 
                 if (mainModule._isAn) {
-                    if (type) {
-                        dep = {
-                            name: id,
-                            type: type
-                        };
-                    } else {
-                        dep = parseNameType(id);
-                    }
+                    dep = {
+                        name: id,
+                        type: type
+                    };
 
                     id = coolieConfigJSHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js');
                 }

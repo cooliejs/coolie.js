@@ -4,10 +4,11 @@
  * @create 2014-11-17 15:04
  */
 
-'use strict';
 
 
 describe('main', function () {
+    'use strict';
+
     coolie.config({
         base: '../modules/',
         version: {
