@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.12.0
+ * @version 0.13.0
  * @license MIT
  */
 
@@ -21,7 +21,7 @@
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.12.0';
+    var version = '0.13.0';
 
 
     /**
@@ -710,13 +710,10 @@
      * @param config
      */
     coolie.config = function (config) {
-        var currentScript = getCurrentScript();
-        var coolieConfigJSURL = getScriptAbsolutelyPath(currentScript);
-
-        // 单独的 coolie-config.js
-        if (coolieJSURL !== coolieConfigJSURL) {
-            mainModuleBaseDir = coolieConfigJSDir = getPathDir(coolieConfigJSURL);
-            coolieConfigJSHost = getHost(coolieConfigJSURL);
+        // 不相对于 coolie-config.js 而是 coolie.js
+        if (config.relative === false) {
+            coolieConfigJSDir = getPathDir(coolieJSURL);
+            coolieConfigJSHost = getHost(coolieJSURL);
         }
 
         coolieConfig = config;

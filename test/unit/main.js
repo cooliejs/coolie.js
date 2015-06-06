@@ -10,7 +10,8 @@ describe('main', function () {
     'use strict';
 
     coolie.config({
-        base: '../modules/',
+        relative: false,
+        base: './test/modules/',
         version: {
             './module5.js': 'abc123'
         }
