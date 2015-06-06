@@ -663,6 +663,8 @@
      * @type {string}
      */
     coolie.version = version;
+
+
     /**
      * 是否已经执行了入口模块
      * @type {boolean}
@@ -1046,14 +1048,63 @@
      * @type {Object}
      */
     win.coolie = coolie;
+
+
+    /**
+     * 当前使用的模块
+     * @name coolie
+     * @property getHost {Function}
+     */
     win.coolie.modules = modules;
-    win.coolie.configs = coolieConfig;
+
+
+    /**
+     * 数组、对象遍历
+     * @name coolie
+     * @property getHost {Function}
+     */
     win.coolie.each = each;
+
+
+    /**
+     * 获得 host
+     * @name coolie
+     * @property getHost {Function}
+     */
     win.coolie.getHost = getHost;
+
+
+    /**
+     * 路径合并
+     * @name coolie
+     * @property getHost {Function}
+     */
     win.coolie.getPathJoin = getPathJoin;
+
+
+    /**
+     * 获得目录
+     * @name coolie
+     * @property getPathDir {Function}
+     */
     win.coolie.getPathDir = getPathDir;
+
+
+    /**
+     * 获得当前脚本
+     * @name coolie
+     * @property getCurrentScript {Function}
+     */
     win.coolie.getCurrentScript = getCurrentScript;
+
+
+    /**
+     * 获得脚本地址
+     * @name coolie
+     * @property getScriptURL {Function}
+     */
     win.coolie.getScriptURL = getScriptURL;
+
 
     /**
      * @namespace define
