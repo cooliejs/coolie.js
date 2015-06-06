@@ -25,6 +25,20 @@
 
 
     /**
+     * coolie
+     * @type {Object}
+     */
+    var coolie = {};
+
+
+    /**
+     * coolie 版本号
+     * @type {string}
+     */
+    coolie.version = version;
+
+
+    /**
      * @type {undefined}
      */
     var udf;
@@ -563,7 +577,7 @@
      * coolie.js 绝对路径
      * @type {String}
      */
-    var coolieJSURL = getScriptURL(currentScript);
+    var coolieJSURL = coolie.coolieJSURL = getScriptURL(currentScript);
 
 
     /**
@@ -649,20 +663,6 @@
      * @type {Object}
      */
     var mainModule = {};
-
-
-    /**
-     * coolie
-     * @type {Object}
-     */
-    var coolie = {};
-
-
-    /**
-     * coolie 版本号
-     * @type {string}
-     */
-    coolie.version = version;
 
 
     /**
