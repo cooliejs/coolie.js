@@ -1,6 +1,6 @@
 coolie.config({
-    relative: false,
-    base: './examples/',
+    //relative: false,
+    base: '../',
     version: {
         './text/some.txt': '123',
         'libs/c.js': 'abc123',

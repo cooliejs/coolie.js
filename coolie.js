@@ -711,6 +711,7 @@
      */
     coolie.config = function (config) {
         // 不相对于 coolie-config.js 而是 coolie.js
+        // !important 不要随意传递当前配置，仅用于单元测试
         if (config.relative === false) {
             coolieConfigJSDir = getPathDir(coolieJSURL);
             coolieConfigJSHost = getHost(coolieJSURL);
