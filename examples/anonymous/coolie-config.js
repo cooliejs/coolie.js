@@ -1,5 +1,4 @@
 coolie.config({
-    //relative: false,
     base: '../',
     version: {
         './text/some.txt': '123',

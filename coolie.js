@@ -710,16 +710,17 @@
      * @param config
      */
     coolie.config = function (config) {
-        // 不相对于 coolie-config.js 而是 coolie.js
-        // !important 不要随意传递当前配置，仅用于单元测试
-        if (config.relative === false) {
-            coolieConfigJSDir = getPathDir(coolieJSURL);
-            coolieConfigJSHost = getHost(coolieJSURL);
-        }
-
         coolieConfig = config;
-        mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
         coolieConfig.version = coolieConfig.version || {};
+
+        if (coolieConfigJSURL) {
+            mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
+        } else {
+            var locationHref = location.href;
+
+            coolieConfigJSHost = getHost(locationHref);
+            mainModuleBaseDir = getPathJoin(getPathDir(locationHref), config.base);
+        }
 
         if (isString(coolieConfig.version)) {
             coolieConfig._v = coolieConfig.version;
