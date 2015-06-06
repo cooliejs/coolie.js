@@ -320,7 +320,7 @@
      * @param script
      * @returns {*}
      */
-    var getScriptAbsolutelyPath = function (script) {
+    var getScriptURL = function (script) {
         return cleanURL(script.hasAttribute ?
             // non-IE6/7
             script.src :
@@ -563,7 +563,7 @@
      * coolie.js 绝对路径
      * @type {String}
      */
-    var coolieJSURL = getScriptAbsolutelyPath(currentScript);
+    var coolieJSURL = getScriptURL(currentScript);
 
 
     /**
@@ -716,10 +716,8 @@
         if (coolieConfigJSURL) {
             mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
         } else {
-            var locationHref = location.href;
-
-            coolieConfigJSHost = getHost(locationHref);
-            mainModuleBaseDir = getPathJoin(getPathDir(locationHref), config.base);
+            coolieConfigJSHost = getHost(config.base);
+            mainModuleBaseDir = getPathDir(config.base)
         }
 
         if (isString(coolieConfig.version)) {
@@ -868,7 +866,7 @@
         var deps = args[1];
         var factory = args[2];
         var interactiveScriptId = $interactiveScript.id;
-        var interactiveScriptURL = getScriptAbsolutelyPath($interactiveScript);
+        var interactiveScriptURL = getScriptURL($interactiveScript);
         var interactiveScriptPath = getPathDir(interactiveScriptId);
 
         // define(id, deps, factory);
@@ -1051,6 +1049,11 @@
     win.coolie.modules = modules;
     win.coolie.configs = coolieConfig;
     win.coolie.each = each;
+    win.coolie.getHost = getHost;
+    win.coolie.getPathJoin = getPathJoin;
+    win.coolie.getPathDir = getPathDir;
+    win.coolie.getCurrentScript = getCurrentScript;
+    win.coolie.getScriptURL = getScriptURL;
 
     /**
      * @namespace define

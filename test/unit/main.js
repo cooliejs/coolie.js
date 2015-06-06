@@ -9,8 +9,11 @@
 describe('main', function () {
     'use strict';
 
+    var scripts = document.getElementsByTagName('script');
+    var currentScript
+
+
     coolie.config({
-        relative: false,
         base: './test/modules/',
         version: {
             './module5.js': 'abc123'

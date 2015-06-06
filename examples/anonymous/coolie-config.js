@@ -1,5 +1,5 @@
 coolie.config({
-    base: '../',
+    base: coolie.getHost(location.href) + '/examples/',
     version: {
         './text/some.txt': '123',
         'libs/c.js': 'abc123',
