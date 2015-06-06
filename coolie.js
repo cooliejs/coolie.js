@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.0
+ * @version 0.13.1
  * @license MIT
  */
 
@@ -14,14 +14,24 @@
  */
 
 
-(function (win) {
+(function () {
     'use strict';
+
+    var win = this;
+
+    /**
+     * 如果 coolie 已经运行完毕，则不必重新运行
+     */
+    if (win.coolie && win.coolie.done) {
+        return;
+    }
+
 
     /**
      * coolie 版本号
      * @type {string}
      */
-    var version = '0.13.0';
+    var version = '0.13.1';
 
 
     /**
@@ -369,13 +379,6 @@
 
 
     /**
-     * 头部 base 标签
-     * @type {HTMLBaseElement|*}
-     */
-    var $docBase = getNodeList('base', $docHead)[0];
-
-
-    /**
      * 文件后缀
      * @type {RegExp}
      */
@@ -450,12 +453,7 @@
             };
         }
 
-        // ref: #185 & http://dev.jquery.com/ticket/2709
-        if ($docBase) {
-            $docHead.insertBefore($script, $docBase);
-        } else {
-            $docHead.appendChild($script);
-        }
+        $docHead.appendChild($script);
     };
 
 
@@ -1107,10 +1105,34 @@
 
 
     /**
+     * coolie 已经准备完毕
+     * @name coolie
+     * @property done {Boolean}
+     */
+    win.coolie.done = true;
+
+
+    /**
+     * coolie 脚本标签 Node 对象
+     * @name coolie
+     * @property script {HTMLScriptElement}
+     */
+    win.coolie.script = currentScript;
+
+
+    // 创建临时 div
+    var $div = doc.createElement('div');
+
+
+    // 添加到缓存区
+    $div.appendChild(currentScript);
+
+
+    /**
      * @namespace define
      * @type {define}
      */
     win.define = define;
     win.define.amd = {};
     win.define.cmd = {};
-}(this));
+}.call(this));
