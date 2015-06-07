@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.1
+ * @version 0.13.2
  * @license MIT
  */
 
@@ -12,6 +12,9 @@
  * coolie-config.js => coolie.js
  * base => coolie-config.js
  */
+
+
+
 
 
 (function () {
@@ -35,14 +38,6 @@
     var CONST_SRC = 'src';
     var CONST_SCRIPT = 'script';
 
-
-    /**
-     * coolie 版本号
-     * @type {string}
-     */
-    var version = '0.13.1';
-
-
     /**
      * coolie
      * @type {Object}
@@ -54,7 +49,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = version;
+    coolie.version = '0.13.2';
 
 
     /**
@@ -432,7 +427,11 @@
     var $body = doc.body || getNodeList('body', doc)[0];
 
 
-    // 创建临时 div
+    /**
+     * 为了增加安全性，coolie 会复制一个 coolie.js 到文档末尾，
+     * 然后，所有的模块都载入到一个独立的缓存块里，
+     * 防止电信广告影响
+     */
     var $cache = createElement('div');
 
 
@@ -473,7 +472,7 @@
     /**
      * 加载脚本
      * @param url {String} 脚本 URL
-     * @param [isNotModule=false] {Boolean} 是否为模块
+     * @param [isNotModule=false] {Boolean} 是否为非模块
      */
     var loadScript = function (url, isNotModule) {
         var url2 = buildVersionURL(url);
