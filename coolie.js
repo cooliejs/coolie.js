@@ -466,9 +466,6 @@
     };
 
 
-    var $lastScript = null;
-
-
     /**
      * 加载脚本
      * @param url {String} 脚本 URL
@@ -479,8 +476,7 @@
         var $script = createElement(CONST_SCRIPT, {
             src: url2,
             id: url,
-            async: true,
-            defer: true
+            async: true
         });
         var hasReady = false;
         var onready = function (eve) {
@@ -495,7 +491,6 @@
             }
 
             if (isNotModule !== true) {
-                $lastScript = $script;
                 analyScriptModule($script);
             }
         };
@@ -931,11 +926,17 @@
 
     /**
      * 分析脚本模块
-     * @param $interactiveScript {Object} 当前活动的脚本
+     * @params $interactiveScript {HTMLScriptElement} 当前活动脚本
      */
     var analyScriptModule = function ($interactiveScript) {
         var isAn = true;
         var args = defineList.shift();
+
+        if (!args) {
+            console.log($interactiveScript);
+            return;
+        }
+
         var id = args[0];
         var deps = args[1];
         var factory = args[2];
@@ -1036,10 +1037,6 @@
 
         module.deps = deps2;
         defineModule(module);
-
-        if (defineList.length) {
-            analyScriptModule($lastScript);
-        }
     };
 
 
