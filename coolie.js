@@ -22,9 +22,18 @@
     /**
      * 如果 coolie 已经运行完毕，则不必重新运行
      */
-    if (win.coolie && win.coolie.done) {
+    if (win.coolie) {
         return;
     }
+
+
+    // 常量
+    var CONST_IMAGE = 'image';
+    var CONST_JSON = 'json';
+    var CONST_TEXT = 'text';
+    var CONST_JS = 'js';
+    var CONST_SRC = 'src';
+    var CONST_SCRIPT = 'script';
 
 
     /**
@@ -296,11 +305,11 @@
     /**
      * 获取标签列表
      * @param tagName {String} 标签名称
-     * @param [parent] {Node|HTMLElement} 父节点
+     * @param [$parent] {Node|HTMLElement} 父节点
      * @returns {NodeList|*}
      */
-    var getNodeList = function (tagName, parent) {
-        return (parent || doc).getElementsByTagName(tagName);
+    var getNodeList = function (tagName, $parent) {
+        return ($parent || doc).getElementsByTagName(tagName);
     };
 
 
@@ -335,7 +344,7 @@
             url += 'index';
         }
 
-        return url + (REG_JS.test(url) ? '' : '.js');
+        return url + (REG_JS.test(url) ? '' : '.' + CONST_JS);
     };
 
 
@@ -349,7 +358,7 @@
             // non-IE6/7
             script.src :
             // @see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            script.getAttribute('src', 4));
+            script.getAttribute(CONST_SRC, 4));
     };
 
 
@@ -365,6 +374,51 @@
 
 
     /**
+     * 创建一个元素
+     * @param tagName
+     * @param [properties]
+     * @returns {Element}
+     */
+    var createElement = function (tagName, properties) {
+        var $node = doc.createElement(tagName);
+
+        each(properties, function (key, val) {
+            $node[key] = val;
+        });
+
+        return $node;
+    };
+
+
+    /**
+     * 插入一个元素
+     * @param $ele
+     * @param [$parent]
+     */
+    var appendChild = function ($ele, $parent) {
+        ($parent || $body).appendChild($ele);
+    };
+
+
+    /**
+     * 移除一个 element
+     * @param $ele
+     * @param $parent
+     */
+    var removeElement = function ($ele, $parent) {
+        try {
+            $ele.remove();
+        } catch (err) {
+            try {
+                ($parent || doc).removeChild($ele);
+            } catch (err) {
+                // ignore
+            }
+        }
+    };
+
+
+    /**
      * 是否加载完毕
      * @type {RegExp}
      */
@@ -372,10 +426,18 @@
 
 
     /**
-     * 头部标签
-     * @type {HTMLHeadElement|*}
+     * body
+     * @type {HTMLBodyElement|*}
      */
-    var $docHead = doc.head || getNodeList('head', doc)[0];
+    var $body = doc.body || getNodeList('body', doc)[0];
+
+
+    // 创建临时 div
+    var $cache = createElement('div');
+
+
+    // 添加到 body 里
+    appendChild($cache);
 
 
     /**
@@ -415,7 +477,12 @@
      */
     var loadScript = function (url, isNotModule) {
         var url2 = buildVersionURL(url);
-        var $script = doc.createElement('script');
+        var $script = createElement(CONST_SCRIPT, {
+            src: url2,
+            id: url,
+            async: true,
+            defer: true
+        });
         var hasReady = false;
         var onready = function (eve) {
             if (hasReady) {
@@ -433,14 +500,9 @@
                 analyScriptModule($script);
             }
 
-            $docHead.removeChild($script);
+            //$cache.removeChild($script);
             $script = null;
         };
-
-        $script.src = url2;
-        $script.id = url;
-        $script.async = true;
-        $script.defer = true;
 
         if ($script.onload !== udf) {
             $script.onload = $script.onerror = onready;
@@ -453,7 +515,7 @@
             };
         }
 
-        $docHead.appendChild($script);
+        appendChild($script, $cache);
     };
 
 
@@ -503,7 +565,7 @@
                         factory: function () {
                             var code = xhr.responseText;
 
-                            if (code && type === 'json') {
+                            if (code && type === CONST_JSON) {
                                 code = parseJSON(url, code);
                             }
 
@@ -541,10 +603,11 @@
 
     /**
      * 获取当前脚本
+     * @param [$parent] {*} 父级
      * @returns {*}
      */
-    var getCurrentScript = function () {
-        var scripts = getNodeList('script');
+    var getCurrentScript = function ($parent) {
+        var scripts = getNodeList(CONST_SCRIPT, $parent);
 
         return scripts[scripts.length - 1];
     };
@@ -555,6 +618,20 @@
      * @type {Node}
      */
     var currentScript = getCurrentScript();
+
+
+    // 添加到缓存区
+    appendChild(currentScript, $cache);
+
+
+    // 克隆一个伪脚本
+    var $cloneCoolie = createElement(CONST_SCRIPT, {
+        src: currentScript.src
+    });
+
+
+    // 添加一个伪脚本到文档末尾，防止其他电信广告影响
+    appendChild($cloneCoolie);
 
 
     /**
@@ -818,11 +895,11 @@
      * @type {{image: string, text: string, html: string, css: string}}
      */
     var moduleTypeMap = {
-        image: 'image',
-        text: 'text',
-        html: 'text',
-        json: 'json',
-        css: 'text'
+        image: CONST_IMAGE,
+        text: CONST_TEXT,
+        html: CONST_TEXT,
+        json: CONST_JSON,
+        css: CONST_TEXT
     };
 
 
@@ -839,7 +916,7 @@
                 // require('1.js', 'js');
                 var dep = {
                     name: cleanURL(matches[1], !!matches[2]),
-                    type: matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js'
+                    type: matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : CONST_JS
                 };
 
                 requires.push(dep);
@@ -857,11 +934,6 @@
     var analyScriptModule = function ($interactiveScript) {
         var isAn = true;
         var args = defineList.shift();
-
-        if (!args) {
-            throw 'can not parse module ' + ($lastScript ? $lastScript.src : 'undefined');
-        }
-
         var id = args[0];
         var deps = args[1];
         var factory = args[2];
@@ -922,7 +994,7 @@
             if (mainModule._isAn) {
                 var path = getPathJoin(interactiveScriptPath, dep.name);
 
-                dep.id = cleanURL(coolieConfigJSHost + path, dep.type !== 'js');
+                dep.id = cleanURL(coolieConfigJSHost + path, dep.type !== CONST_JS);
             }
 
             if (id === dep.id) {
@@ -944,12 +1016,12 @@
 
                 if (mainModule._isAn) {
                     switch (dep.type) {
-                        case 'text':
-                        case 'json':
+                        case CONST_TEXT:
+                        case CONST_JSON:
                             ajaxText(dep.id, dep.type);
                             break;
 
-                        case 'image':
+                        case CONST_IMAGE:
                             wrapImageModule(dep.id);
                             break;
 
@@ -983,10 +1055,10 @@
                 if (mainModule._isAn) {
                     dep = {
                         name: id,
-                        type: type || 'js'
+                        type: type || CONST_JS
                     };
 
-                    id = coolieConfigJSHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== 'js');
+                    id = coolieConfigJSHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== CONST_JS);
                 }
 
                 if (!modules[id]) {
@@ -1009,11 +1081,14 @@
                 }
             };
         })();
+
         modules[module.id] = module;
         defineLength++;
         console.log('module ' + module.id);
 
         if (!defineList.length && defineLength === dependenceLength) {
+            removeElement($cache, $body);
+            removeElement($cloneCoolie, $body);
             console.log('past ' + ( now() - timeNow) + 'ms');
             console.groupEnd('coolie modules');
             mainModule._execute();
@@ -1105,27 +1180,11 @@
 
 
     /**
-     * coolie 已经准备完毕
-     * @name coolie
-     * @property done {Boolean}
-     */
-    win.coolie.done = true;
-
-
-    /**
      * coolie 脚本标签 Node 对象
      * @name coolie
      * @property script {HTMLScriptElement}
      */
     win.coolie.script = currentScript;
-
-
-    // 创建临时 div
-    var $div = doc.createElement('div');
-
-
-    // 添加到缓存区
-    $div.appendChild(currentScript);
 
 
     /**
