@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.6
+ * @version 0.13.7
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.13.6';
+    coolie.version = '0.13.7';
 
 
     /**
@@ -1101,7 +1101,6 @@
         if (!defineList.length && defineLength === dependenceLength) {
             if (coolieConfig.debug === false) {
                 removeElement($cache, $body);
-                removeElement($cloneCoolie, $body);
             }
 
             console.log('past ' + ( now() - timeNow) + 'ms');
