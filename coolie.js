@@ -499,7 +499,6 @@
                 analyScriptModule($script);
             }
 
-            //$cache.removeChild($script);
             $script = null;
         };
 
@@ -812,6 +811,11 @@
             dependenceModules[mainModuleId] = mainModule;
         }
 
+        /**
+         * 会在 config.debug 不为 false 的时候
+         * 添加一个 DEBUG 到 window 上
+         * @type {boolean}
+         */
         win.DEBUG = config.debug = config.debug !== false;
 
         return coolie;
