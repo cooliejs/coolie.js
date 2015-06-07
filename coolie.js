@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.2
+ * @version 0.13.3
  * @license MIT
  */
 
@@ -34,6 +34,7 @@
     var CONST_JS = 'js';
     var CONST_SRC = 'src';
     var CONST_SCRIPT = 'script';
+    var CONST_COOLIE_MODULES = 'coolie modules';
 
     /**
      * coolie
@@ -46,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.13.2';
+    coolie.version = '0.13.3';
 
 
     /**
@@ -429,7 +430,9 @@
      * 然后，所有的模块都载入到一个独立的缓存块里，
      * 防止电信广告影响
      */
-    var $cache = createElement('div');
+    var $cache = createElement('div', {
+        id: CONST_COOLIE_MODULES + now()
+    });
 
 
     // 添加到 body 里
@@ -495,8 +498,6 @@
                 $lastScript = $script;
                 analyScriptModule($script);
             }
-
-            $script = null;
         };
 
         if ($script.onload !== udf) {
@@ -844,7 +845,7 @@
 
         loadScript(mainModule.url);
 
-        console.group('coolie modules');
+        console.group(CONST_COOLIE_MODULES);
 
         return coolie;
     };
@@ -1085,13 +1086,16 @@
 
         modules[module.id] = module;
         defineLength++;
-        console.log('module ' + module.id);
+        console.log(module.id);
 
         if (!defineList.length && defineLength === dependenceLength) {
-            removeElement($cache, $body);
-            removeElement($cloneCoolie, $body);
+            if (coolieConfig.debug === false) {
+                removeElement($cache, $body);
+                removeElement($cloneCoolie, $body);
+            }
+
             console.log('past ' + ( now() - timeNow) + 'ms');
-            console.groupEnd('coolie modules');
+            console.groupEnd(CONST_COOLIE_MODULES);
             mainModule._exe();
             each(coolieCallbacks, function (index, callback) {
                 callback.call(coolie, mainModule.exports);
