@@ -82,8 +82,8 @@
     /**
      * coolie 配置
      * @property base {String} 模块入口基准路径
-     * @property host {String} 模块入口 host
-     * @property version {Object} 入口模块版本 map
+     * @property version {Object|String} 入口模块版本 map
+     * @property [debug=true] {Boolean} 是否为调试模式
      * @type {Object}
      */
     var coolieConfig = {};
@@ -608,21 +608,23 @@
      * 当前运行的脚本
      * @type {Node}
      */
-    var currentScript = getCurrentScript();
+    var $currentScript = getCurrentScript();
 
 
     // 添加到缓存区
-    appendChild(currentScript, $cache);
+    appendChild($currentScript, $cache);
 
 
-    // 克隆一个伪脚本
-    var $cloneCoolie = createElement(CONST_SCRIPT, {
-        src: currentScript.src
-    });
-
-
-    // 添加一个伪脚本到文档末尾，防止其他电信广告影响
-    appendChild($cloneCoolie);
+    //            -   -
+    // 看我眼神，这种方式根本没办法阻止电信广告
+    //
+    //// 克隆一个伪脚本
+    //var $cloneCoolie = createElement(CONST_SCRIPT, {
+    //    src: currentScript.src
+    //});
+    //
+    //
+    //appendChild($cloneCoolie);
 
 
     /**
@@ -643,7 +645,7 @@
      * coolie.js 绝对路径
      * @type {String}
      */
-    var coolieJSURL = coolie.coolieJSURL = getScriptURL(currentScript);
+    var coolieJSURL = coolie.coolieJSURL = getScriptURL($currentScript);
 
 
     /**
@@ -657,14 +659,14 @@
      * coolie.js data-config
      * @type {string}
      */
-    var coolieJSDataConfig = getNodeDataset(currentScript, 'config');
+    var coolieJSDataConfig = getNodeDataset($currentScript, 'config');
 
 
     /**
      * coolie.js data-main
      * @type {string}
      */
-    var coolieJSDataMain = getNodeDataset(currentScript, 'main');
+    var coolieJSDataMain = getNodeDataset($currentScript, 'main');
 
 
     /**
@@ -1186,7 +1188,7 @@
      * @name coolie
      * @property script {HTMLScriptElement}
      */
-    win.coolie.script = currentScript;
+    win.coolie.script = $currentScript;
 
 
     /**
