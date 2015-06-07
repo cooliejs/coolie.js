@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.5
+ * @version 0.13.6
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.13.5';
+    coolie.version = '0.13.6';
 
 
     /**
@@ -467,6 +467,13 @@
 
 
     /**
+     * 最后一个添加的脚本
+     * @type {null|Object}
+     */
+    var $lastScript = null;
+
+
+    /**
      * 加载脚本
      * @param url {String} 脚本 URL
      * @param [isNotModule=false] {Boolean} 是否为非模块
@@ -491,6 +498,7 @@
             }
 
             if (isNotModule !== true) {
+                $lastScript = $script;
                 analyScriptModule($script);
             }
         };
@@ -935,7 +943,6 @@
         var args = defineList.shift();
 
         if (!args) {
-            console.log($interactiveScript);
             return;
         }
 
@@ -1039,6 +1046,10 @@
 
         module.deps = deps2;
         defineModule(module);
+
+        if (defineList.length && $lastScript) {
+            analyScriptModule($lastScript);
+        }
     };
 
 
