@@ -14,9 +14,6 @@
  */
 
 
-
-
-
 (function () {
     'use strict';
 
