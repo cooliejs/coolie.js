@@ -811,6 +811,7 @@
         /**
          * 会在 config.debug 不为 false 的时候
          * 添加一个 DEBUG 到 window 上
+         * @namespace DEBUG
          * @type {boolean}
          */
         win.DEBUG = config.debug = config.debug !== false;
@@ -854,7 +855,7 @@
      * @param callback
      */
     coolie.callback = function (callback) {
-        if (mainModule._executed && isFunction(callback)) {
+        if (mainModule._exd && isFunction(callback)) {
             callback.call(coolie, mainModule.exports);
 
             return coolie;
@@ -1048,7 +1049,7 @@
      */
     var defineModule = function (module) {
         module.exports = {};
-        module._execute = (function () {
+        module._exe = (function () {
             var require = function (id, type) {
                 var dep;
 
@@ -1065,16 +1066,16 @@
                     throw 'can not found module \n' + id + '\nbut required in\n' + module.id;
                 }
 
-                return modules[id]._execute();
+                return modules[id]._exe();
             };
 
             return function () {
                 var id = module.id;
 
-                if (module._executed) {
+                if (module._exd) {
                     return modules[id].exports;
                 } else {
-                    module._executed = true;
+                    module._exd = true;
                     modules[id].exports = module.factory.call(win, require, module.exports, module) || module.exports;
 
                     return modules[id].exports;
@@ -1091,7 +1092,7 @@
             removeElement($cloneCoolie, $body);
             console.log('past ' + ( now() - timeNow) + 'ms');
             console.groupEnd('coolie modules');
-            mainModule._execute();
+            mainModule._exe();
             each(coolieCallbacks, function (index, callback) {
                 callback.call(coolie, mainModule.exports);
             });

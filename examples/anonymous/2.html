@@ -3,10 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
+    <style>
+        html,body{
+            height: 100%;
+        }
+    </style>
 </head>
 <body>
 
-<script src="/coolie.js"></script>
+<script src="./jquery-1.11.3.js"></script>
+
+<script>
+
+    $(document.body).hover(function () {
+        console.log($(document.body).is(':hover'));
+    });
+
+</script>
 
 </body>
 </html>
