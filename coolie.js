@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.7
+ * @version 0.13.8
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.13.7';
+    coolie.version = '0.13.8';
 
 
     /**
@@ -481,7 +481,7 @@
     var loadScript = function (url, isNotModule) {
         var url2 = buildVersionURL(url);
         var $script = createElement(CONST_SCRIPT, {
-            src: url2,
+            src: url2 + (coolieConfig.cache === false ? '?_=' + now() : ''),
             id: url,
             async: true
         });
