@@ -1,4 +1,4 @@
-# coolie.js@0.13.7 苦力 
+# coolie.js@0.13.8 苦力 
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
@@ -39,6 +39,10 @@ coolie.config({
 
 ## `coolie.callback`
 模块全部加载完毕后回调。常用于测试项目。
+
+
+## `coolie.cache`
+是否缓存已下载的模块，默认为true。
 
 
 
