@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.13.8
+ * @version 0.13.9
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.13.8';
+    coolie.version = '0.13.9';
 
 
     /**
@@ -389,7 +389,7 @@
      * @param [$parent]
      */
     var appendChild = function ($ele, $parent) {
-        ($parent || $body).appendChild($ele);
+        ($parent || $body || $html).appendChild($ele);
     };
 
 
@@ -419,10 +419,17 @@
 
 
     /**
+     * html
+     * @type {HTMLHtmlElement|*}
+     */
+    var $html = doc.documentElement;
+
+
+    /**
      * body
      * @type {HTMLBodyElement|*}
      */
-    var $body = doc.body || getNodeList('body', doc)[0];
+    var $body = doc.body;
 
 
     /**
