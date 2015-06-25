@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.14.0
+ * @version 0.14.1
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.14.0';
+    coolie.version = '0.14.1';
 
 
     /**
@@ -1238,7 +1238,7 @@
         chunkList = isArray(chunkList) ? chunkList : [chunkList];
 
         each(chunkList, function (index, chunkId) {
-            loadScript(coolieJSHost + getPathJoin(mainModuleBaseDir, chunkId) + '.js');
+            loadScript(coolieConfigJSHost + getPathJoin(mainModuleBaseDir, chunkId) + '.js');
         });
     };
 
