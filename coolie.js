@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.14.2
+ * @version 0.14.0
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.14.2';
+    coolie.version = '0.14.0';
 
 
     /**
@@ -1125,10 +1125,13 @@
 
         if (!defineList.length &&
             defineLength >= dependenceLength &&
-            matchMap(dependenceModules, modules) && !mainModule._exd) {
+            //matchMap(dependenceModules, modules) &&
+            !mainModule._exd) {
             if (coolieConfig.debug === false) {
                 removeElement($cache, $body);
             }
+
+            console.log(matchMap(dependenceModules, modules))
 
             console.log('past ' + ( now() - timeNow) + 'ms');
             console.groupEnd(CONST_COOLIE_MODULES);
