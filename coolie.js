@@ -486,8 +486,6 @@
             return url;
         }
 
-        url = url + (REG_EXT.test(url) ? '' : '.js');
-
         return url.replace(REG_EXT, '.' + version + '$&');
     };
 
