@@ -6,4 +6,4 @@ define('1', ['2', '3'], function (require, exports, module) {
     module.exports = require('2') + require('3');
 });
 
-coolie.load('2.js');
+coolie.chunk('0');

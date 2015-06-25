@@ -469,6 +469,8 @@
             return url;
         }
 
+        url = url + (REG_EXT.test(url) ? '' : '.js');
+
         return url.replace(REG_EXT, '.' + version + '$&');
     };
 
@@ -1146,7 +1148,7 @@
 
     /**
      * 当前使用的模块
-     * @name coolie
+     * @name coolie.modules
      * @property getHost {Function}
      */
     win.coolie.modules = modules;
@@ -1154,7 +1156,7 @@
 
     /**
      * 数组、对象遍历
-     * @name coolie
+     * @name coolie.each
      * @property getHost {Function}
      */
     win.coolie.each = each;
@@ -1162,7 +1164,7 @@
 
     /**
      * 获得 host
-     * @name coolie
+     * @name coolie.getHost
      * @property getHost {Function}
      */
     win.coolie.getHost = getHost;
@@ -1170,7 +1172,7 @@
 
     /**
      * 路径合并
-     * @name coolie
+     * @name coolie.getPathJoin
      * @property getHost {Function}
      */
     win.coolie.getPathJoin = getPathJoin;
@@ -1178,7 +1180,7 @@
 
     /**
      * 获得目录
-     * @name coolie
+     * @name coolie.getPathDir
      * @property getPathDir {Function}
      */
     win.coolie.getPathDir = getPathDir;
@@ -1186,7 +1188,7 @@
 
     /**
      * 获得当前脚本
-     * @name coolie
+     * @name coolie.getCurrentScript
      * @property getCurrentScript {Function}
      */
     win.coolie.getCurrentScript = getCurrentScript;
@@ -1194,7 +1196,7 @@
 
     /**
      * 获得脚本地址
-     * @name coolie
+     * @name coolie.getScriptURL
      * @property getScriptURL {Function}
      */
     win.coolie.getScriptURL = getScriptURL;
@@ -1202,17 +1204,23 @@
 
     /**
      * coolie 脚本标签 Node 对象
-     * @name coolie
+     * @name coolie.script
      * @property script {HTMLScriptElement}
      */
     win.coolie.script = $currentScript;
 
 
     /**
-     * 加载模块脚本
+     * 加载 chunk 脚本
+     * @name coolie.chunk
+     * @param chunkId
      * @type {Function}
      */
-    win.coolie.load = loadScript;
+    win.coolie.chunk = function (chunkId) {
+        var url = coolieJSHost + getPathJoin(mainModuleBaseDir, chunkId);
+
+        loadScript(url);
+    };
 
 
     /**
