@@ -1,9 +1,9 @@
-# coolie.js@0.13.8 苦力 
+# coolie.js@0.14.0 苦力 
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
 
-苦力——一个纯净、易用的模块加载器。
+苦力——一个纯净、易用、智能的模块加载器。
 
 ```
 require('some.js');
@@ -16,7 +16,7 @@ require('some.json', 'json');
 
 - coolie book：<http://coolie.ydr.me/>
 - 构建工具：<https://www.npmjs.com/package/coolie>
-
+- 社区：<http://FrontEndDev.org/>
 
 
 # 接口
