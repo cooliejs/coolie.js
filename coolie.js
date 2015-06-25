@@ -169,6 +169,23 @@
 
 
     /**
+     * map1 是否全部匹配到 map2
+     * @param map1
+     * @param map2
+     * @returns {boolean}
+     */
+    var matchMap = function (map1, map2) {
+        for (var i in map1) {
+            if (!map2[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+
+    /**
      * 定义 console，防止出错
      */
     var console = (function () {
@@ -995,6 +1012,7 @@
             // 具名模块
             if (!isAn) {
                 dependenceModules[id] = dependenceModules[mainModule.url];
+                delete dependenceModules[mainModule.url];
             }
 
             module._isMain = true;
@@ -1107,7 +1125,9 @@
         defineLength++;
         console.log(module.id);
 
-        if (!defineList.length && defineLength >= dependenceLength && !mainModule._exd) {
+        if (!defineList.length &&
+            defineLength >= dependenceLength &&
+            matchMap(dependenceModules, modules) && !mainModule._exd) {
             if (coolieConfig.debug === false) {
                 removeElement($cache, $body);
             }
@@ -1213,13 +1233,15 @@
     /**
      * 加载 chunk 脚本
      * @name coolie.chunk
-     * @param chunkId
+     * @param chunkList {String|Array}
      * @type {Function}
      */
-    win.coolie.chunk = function (chunkId) {
-        var url = coolieJSHost + getPathJoin(mainModuleBaseDir, chunkId);
+    win.coolie.chunk = function (chunkList) {
+        chunkList = isArray(chunkList) ? chunkList : [chunkList];
 
-        loadScript(url);
+        each(chunkList, function (index, chunkId) {
+            loadScript(coolieJSHost + getPathJoin(mainModuleBaseDir, chunkId));
+        });
     };
 
 
