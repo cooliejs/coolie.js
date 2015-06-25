@@ -1238,7 +1238,7 @@
         chunkList = isArray(chunkList) ? chunkList : [chunkList];
 
         each(chunkList, function (index, chunkId) {
-            loadScript(coolieJSHost + getPathJoin(mainModuleBaseDir, chunkId));
+            loadScript(coolieJSHost + getPathJoin(mainModuleBaseDir, chunkId) + '.js');
         });
     };
 
