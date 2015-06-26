@@ -169,23 +169,6 @@
 
 
     /**
-     * map1 是否全部匹配到 map2
-     * @param map1
-     * @param map2
-     * @returns {boolean}
-     */
-    var matchMap = function (map1, map2) {
-        for (var i in map1) {
-            if (!map2[i]) {
-                return false;
-            }
-        }
-
-        return true;
-    };
-
-
-    /**
      * 定义 console，防止出错
      */
     var console = (function () {
@@ -195,7 +178,7 @@
 
         each(arr, function (index, key) {
             ret[key] = function () {
-                if (!coolieConfig.debug) {
+                if (coolieConfig.debug === false) {
                     return;
                 }
 
@@ -498,11 +481,22 @@
 
 
     /**
+     * 是否正在分析模块
+     * @type {boolean}
+     */
+    var inAnalyModule = false;
+
+
+    /**
      * 加载脚本
      * @param url {String} 脚本 URL
      * @param [isNotModule=false] {Boolean} 是否为非模块
      */
     var loadScript = function (url, isNotModule) {
+        if (!isNotModule) {
+            inAnalyModule = true;
+        }
+
         var url2 = buildVersionURL(url);
         var $script = createElement(CONST_SCRIPT, {
             src: url2 + (coolieConfig.cache === false ? '?_=' + now() : ''),
@@ -524,6 +518,10 @@
             if (isNotModule !== true) {
                 $lastScript = $script;
                 analyScriptModule($script);
+
+                if (!isNotModule) {
+                    inAnalyModule = false;
+                }
             }
         };
 
@@ -812,6 +810,7 @@
      * @param config
      */
     coolie.config = function (config) {
+        //config.debug = true;
         coolieConfig = config;
         coolieConfig.version = coolieConfig.version || {};
 
@@ -1079,6 +1078,12 @@
 
 
     /**
+     * 定时器
+     */
+    var timeId;
+
+
+    /**
      * 定义 module
      * @param module
      * @returns module
@@ -1120,23 +1125,27 @@
         })();
 
         modules[module.id] = module;
-        defineLength++;
         console.log(module.id);
+        defineLength++;
 
-        if (!defineList.length &&
-            defineLength >= dependenceLength &&
-            matchMap(dependenceModules, modules) &&
-            !mainModule._exd) {
+        // 加载完成的条件：
+        // 1. 当前没有正在加载的脚本
+        // 2. 定义的长度 >= 依赖的长度
+
+        if (!defineList.length && defineLength >= dependenceLength && !inAnalyModule && !mainModule._exd && !timeId) {
             if (coolieConfig.debug === false) {
                 removeElement($cache, $body);
             }
 
-            console.log('past ' + ( now() - timeNow) + 'ms');
-            console.groupEnd(CONST_COOLIE_MODULES);
-            mainModule._exe();
-            each(coolieCallbacks, function (index, callback) {
-                callback.call(coolie, mainModule.exports);
-            });
+            timeId = setTimeout(function () {
+                console.log('past ' + ( now() - timeNow) + 'ms');
+
+                console.groupEnd(CONST_COOLIE_MODULES);
+                mainModule._exe();
+                each(coolieCallbacks, function (index, callback) {
+                    callback.call(coolie, mainModule.exports);
+                });
+            }, 0);
         }
     };
 
@@ -1171,6 +1180,14 @@
      * @property getHost {Function}
      */
     win.coolie.modules = modules;
+
+
+    /**
+     * 当前使用的模块
+     * @name coolie.dependences
+     * @property getHost {Function}
+     */
+    win.coolie.dependences = dependenceModules;
 
 
     /**
