@@ -1,4 +1,4 @@
-# coolie.js@0.14.3 苦力 
+# coolie.js@0.14.4 苦力 
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
