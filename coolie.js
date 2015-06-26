@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.14.4
+ * @version 0.14.5
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.14.4';
+    coolie.version = '0.14.5';
 
 
     /**
@@ -484,7 +484,7 @@
      * 需要加载的模块脚本长度
      * @type {number}
      */
-    var loadScriptsLength = 0;
+    var loadModuleLength = 0;
 
 
     /**
@@ -494,7 +494,7 @@
      */
     var loadScript = function (url, isNotModule) {
         if (isNotModule !== true) {
-            loadScriptsLength++;
+            loadModuleLength++;
         }
 
         var url2 = buildVersionURL(url);
@@ -518,7 +518,7 @@
             if (isNotModule !== true) {
                 $lastScript = $script;
                 analyScriptModule($script);
-                loadScriptsLength--;
+                loadModuleLength--;
             }
         };
 
@@ -568,6 +568,7 @@
      * @param type {String} 文本类型
      */
     var ajaxText = function (url, type) {
+        loadModuleLength++;
         var url2 = buildVersionURL(url);
         var xhr = new XMLHttpRequest();
         var hasComplete;
@@ -590,6 +591,7 @@
                             return code;
                         }
                     });
+                    loadModuleLength--;
                 } else {
                     throw 'ajax error\n' + url2;
                 }
@@ -1117,7 +1119,7 @@
             clearTimeout(timeId);
             timeId = setTimeout(function () {
                 //win.console.log(loadScriptsLength);
-                if (loadScriptsLength) {
+                if (loadModuleLength) {
                     return;
                 }
 
