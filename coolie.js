@@ -481,10 +481,10 @@
 
 
     /**
-     * 是否正在分析模块
-     * @type {boolean}
+     * 需要加载的模块脚本长度
+     * @type {number}
      */
-    var inAnalyModule = false;
+    var loadScriptsLength = 0;
 
 
     /**
@@ -493,8 +493,8 @@
      * @param [isNotModule=false] {Boolean} 是否为非模块
      */
     var loadScript = function (url, isNotModule) {
-        if (!isNotModule) {
-            inAnalyModule = true;
+        if (isNotModule !== true) {
+            loadScriptsLength++;
         }
 
         var url2 = buildVersionURL(url);
@@ -518,10 +518,7 @@
             if (isNotModule !== true) {
                 $lastScript = $script;
                 analyScriptModule($script);
-
-                if (!isNotModule) {
-                    inAnalyModule = false;
-                }
+                loadScriptsLength--;
             }
         };
 
@@ -792,20 +789,6 @@
 
 
     /**
-     * 依赖长度，包括入口模块
-     * @type {number}
-     */
-    var dependenceLength = 1;
-
-
-    /**
-     * 注册长度，包括入口模块
-     * @type {number}
-     */
-    var defineLength = 0;
-
-
-    /**
      * coolie 配置
      * @param config
      */
@@ -1048,7 +1031,6 @@
             if (!dependenceModules[dep.id]) {
                 deps2.push(dep.id);
                 dependenceModules[dep.id] = true;
-                dependenceLength++;
 
                 if (mainModule._isAn) {
                     switch (dep.type) {
@@ -1126,26 +1108,31 @@
 
         modules[module.id] = module;
         console.log(module.id);
-        defineLength++;
+
 
         // 加载完成的条件：
-        // 1. 当前没有正在加载的脚本
-        // 2. 定义的长度 >= 依赖的长度
-
-        if (!defineList.length && defineLength >= dependenceLength && !inAnalyModule && !mainModule._exd && !timeId) {
-            if (coolieConfig.debug === false) {
-                removeElement($cache, $body);
-            }
-
+        // 1. 定义的模块都分析完毕
+        // 2. 当前没有正在加载的脚本
+        if (!defineList.length) {
+            clearTimeout(timeId);
             timeId = setTimeout(function () {
+                //win.console.log(loadScriptsLength);
+                if (loadScriptsLength) {
+                    return;
+                }
+
                 console.log('past ' + ( now() - timeNow) + 'ms');
+
+                if (coolieConfig.debug === false) {
+                    removeElement($cache, $body);
+                }
 
                 console.groupEnd(CONST_COOLIE_MODULES);
                 mainModule._exe();
                 each(coolieCallbacks, function (index, callback) {
                     callback.call(coolie, mainModule.exports);
                 });
-            }, 0);
+            }, 1);
         }
     };
 
