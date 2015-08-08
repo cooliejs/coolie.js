@@ -52,6 +52,7 @@
 
     var isObject = isType("Object");
     var isString = isType("String");
+    var isBoolean = isType("Boolean");
     var isArray = Array.isArray || isType("Array");
     var isFunction = isType("Function");
     var isUndefined = isType("Undefined");
@@ -172,9 +173,9 @@
     /**
      * 加载文本模块
      * @param url {String} 文本 URL
-     * @param type {String} 文本类型
+     * @param callback {Function} 加载回调
      */
-    var ajaxText = function (url, type) {
+    var ajaxText = function (url, callback) {
         //var url2 = buildVersionURL(url);
         var url2 = url;
         var xhr = new XMLHttpRequest();
@@ -183,21 +184,25 @@
             if (xhr.readyState === 4 && !hasComplete) {
                 hasComplete = true;
                 if (xhr.status === 200 || xhr.status === 304) {
-                    defineModule({
-                        _isAn: mainModule._isAn,
-                        id: url,
-                        url: url2,
-                        deps: [],
-                        factory: function () {
-                            var code = xhr.responseText;
-
-                            if (code && type === CONST_JSON) {
-                                code = parseJSON(url, code);
-                            }
-
-                            return code;
-                        }
-                    });
+                    callback(xhr.responseText);
+                    //Module.define(url2, [], function () {
+                    //   return xhr.responseText;
+                    //});
+                    //defineModule({
+                    //    _isAn: mainModule._isAn,
+                    //    id: url,
+                    //    url: url2,
+                    //    deps: [],
+                    //    factory: function () {
+                    //        var code = xhr.responseText;
+                    //
+                    //        if (code && type === CONST_JSON) {
+                    //            code = parseJSON(url, code);
+                    //        }
+                    //
+                    //        return code;
+                    //    }
+                    //});
                 } else {
                     throw 'ajax error\n' + url2;
                 }
@@ -945,24 +950,18 @@
      */
     var parseDependencies = function (code) {
         var deps = [];
-        var depList = [];
+        var types = [];
 
         code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
             if ($2) {
                 var matches = $2.match(REG_REQUIRE_TYPE);
-                var uri = id2Uri(matches[1], '', matches[2]);
-                // require('1.js', 'js');
-                var dep = {
-                    name: uri,
-                    type: matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js'
-                };
 
-                deps.push(uri);
-                depList.push(dep);
+                deps.push(id2Uri(matches[1], '', matches[2]));
+                types.push(matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js');
             }
         });
 
-        return [deps, depList];
+        return [deps, types];
     };
 
 
@@ -995,14 +994,18 @@
     };
 
 
-    function Module(uri, deps) {
+    function Module(uri, deps, type) {
         this.uri = uri;
-        this.dependencies = deps || [];
+        this.dependencies = deps;
         this.deps = {}; // Ref the dependence modules
         this.status = 0;
-
+        this.type = type || 'js';
         this._entry = [];
     }
+
+    // 默认为 cmd，当第一次 define 为匿名时，后续模块都视为匿名
+    // 否则为 amd
+    Module.cmd = null;
 
     // Resolve module.dependencies
     Module.prototype.resolve = function () {
@@ -1011,8 +1014,9 @@
         var uris = [];
 
         for (var i = 0, len = ids.length; i < len; i++) {
-            uris[i] = Module.resolve(ids[i], mod.uri);
+            uris[i] = Module.resolve(ids[i], mod.uri, mod.types ? mod.types[i] : 'js');
         }
+
         return uris;
     };
 
@@ -1061,7 +1065,7 @@
         emit("load", uris);
 
         for (var i = 0, len = uris.length; i < len; i++) {
-            mod.deps[mod.dependencies[i]] = Module.get(uris[i]);
+            mod.deps[mod.dependencies[i]] = Module.get(uris[i], [], mod.types ? mod.types[i] : 'js');
         }
 
         // Pass entry to it's dependencies
@@ -1146,7 +1150,7 @@
         var uri = mod.uri;
 
         function require(id, type) {
-            var m = mod.deps[id] || Module.get(require.resolve(id, type));
+            var m = mod.deps[id] || Module.get(require.resolve(id, type), [], type);
             if (m.status === STATUS.ERROR) {
                 throw new Error('module was broken: ' + m.uri);
             }
@@ -1213,6 +1217,7 @@
 
         // Emit `request` event for plugins such as text plugin
         emit("request", emitData = {
+            type: mod.type,
             uri: uri,
             requestUri: requestUri,
             onRequest: onRequest,
@@ -1227,7 +1232,7 @@
         }
 
         function sendRequest() {
-            seajs.request(emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
+            seajs.request(emitData.requestVersionUri || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
         }
 
         function onRequest(error) {
@@ -1272,6 +1277,10 @@
         if (argsLen === 1) {
             factory = id;
             id = undefined;
+
+            if (!isBoolean(Module.cmd)) {
+                Module.cmd = true;
+            }
         }
         else if (argsLen === 2) {
             factory = deps;
@@ -1287,6 +1296,10 @@
             }
         }
 
+        if (Module.cmd) {
+            id = deps = undefined;
+        }
+
         // Parse dependencies according to the module factory code
         if (!isArray(deps) && isFunction(factory)) {
             deps = parseDependencies(factory.toString());
@@ -1296,7 +1309,7 @@
             id: id,
             uri: Module.resolve(id),
             deps: deps[0],
-            depList: deps[1],
+            types: deps[1],
             factory: factory
         };
 
@@ -1322,14 +1335,15 @@
             anonymousMeta = meta;
     };
 
+
     // Save meta data to cachedMods
     Module.save = function (uri, meta) {
-        var mod = Module.get(uri);
+        var mod = Module.get(uri, []);
 
         // Do NOT override already saved modules
         if (mod.status < STATUS.SAVED) {
             mod.id = meta.id || uri;
-            mod.depList = meta.depList;
+            mod.types = meta.types;
             mod.dependencies = meta.deps;
             mod.factory = meta.factory;
             mod.status = STATUS.SAVED;
@@ -1339,8 +1353,8 @@
     };
 
     // Get an existed module or create a new one
-    Module.get = function (uri, deps) {
-        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps));
+    Module.get = function (uri, deps, type) {
+        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type));
     };
 
     // Use function is equal to load a anonymous module
@@ -1384,6 +1398,7 @@
         return seajs;
     };
 
+    Module.define.amd = {};
     Module.define.cmd = {};
     global.define = Module.define;
 
@@ -1394,8 +1409,8 @@
     data.fetchedList = fetchedList;
     data.cid = cid;
 
-    seajs.require = function (id) {
-        var mod = Module.get(Module.resolve(id));
+    seajs.require = function (id, type) {
+        var mod = Module.get(Module.resolve(id), [], type);
         if (mod.status < STATUS.EXECUTING) {
             mod.onload();
             mod.exec();
@@ -1481,6 +1496,48 @@
         var coolieConfig;
         var CONST_COOLIE_MODULES = 'coolie modules';
         var timeStart = now();
+        var REG_EXT = /\.[^.]*$/;
+
+        seajs.on('request', function (meta) {
+            var url = meta.requestUri;
+            var version =  coolieConfig._v[meta.requestUri];
+
+            meta.requestVersionUri = version ? url.replace(REG_EXT, '.' + version + '$&') : url;
+        }).on('request', function (meta) {
+            var id = meta.requestUri;
+            var url = meta.requestVersionUri || id;
+
+            switch (meta.type) {
+                case 'text':
+                case 'json':
+                    ajaxText(url, function (text) {
+                        Module.save(id, {
+                            id: id,
+                            types: [],
+                            deps: [],
+                            factory: function () {
+                                return meta.type === 'json' ? parseJSON(url, text) : text;
+                            }
+                        });
+                        meta.onRequest();
+                    });
+                    meta.requested = true;
+                    break;
+
+                case 'image':
+                    Module.save(id, {
+                        id: id,
+                        types: [],
+                        deps: [],
+                        factory: function () {
+                            return url;
+                        }
+                    });
+                    meta.requested = true;
+                    meta.onRequest();
+                    break;
+            }
+        });
 
         configURL = id2Uri(configURL, loaderPath);
         global.coolie = {
@@ -1513,6 +1570,12 @@
                         console.groupEnd(CONST_COOLIE_MODULES);
                     });
                 }
+
+                config._v = {};
+
+                each(config.version, function (key, val) {
+                    config._v[id2Uri(key, baseURL, true)] = val;
+                });
 
                 coolieConfig = config;
                 return this;
