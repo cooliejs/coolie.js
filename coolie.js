@@ -26,6 +26,11 @@
     var win = window;
 
 
+    var noop = function () {
+        // ignore
+    };
+
+
     // Avoid conflicting when `sea.js` is loaded multiple times
     //if (global.seajs) {
     //    return;
@@ -1175,11 +1180,25 @@
                 }
 
                 return the;
+            },
+
+
+            /**
+             * 分块加载
+             * @param urls
+             * @returns {global.coolie}
+             */
+            chunk: function (urls) {
+                //urls = isArray(urls) ? urls : [urls];
+                each(urls, function (index, url) {
+
+                    request(url, noop);
+                });
+
+                return this;
             }
         };
 
-        request(configURL, function () {
-            //
-        });
+        request(configURL, noop);
     }());
 })(this);
