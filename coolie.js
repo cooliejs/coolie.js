@@ -264,7 +264,6 @@
     }
 
 
-
     var ABSOLUTE_RE = /^\/\/.|:\//;
     var ROOT_DIR_RE = /^.*?\/\/.*?\//;
 
@@ -331,7 +330,6 @@
     var loaderPath;
     // Location is read-only from web worker, should be ok though
     var cwd = (!location.href || IGNORE_LOCATION_RE.test(location.href)) ? '' : dirname(location.href);
-
 
 
     var doc = document;
@@ -548,6 +546,7 @@
         this.dependencies = deps;
         this.deps = {}; // Ref the dependence modules
         this.status = 0;
+        this.id = uri;
         this.type = type || 'js';
         this._entry = [];
     }
@@ -707,7 +706,7 @@
         }
 
         require.resolve = function (id, type) {
-            return Module.resolve(id, uri, type);
+            return Module.cmd ? Module.resolve(id, uri, type) : id;
         };
 
         require.async = function (ids, callback) {
@@ -843,22 +842,28 @@
             else {
                 deps = undefined;
             }
+        } else {
+            if (!isBoolean(Module.cmd)) {
+                Module.cmd = false;
+            }
         }
 
         if (Module.cmd) {
             id = deps = undefined;
         }
 
+        var depList;
+
         // Parse dependencies according to the module factory code
         if (!isArray(deps) && isFunction(factory)) {
-            deps = parseDependencies(factory.toString());
+            depList = parseDependencies(factory.toString());
         }
 
         var meta = {
             id: id,
             uri: Module.resolve(id),
-            deps: deps[0],
-            types: deps[1],
+            deps: depList ? depList[0] : deps,
+            types: depList ? depList[1] : [],
             factory: factory
         };
 
@@ -887,16 +892,15 @@
 
     // Save meta data to cachedMods
     Module.save = function (uri, meta) {
-        var mod = Module.get(uri, []);
+        var id = meta.id || uri;
+        var mod = Module.get(id, []);
 
         // Do NOT override already saved modules
         if (mod.status < STATUS.SAVED) {
-            mod.id = meta.id || uri;
             mod.types = meta.types;
             mod.dependencies = meta.deps;
             mod.factory = meta.factory;
             mod.status = STATUS.SAVED;
-
             emit("save", mod);
         }
     };
@@ -916,7 +920,8 @@
 
         mod.callback = function () {
             var exports = [];
-            var uris = mod.resolve();
+            // 如果为非 cmd，则入口模块为 0
+            var uris = Module.cmd ? mod.resolve() : ['0'];
 
             emit('ready');
 
@@ -1049,7 +1054,7 @@
 
         seajs.on('request', function (meta) {
             var url = meta.requestUri;
-            var version =  coolieConfig._v[meta.requestUri];
+            var version = coolieConfig._v[meta.requestUri];
 
             meta.requestVersionUri = version ? url.replace(REG_EXT, '.' + version + '$&') : url;
         }).on('request', function (meta) {
@@ -1117,6 +1122,10 @@
                     }).on('ready', function () {
                         console.log('past ' + (now() - timeStart) + 'ms');
                         console.groupEnd(CONST_COOLIE_MODULES);
+                    });
+                } else {
+                    seajs.on('ready', function () {
+                        console.log(CONST_COOLIE_MODULES + ' past ' + (now() - timeStart) + 'ms');
                     });
                 }
 

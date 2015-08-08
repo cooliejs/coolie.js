@@ -14,13 +14,13 @@ define(function (require) {
     var image = require('../image/arrow1.png', 'image');
     var json = require('../image/coolie.json', 'json');
     //var wx = require('../libs/wx.js');
-    var jquery = require('../libs/path1/jquery.min.js');
+    //var jquery = require('../libs/path1/jquery.min.js');
 
     //console.log('456');
     console.log(text);
     console.log(image);
     console.log(json);
-    jquery('body').css('background', '#000');
+    //jquery('body').css('background', '#000');
     //a();
     //var json = require('./b/1.json', 'json');
     //console.log(json);
