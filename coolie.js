@@ -23,34 +23,8 @@
         return;
     }
 
+    var win = window;
 
-    /**
-     * 遍历
-     * @param list
-     * @param callback {Function} 返回 false，中断当前循环
-     * @param [isReverse=false] {Boolean} 是否反序
-     * @private
-     */
-    var each = function (list, callback, isReverse) {
-        var i;
-        var j;
-
-        if (isArray(list)) {
-            for (i = isReverse ? list.length - 1 : 0, j = isReverse ? 0 : list.length;
-                 isReverse ? i > j : i < j;
-                 isReverse ? i-- : i++) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
-            }
-        } else if (typeof(list) === 'object') {
-            for (i in list) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
-            }
-        }
-    };
 
     // Avoid conflicting when `sea.js` is loaded multiple times
     //if (global.seajs) {
@@ -88,6 +62,171 @@
         return _cid++;
     }
 
+
+    /**
+     * 遍历
+     * @param list
+     * @param callback {Function} 返回 false，中断当前循环
+     * @param [isReverse=false] {Boolean} 是否反序
+     * @private
+     */
+    var each = function (list, callback, isReverse) {
+        var i;
+        var j;
+
+        if (isArray(list)) {
+            for (i = isReverse ? list.length - 1 : 0, j = isReverse ? 0 : list.length;
+                 isReverse ? i > j : i < j;
+                 isReverse ? i-- : i++) {
+                if (callback(i, list[i]) === false) {
+                    break;
+                }
+            }
+        } else if (typeof(list) === 'object') {
+            for (i in list) {
+                if (callback(i, list[i]) === false) {
+                    break;
+                }
+            }
+        }
+    };
+
+    /**
+     * 定义 console，防止出错
+     */
+    var console = (function () {
+        var ret = {};
+        var hasConsole = win.console;
+        var arr = ['log', 'warn', 'group', 'groupEnd'];
+
+        each(arr, function (index, key) {
+            ret[key] = function () {
+                if (hasConsole && hasConsole[key]) {
+                    try {
+                        hasConsole[key].apply(hasConsole, arguments);
+                    } catch (err) {
+                        //ignore
+                    }
+                }
+            };
+        });
+
+        return ret;
+    })();
+
+
+    /**
+     * 当前时间戳
+     * @returns {number}
+     */
+    var now = function () {
+        return new Date().getTime();
+    };
+
+
+    ///**
+    // * 构造版本 URL
+    // * @param url
+    // * @returns {*}
+    // */
+    //var buildVersionURL = function (url) {
+    //    if (!coolieConfig._v) {
+    //        return url;
+    //    }
+    //
+    //    var version = isString(coolieConfig._v) ? coolieConfig._v : coolieConfig._v[url];
+    //
+    //    if (!version) {
+    //        return url;
+    //    }
+    //
+    //    return url.replace(REG_EXT, '.' + version + '$&');
+    //};
+
+
+    /**
+     * 解析字符串为 JSON 对象
+     * @param url {String} url 地址
+     * @param text {String} JSON 字符串
+     * @returns {{}}
+     */
+    var parseJSON = function (url, text) {
+        var json = {};
+
+        try {
+            json = JSON.parse(text);
+        } catch (err1) {
+            try {
+                /* jshint evil: true */
+                var fn = new Function('', 'return ' + text);
+                json = fn();
+            } catch (err2) {
+                throw 'parse json error ' + url;
+            }
+        }
+
+        return json;
+    };
+
+
+    /**
+     * 加载文本模块
+     * @param url {String} 文本 URL
+     * @param type {String} 文本类型
+     */
+    var ajaxText = function (url, type) {
+        //var url2 = buildVersionURL(url);
+        var url2 = url;
+        var xhr = new XMLHttpRequest();
+        var hasComplete;
+        var onready = function () {
+            if (xhr.readyState === 4 && !hasComplete) {
+                hasComplete = true;
+                if (xhr.status === 200 || xhr.status === 304) {
+                    defineModule({
+                        _isAn: mainModule._isAn,
+                        id: url,
+                        url: url2,
+                        deps: [],
+                        factory: function () {
+                            var code = xhr.responseText;
+
+                            if (code && type === CONST_JSON) {
+                                code = parseJSON(url, code);
+                            }
+
+                            return code;
+                        }
+                    });
+                } else {
+                    throw 'ajax error\n' + url2;
+                }
+            }
+        };
+
+        xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
+        xhr.open('GET', url2);
+        xhr.send(null);
+    };
+
+
+    ///**
+    // * 包裹图片模块
+    // * @param id
+    // */
+    //var wrapImageModule = function (id) {
+    //    defineModule({
+    //        _isAn: mainModule._isAn,
+    //        id: id,
+    //        url: buildVersionURL(id),
+    //        deps: [],
+    //        factory: function () {
+    //            return id;
+    //        }
+    //    });
+    //};
+
+
     /**
      * util-events.js - The minimal events support
      */
@@ -101,32 +240,32 @@
         return seajs;
     };
 
-    // Remove event. If `callback` is undefined, remove all callbacks for the
-    // event. If `event` and `callback` are both undefined, remove all callbacks
-    // for all events
-    seajs.off = function (name, callback) {
-        // Remove *all* events
-        if (!(name || callback)) {
-            events = data.events = {};
-            return seajs;
-        }
-
-        var list = events[name];
-        if (list) {
-            if (callback) {
-                for (var i = list.length - 1; i >= 0; i--) {
-                    if (list[i] === callback) {
-                        list.splice(i, 1);
-                    }
-                }
-            }
-            else {
-                delete events[name];
-            }
-        }
-
-        return seajs;
-    };
+    //// Remove event. If `callback` is undefined, remove all callbacks for the
+    //// event. If `event` and `callback` are both undefined, remove all callbacks
+    //// for all events
+    //seajs.off = function (name, callback) {
+    //    // Remove *all* events
+    //    if (!(name || callback)) {
+    //        events = data.events = {};
+    //        return seajs;
+    //    }
+    //
+    //    var list = events[name];
+    //    if (list) {
+    //        if (callback) {
+    //            for (var i = list.length - 1; i >= 0; i--) {
+    //                if (list[i] === callback) {
+    //                    list.splice(i, 1);
+    //                }
+    //            }
+    //        }
+    //        else {
+    //            delete events[name];
+    //        }
+    //    }
+    //
+    //    return seajs;
+    //};
 
     // Emit event, firing all bound callbacks. Callbacks receive the same
     // arguments as `emit` does, apart from the event name
@@ -188,7 +327,7 @@
     // Normalize an id
     // normalize("path/to/a") ==> "path/to/a.js"
     // NOTICE: substring is faster than negative slice and RegExp
-    function normalize(path) {
+    function normalize(path, isSingle) {
         var last = path.length - 1;
         var lastC = path.charCodeAt(last);
 
@@ -199,7 +338,7 @@
 
         return (path.substring(last - 2) === ".js" ||
         path.indexOf("?") > 0 ||
-        lastC === 47 /* "/" */) ? path : path + ".js";
+        lastC === 47 /* "/" */) || isSingle ? path : path + ".js";
     }
 
 
@@ -289,7 +428,7 @@
     }
 
 
-    function id2Uri(id, refUri) {
+    function id2Uri(id, refUri, isSingle) {
         if (!id) return refUri;
 
         //id = parseAlias(id);
@@ -297,7 +436,7 @@
         //id = parseAlias(id);
         //id = parseVars(id);
         //id = parseAlias(id);
-        id = normalize(id);
+        id = normalize(id, isSingle);
         //id = parseAlias(id);
 
         //var uri = addBase(id, refUri);
@@ -522,247 +661,310 @@
         }
     }
 
+    ///**
+    // * util-deps.js - The parser for dependencies
+    // * ref: tests/research/parse-dependencies/test.html
+    // * ref: https://github.com/seajs/crequire
+    // */
+    //
+    //function parseDependencies(s) {
+    //    if (s.indexOf('require') === -1) {
+    //        return [];
+    //    }
+    //    var index = 0, peek = '', length = s.length, isReg = 1, modName = 0, res = [];
+    //    var parentheseState = 0, parentheseStack = [];
+    //    var braceState, braceStack = [], isReturn;
+    //    while (index < length) {
+    //        readch();
+    //        if (isBlank()) {
+    //            if (isReturn && (peek === '\n' || peek === '\r')) {
+    //                braceState = 0;
+    //                isReturn = 0;
+    //            }
+    //        }
+    //        else if (isQuote()) {
+    //            dealQuote();
+    //            isReg = 1;
+    //            isReturn = 0;
+    //            braceState = 0;
+    //        }
+    //        else if (peek === '/') {
+    //            readch();
+    //            if (peek === '/') {
+    //                index = s.indexOf('\n', index);
+    //                if (index === -1) {
+    //                    index = s.length;
+    //                }
+    //            }
+    //            else if (peek === '*') {
+    //                var i = s.indexOf('\n', index);
+    //                index = s.indexOf('*/', index);
+    //                if (index === -1) {
+    //                    index = length;
+    //                }
+    //                else {
+    //                    index += 2;
+    //                }
+    //                if (isReturn && i !== -1 && i < index) {
+    //                    braceState = 0;
+    //                    isReturn = 0;
+    //                }
+    //            }
+    //            else if (isReg) {
+    //                dealReg();
+    //                isReg = 0;
+    //                isReturn = 0;
+    //                braceState = 0;
+    //            }
+    //            else {
+    //                index--;
+    //                isReg = 1;
+    //                isReturn = 0;
+    //                braceState = 1;
+    //            }
+    //        }
+    //        else if (isWord()) {
+    //            dealWord();
+    //        }
+    //        else if (isNumber()) {
+    //            dealNumber();
+    //            isReturn = 0;
+    //            braceState = 0;
+    //        }
+    //        else if (peek === '(') {
+    //            parentheseStack.push(parentheseState);
+    //            isReg = 1;
+    //            isReturn = 0;
+    //            braceState = 1;
+    //        }
+    //        else if (peek === ')') {
+    //            isReg = parentheseStack.pop();
+    //            isReturn = 0;
+    //            braceState = 0;
+    //        }
+    //        else if (peek === '{') {
+    //            if (isReturn) {
+    //                braceState = 1;
+    //            }
+    //            braceStack.push(braceState);
+    //            isReturn = 0;
+    //            isReg = 1;
+    //        }
+    //        else if (peek === '}') {
+    //            braceState = braceStack.pop();
+    //            isReg = !braceState;
+    //            isReturn = 0;
+    //        }
+    //        else {
+    //            var next = s.charAt(index);
+    //            if (peek === ';') {
+    //                braceState = 0;
+    //            }
+    //            else if (peek === '-' && next === '-' || peek === '+' && next === '+' || peek === '=' && next === '>') {
+    //                braceState = 0;
+    //                index++;
+    //            }
+    //            else {
+    //                braceState = 1;
+    //            }
+    //            isReg = peek !== ']';
+    //            isReturn = 0;
+    //        }
+    //    }
+    //    return res;
+    //    function readch() {
+    //        peek = s.charAt(index++);
+    //    }
+    //
+    //    function isBlank() {
+    //        return /\s/.test(peek);
+    //    }
+    //
+    //    function isQuote() {
+    //        return peek === '"' || peek === "'";
+    //    }
+    //
+    //    function dealQuote() {
+    //        var start = index;
+    //        var c = peek;
+    //        var end = s.indexOf(c, start);
+    //        if (end === -1) {
+    //            index = length;
+    //        }
+    //        else if (s.charAt(end - 1) !== '\\') {
+    //            index = end + 1;
+    //        }
+    //        else {
+    //            while (index < length) {
+    //                readch();
+    //                if (peek === '\\') {
+    //                    index++;
+    //                }
+    //                else if (peek === c) {
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //        if (modName) {
+    //            res.push(s.slice(start, index - 1));
+    //            modName = 0;
+    //        }
+    //    }
+    //
+    //    function dealReg() {
+    //        index--;
+    //        while (index < length) {
+    //            readch();
+    //            if (peek === '\\') {
+    //                index++;
+    //            }
+    //            else if (peek === '/') {
+    //                break;
+    //            }
+    //            else if (peek === '[') {
+    //                while (index < length) {
+    //                    readch();
+    //                    if (peek === '\\') {
+    //                        index++;
+    //                    }
+    //                    else if (peek === ']') {
+    //                        break;
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    //
+    //    function isWord() {
+    //        return /[a-z_$]/i.test(peek);
+    //    }
+    //
+    //    function dealWord() {
+    //        var s2 = s.slice(index - 1);
+    //        var r = /^[\w$]+/.exec(s2)[0];
+    //        parentheseState = {
+    //            'if': 1,
+    //            'for': 1,
+    //            'while': 1,
+    //            'with': 1
+    //        }[r];
+    //        isReg = {
+    //            'break': 1,
+    //            'case': 1,
+    //            'continue': 1,
+    //            'debugger': 1,
+    //            'delete': 1,
+    //            'do': 1,
+    //            'else': 1,
+    //            'false': 1,
+    //            'if': 1,
+    //            'in': 1,
+    //            'instanceof': 1,
+    //            'return': 1,
+    //            'typeof': 1,
+    //            'void': 1
+    //        }[r];
+    //        isReturn = r === 'return';
+    //        braceState = {
+    //            'instanceof': 1,
+    //            'delete': 1,
+    //            'void': 1,
+    //            'typeof': 1,
+    //            'return': 1
+    //        }.hasOwnProperty(r);
+    //        modName = /^require\s*\(\s*(['"]).+?\1\s*\)/.test(s2);
+    //        if (modName) {
+    //            r = /^require\s*\(\s*['"]/.exec(s2)[0];
+    //            index += r.length - 2;
+    //        }
+    //        else {
+    //            index += /^[\w$]+(?:\s*\.\s*[\w$]+)*/.exec(s2)[0].length - 1;
+    //        }
+    //    }
+    //
+    //    function isNumber() {
+    //        return /\d/.test(peek) || peek === '.' && /\d/.test(s.charAt(index));
+    //    }
+    //
+    //    function dealNumber() {
+    //        var s2 = s.slice(index - 1);
+    //        var r;
+    //        if (peek === '.') {
+    //            r = /^\.\d+(?:E[+-]?\d*)?\s*/i.exec(s2)[0];
+    //        }
+    //        else if (/^0x[\da-f]*/i.test(s2)) {
+    //            r = /^0x[\da-f]*\s*/i.exec(s2)[0];
+    //        }
+    //        else {
+    //            r = /^\d+\.?\d*(?:E[+-]?\d*)?\s*/i.exec(s2)[0];
+    //        }
+    //        index += r.length - 1;
+    //        isReg = 0;
+    //    }
+    //}
+
+
     /**
-     * util-deps.js - The parser for dependencies
-     * ref: tests/research/parse-dependencies/test.html
-     * ref: https://github.com/seajs/crequire
+     * require 正则
+     * @type {RegExp}
+     * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js
      */
+    var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
 
-    function parseDependencies(s) {
-        if (s.indexOf('require') === -1) {
-            return [];
-        }
-        var index = 0, peek = '', length = s.length, isReg = 1, modName = 0, res = [];
-        var parentheseState = 0, parentheseStack = [];
-        var braceState, braceStack = [], isReturn;
-        while (index < length) {
-            readch();
-            if (isBlank()) {
-                if (isReturn && (peek === '\n' || peek === '\r')) {
-                    braceState = 0;
-                    isReturn = 0;
-                }
-            }
-            else if (isQuote()) {
-                dealQuote();
-                isReg = 1;
-                isReturn = 0;
-                braceState = 0;
-            }
-            else if (peek === '/') {
-                readch();
-                if (peek === '/') {
-                    index = s.indexOf('\n', index);
-                    if (index === -1) {
-                        index = s.length;
-                    }
-                }
-                else if (peek === '*') {
-                    var i = s.indexOf('\n', index);
-                    index = s.indexOf('*/', index);
-                    if (index === -1) {
-                        index = length;
-                    }
-                    else {
-                        index += 2;
-                    }
-                    if (isReturn && i !== -1 && i < index) {
-                        braceState = 0;
-                        isReturn = 0;
-                    }
-                }
-                else if (isReg) {
-                    dealReg();
-                    isReg = 0;
-                    isReturn = 0;
-                    braceState = 0;
-                }
-                else {
-                    index--;
-                    isReg = 1;
-                    isReturn = 0;
-                    braceState = 1;
-                }
-            }
-            else if (isWord()) {
-                dealWord();
-            }
-            else if (isNumber()) {
-                dealNumber();
-                isReturn = 0;
-                braceState = 0;
-            }
-            else if (peek === '(') {
-                parentheseStack.push(parentheseState);
-                isReg = 1;
-                isReturn = 0;
-                braceState = 1;
-            }
-            else if (peek === ')') {
-                isReg = parentheseStack.pop();
-                isReturn = 0;
-                braceState = 0;
-            }
-            else if (peek === '{') {
-                if (isReturn) {
-                    braceState = 1;
-                }
-                braceStack.push(braceState);
-                isReturn = 0;
-                isReg = 1;
-            }
-            else if (peek === '}') {
-                braceState = braceStack.pop();
-                isReg = !braceState;
-                isReturn = 0;
-            }
-            else {
-                var next = s.charAt(index);
-                if (peek === ';') {
-                    braceState = 0;
-                }
-                else if (peek === '-' && next === '-' || peek === '+' && next === '+' || peek === '=' && next === '>') {
-                    braceState = 0;
-                    index++;
-                }
-                else {
-                    braceState = 1;
-                }
-                isReg = peek !== ']';
-                isReturn = 0;
-            }
-        }
-        return res;
-        function readch() {
-            peek = s.charAt(index++);
-        }
 
-        function isBlank() {
-            return /\s/.test(peek);
-        }
+    /**
+     * 反斜杠
+     * @type {RegExp}
+     */
+    var REG_SLASH = /\\\\/g;
 
-        function isQuote() {
-            return peek === '"' || peek === "'";
-        }
 
-        function dealQuote() {
-            var start = index;
-            var c = peek;
-            var end = s.indexOf(c, start);
-            if (end === -1) {
-                index = length;
-            }
-            else if (s.charAt(end - 1) !== '\\') {
-                index = end + 1;
-            }
-            else {
-                while (index < length) {
-                    readch();
-                    if (peek === '\\') {
-                        index++;
-                    }
-                    else if (peek === c) {
-                        break;
-                    }
-                }
-            }
-            if (modName) {
-                res.push(s.slice(start, index - 1));
-                modName = 0;
-            }
-        }
+    /**
+     * require 类型
+     * @type {RegExp}
+     */
+    var REG_REQUIRE_TYPE = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
 
-        function dealReg() {
-            index--;
-            while (index < length) {
-                readch();
-                if (peek === '\\') {
-                    index++;
-                }
-                else if (peek === '/') {
-                    break;
-                }
-                else if (peek === '[') {
-                    while (index < length) {
-                        readch();
-                        if (peek === '\\') {
-                            index++;
-                        }
-                        else if (peek === ']') {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
 
-        function isWord() {
-            return /[a-z_$]/i.test(peek);
-        }
+    /**
+     * 模块类型别名
+     * @type {{image: string, text: string, html: string, css: string}}
+     */
+    var moduleTypeMap = {
+        image: 'image',
+        text: 'text',
+        html: 'text',
+        json: 'json',
+        css: 'text'
+    };
 
-        function dealWord() {
-            var s2 = s.slice(index - 1);
-            var r = /^[\w$]+/.exec(s2)[0];
-            parentheseState = {
-                'if': 1,
-                'for': 1,
-                'while': 1,
-                'with': 1
-            }[r];
-            isReg = {
-                'break': 1,
-                'case': 1,
-                'continue': 1,
-                'debugger': 1,
-                'delete': 1,
-                'do': 1,
-                'else': 1,
-                'false': 1,
-                'if': 1,
-                'in': 1,
-                'instanceof': 1,
-                'return': 1,
-                'typeof': 1,
-                'void': 1
-            }[r];
-            isReturn = r === 'return';
-            braceState = {
-                'instanceof': 1,
-                'delete': 1,
-                'void': 1,
-                'typeof': 1,
-                'return': 1
-            }.hasOwnProperty(r);
-            modName = /^require\s*\(\s*(['"]).+?\1\s*\)/.test(s2);
-            if (modName) {
-                r = /^require\s*\(\s*['"]/.exec(s2)[0];
-                index += r.length - 2;
-            }
-            else {
-                index += /^[\w$]+(?:\s*\.\s*[\w$]+)*/.exec(s2)[0].length - 1;
-            }
-        }
 
-        function isNumber() {
-            return /\d/.test(peek) || peek === '.' && /\d/.test(s.charAt(index));
-        }
+    /**
+     * 解析代码里的依赖信息
+     * @param code {String} 代码
+     */
+    var parseDependencies = function (code) {
+        var deps = [];
+        var depList = [];
 
-        function dealNumber() {
-            var s2 = s.slice(index - 1);
-            var r;
-            if (peek === '.') {
-                r = /^\.\d+(?:E[+-]?\d*)?\s*/i.exec(s2)[0];
+        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
+            if ($2) {
+                var matches = $2.match(REG_REQUIRE_TYPE);
+                var uri = id2Uri(matches[1], '', matches[2]);
+                // require('1.js', 'js');
+                var dep = {
+                    name: uri,
+                    type: matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js'
+                };
+
+                deps.push(uri);
+                depList.push(dep);
             }
-            else if (/^0x[\da-f]*/i.test(s2)) {
-                r = /^0x[\da-f]*\s*/i.exec(s2)[0];
-            }
-            else {
-                r = /^\d+\.?\d*(?:E[+-]?\d*)?\s*/i.exec(s2)[0];
-            }
-            index += r.length - 1;
-            isReg = 0;
-        }
-    }
+        });
+
+        return [deps, depList];
+    };
+
 
     /**
      * module.js - The core of module loader
@@ -943,16 +1145,16 @@
         // Create require
         var uri = mod.uri;
 
-        function require(id) {
-            var m = mod.deps[id] || Module.get(require.resolve(id));
+        function require(id, type) {
+            var m = mod.deps[id] || Module.get(require.resolve(id, type));
             if (m.status === STATUS.ERROR) {
                 throw new Error('module was broken: ' + m.uri);
             }
             return m.exec();
         }
 
-        require.resolve = function (id) {
-            return Module.resolve(id, uri);
+        require.resolve = function (id, type) {
+            return Module.resolve(id, uri, type);
         };
 
         require.async = function (ids, callback) {
@@ -1054,12 +1256,12 @@
     };
 
     // Resolve id to uri
-    Module.resolve = function (id, refUri) {
+    Module.resolve = function (id, refUri, type) {
         // Emit `resolve` event for plugins such as text plugin
-        var emitData = {id: id, refUri: refUri};
+        var emitData = {id: id, refUri: refUri, type: type};
         emit("resolve", emitData);
 
-        return emitData.uri || seajs.resolve(emitData.id, refUri);
+        return emitData.uri || id2Uri(emitData.id, refUri, type);
     };
 
     // Define a module
@@ -1087,13 +1289,14 @@
 
         // Parse dependencies according to the module factory code
         if (!isArray(deps) && isFunction(factory)) {
-            deps = typeof parseDependencies === "undefined" ? [] : parseDependencies(factory.toString());
+            deps = parseDependencies(factory.toString());
         }
 
         var meta = {
             id: id,
             uri: Module.resolve(id),
-            deps: deps,
+            deps: deps[0],
+            depList: deps[1],
             factory: factory
         };
 
@@ -1126,7 +1329,8 @@
         // Do NOT override already saved modules
         if (mod.status < STATUS.SAVED) {
             mod.id = meta.id || uri;
-            mod.dependencies = meta.deps || [];
+            mod.depList = meta.depList;
+            mod.dependencies = meta.deps;
             mod.factory = meta.factory;
             mod.status = STATUS.SAVED;
 
@@ -1151,9 +1355,13 @@
             var exports = [];
             var uris = mod.resolve();
 
+            emit('ready');
+
             for (var i = 0, len = uris.length; i < len; i++) {
                 exports[i] = cachedMods[uris[i]].exec();
             }
+
+            emit('execed');
 
             if (callback) {
                 callback.apply(global, exports);
@@ -1265,25 +1473,26 @@
     // ==============================================================================
     // @coolie exports
     (function () {
-        //var $scipts = doc.getElementsByTagName('script');
-        //var $currentScript = $scipts[$scipts.length - 1];
-        //var currentScriptURL = getScriptAbsoluteSrc($currentScript);
         var mainURL = loaderScript.getAttribute('data-main');
         var configURL = loaderScript.getAttribute('data-config');
         var baseURL = loaderPath;
         var mainCallbackList = [];
         var mainModule;
+        var coolieConfig;
+        var CONST_COOLIE_MODULES = 'coolie modules';
+        var timeStart = now();
 
-        configURL = seajs.resolve(configURL, loaderPath);
+        configURL = id2Uri(configURL, loaderPath);
         global.coolie = {
+            modules: cachedMods,
             /**
              * 配置模块
              * @param config
              * @returns {global.coolie}
              */
             config: function (config) {
-                baseURL = seajs.resolve(config.base, configURL);
-                mainURL = seajs.resolve(mainURL, baseURL);
+                baseURL = id2Uri(config.base, configURL);
+                mainURL = id2Uri(mainURL, baseURL);
 
                 if (config.debug !== false) {
                     config.debug = true;
@@ -1295,6 +1504,17 @@
                     debug: config.debug
                 });
 
+                if (config.debug) {
+                    console.group(CONST_COOLIE_MODULES);
+                    seajs.on('request', function (meta) {
+                        console.log(meta.requestUri);
+                    }).on('ready', function () {
+                        console.log('past ' + (now() - timeStart) + 'ms');
+                        console.groupEnd(CONST_COOLIE_MODULES);
+                    });
+                }
+
+                coolieConfig = config;
                 return this;
             },
 
@@ -1304,7 +1524,7 @@
              * @returns {global.coolie}
              */
             use: function (main) {
-                seajs.use(main ? seajs.resolve(main, baseURL) : mainURL, function (modules) {
+                seajs.use(main ? id2Uri(main, baseURL) : mainURL, function (modules) {
                     mainModule = cachedMods[mainURL];
 
                     for (var i = 0, len = mainCallbackList.length; i < len; i++) {

@@ -10,7 +10,7 @@ define(function (require) {
     //var c = require('../libs/c.js?a=312');
     //var c = require('../libs/c.js?a=312');
     //var c = require('../libs/c.js?a=312');
-    //var text = require('../text/some.txt', 'text');
+    var text = require('../text/some.txt', 'text');
     //var wx = require('../libs/wx.js');
     //var jquery = require('../libs/path1/jquery.min.js');
 
