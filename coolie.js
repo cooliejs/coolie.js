@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author ydr.me
- * @version 0.14.5
+ * @version 0.14.6
  * @license MIT
  */
 
@@ -47,7 +47,7 @@
      * coolie 版本号
      * @type {string}
      */
-    coolie.version = '0.14.5';
+    coolie.version = '0.14.6';
 
 
     /**
@@ -77,6 +77,13 @@
      * @type {HTMLDocument}
      */
     var doc = win.document;
+
+
+    /**
+     * 是否为旧的IE（ie6、ie7、ie8、ie9）
+     * @type {boolean}
+     */
+    var isOldIE = !!doc.attachEvent;
 
 
     /**
@@ -474,10 +481,17 @@
 
 
     /**
-     * 最后一个添加的脚本
-     * @type {null|Object}
+     * 脚本加载列表，IE10、chrome、firefox 按照添加的脚本队列，按照顺序执行，
+     * 而 IE 需要通过遍历判断来获取
      */
-    var $lastScript = null;
+    var appendModuleScriptList = [];
+
+
+    /**
+     * 最后一个添加的脚本
+     * @type {Object}
+     */
+    var $lastAppendModuleScript;
 
 
     /**
@@ -516,8 +530,6 @@
             }
 
             if (isNotModule !== true) {
-                $lastScript = $script;
-                analyScriptModule($script);
                 loadModuleLength--;
             }
         };
@@ -531,6 +543,10 @@
                     onready(eve);
                 }
             };
+        }
+
+        if (isNotModule !== true) {
+            $lastAppendModuleScript = $script;
         }
 
         appendChild($script, $cache);
@@ -630,6 +646,29 @@
         var scripts = getNodeList(CONST_SCRIPT, $parent);
 
         return scripts[scripts.length - 1];
+    };
+
+
+    /**
+     * 获得当前运行的脚本，为 IE 服务
+     * @returns {*}
+     */
+    var getInteractiveScript = function () {
+        // For IE6-9 browsers, the script onload event may not fire right
+        // after the script is evaluated. Kris Zyp found that it
+        // could query the script nodes and the one that is in "interactive"
+        // mode indicates the current script
+        // ref: http://goo.gl/JHfFW
+        var scripts = getNodeList('script', $cache);
+
+        for (var i = scripts.length - 1; i >= 0; i--) {
+            var script = scripts[i];
+
+            if (script.readyState === 'interactive') {
+                console.log('readyState' + '=>' + script.readyState + '=>' + script.src);
+                return script;
+            }
+        }
     };
 
 
@@ -944,10 +983,11 @@
 
     /**
      * 分析脚本模块
-     * @params $interactiveScript {HTMLScriptElement} 当前活动脚本
      */
-    var analyScriptModule = function ($interactiveScript) {
+    var analyScriptModule = function () {
         var isAn = true;
+        var $interactiveScript = isOldIE ? getInteractiveScript() : $lastAppendModuleScript;
+        console.log($interactiveScript);
         var args = defineList.shift();
 
         if (!args) {
@@ -1054,10 +1094,6 @@
 
         module.deps = deps2;
         defineModule(module);
-
-        if (defineList.length && $lastScript) {
-            analyScriptModule($lastScript);
-        }
     };
 
 
@@ -1147,6 +1183,7 @@
      */
     var define = function (id, deps, factory) {
         defineList.push([id, deps, factory]);
+        analyScriptModule();
     };
 
 
