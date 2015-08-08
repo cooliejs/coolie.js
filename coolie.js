@@ -125,26 +125,6 @@
     };
 
 
-    ///**
-    // * 构造版本 URL
-    // * @param url
-    // * @returns {*}
-    // */
-    //var buildVersionURL = function (url) {
-    //    if (!coolieConfig._v) {
-    //        return url;
-    //    }
-    //
-    //    var version = isString(coolieConfig._v) ? coolieConfig._v : coolieConfig._v[url];
-    //
-    //    if (!version) {
-    //        return url;
-    //    }
-    //
-    //    return url.replace(REG_EXT, '.' + version + '$&');
-    //};
-
-
     /**
      * 解析字符串为 JSON 对象
      * @param url {String} url 地址
@@ -176,35 +156,15 @@
      * @param callback {Function} 加载回调
      */
     var ajaxText = function (url, callback) {
-        //var url2 = buildVersionURL(url);
-        var url2 = url;
-        var xhr = new XMLHttpRequest();
+        var xhr = XMLHttpRequest ? new XMLHttpRequest() : new win.ActiveXObject("Microsoft.XMLHTTP");
         var hasComplete;
         var onready = function () {
             if (xhr.readyState === 4 && !hasComplete) {
                 hasComplete = true;
                 if (xhr.status === 200 || xhr.status === 304) {
                     callback(xhr.responseText);
-                    //Module.define(url2, [], function () {
-                    //   return xhr.responseText;
-                    //});
-                    //defineModule({
-                    //    _isAn: mainModule._isAn,
-                    //    id: url,
-                    //    url: url2,
-                    //    deps: [],
-                    //    factory: function () {
-                    //        var code = xhr.responseText;
-                    //
-                    //        if (code && type === CONST_JSON) {
-                    //            code = parseJSON(url, code);
-                    //        }
-                    //
-                    //        return code;
-                    //    }
-                    //});
                 } else {
-                    throw 'ajax error\n' + url2;
+                    throw 'ajax error\n' + url;
                 }
             }
         };
@@ -213,23 +173,6 @@
         xhr.open('GET', url2);
         xhr.send(null);
     };
-
-
-    ///**
-    // * 包裹图片模块
-    // * @param id
-    // */
-    //var wrapImageModule = function (id) {
-    //    defineModule({
-    //        _isAn: mainModule._isAn,
-    //        id: id,
-    //        url: buildVersionURL(id),
-    //        deps: [],
-    //        factory: function () {
-    //            return id;
-    //        }
-    //    });
-    //};
 
 
     /**
@@ -245,32 +188,6 @@
         return seajs;
     };
 
-    //// Remove event. If `callback` is undefined, remove all callbacks for the
-    //// event. If `event` and `callback` are both undefined, remove all callbacks
-    //// for all events
-    //seajs.off = function (name, callback) {
-    //    // Remove *all* events
-    //    if (!(name || callback)) {
-    //        events = data.events = {};
-    //        return seajs;
-    //    }
-    //
-    //    var list = events[name];
-    //    if (list) {
-    //        if (callback) {
-    //            for (var i = list.length - 1; i >= 0; i--) {
-    //                if (list[i] === callback) {
-    //                    list.splice(i, 1);
-    //                }
-    //            }
-    //        }
-    //        else {
-    //            delete events[name];
-    //        }
-    //    }
-    //
-    //    return seajs;
-    //};
 
     // Emit event, firing all bound callbacks. Callbacks receive the same
     // arguments as `emit` does, apart from the event name
@@ -347,57 +264,6 @@
     }
 
 
-    //var PATHS_RE = /^([^/:]+)(\/.+)$/;
-    //var VARS_RE = /{([^{]+)}/g;
-    //
-    //function parseAlias(id) {
-    //    var alias = data.alias;
-    //    return alias && isString(alias[id]) ? alias[id] : id;
-    //}
-    //
-    //function parsePaths(id) {
-    //    var paths = data.paths;
-    //    var m;
-    //
-    //    if (paths && (m = id.match(PATHS_RE)) && isString(paths[m[1]])) {
-    //        id = paths[m[1]] + m[2];
-    //    }
-    //
-    //    return id;
-    //}
-    //
-    //function parseVars(id) {
-    //    var vars = data.vars;
-    //
-    //    if (vars && id.indexOf("{") > -1) {
-    //        id = id.replace(VARS_RE, function (m, key) {
-    //            return isString(vars[key]) ? vars[key] : m;
-    //        });
-    //    }
-    //
-    //    return id;
-    //}
-    //
-    //function parseMap(uri) {
-    //    var map = data.map;
-    //    var ret = uri;
-    //
-    //    if (map) {
-    //        for (var i = 0, len = map.length; i < len; i++) {
-    //            var rule = map[i];
-    //
-    //            ret = isFunction(rule) ?
-    //                (rule(uri) || uri) :
-    //                uri.replace(rule[0], rule[1]);
-    //
-    //            // Only apply the first matched rule
-    //            if (ret !== uri) break;
-    //        }
-    //    }
-    //
-    //    return ret;
-    //}
-
 
     var ABSOLUTE_RE = /^\/\/.|:\//;
     var ROOT_DIR_RE = /^.*?\/\/.*?\//;
@@ -467,63 +333,7 @@
     var cwd = (!location.href || IGNORE_LOCATION_RE.test(location.href)) ? '' : dirname(location.href);
 
 
-    // @coolie ignore webworker
-    //if (isWebWorker) {
-    //    // Web worker doesn't create DOM object when loading scripts
-    //    // Get sea.js's path by stack trace.
-    //    var stack
-    //    try {
-    //        var up = new Error()
-    //        throw up
-    //    } catch (e) {
-    //        // IE won't set Error.stack until thrown
-    //        stack = e.stack.split('\n')
-    //    }
-    //    // First line is 'Error'
-    //    stack.shift()
-    //
-    //    var m
-    //    // Try match `url:row:col` from stack trace line. Known formats:
-    //    // Chrome:  '    at http://localhost:8000/script/sea-worker-debug.js:294:25'
-    //    // FireFox: '@http://localhost:8000/script/sea-worker-debug.js:1082:1'
-    //    // IE11:    '   at Anonymous function (http://localhost:8000/script/sea-worker-debug.js:295:5)'
-    //    // Don't care about older browsers since web worker is an HTML5 feature
-    //    var TRACE_RE = /.*?((?:http|https|file)(?::\/{2}[\w]+)(?:[\/|\.]?)(?:[^\s"]*)).*?/i
-    //    // Try match `url` (Note: in IE there will be a tailing ')')
-    //    var URL_RE = /(.*?):\d+:\d+\)?$/
-    //    // Find url of from stack trace.
-    //    // Cannot simply read the first one because sometimes we will get:
-    //    // Error
-    //    //  at Error (native) <- Here's your problem
-    //    //  at http://localhost:8000/_site/dist/sea.js:2:4334 <- What we want
-    //    //  at http://localhost:8000/_site/dist/sea.js:2:8386
-    //    //  at http://localhost:8000/_site/tests/specs/web-worker/worker.js:3:1
-    //    while (stack.length > 0) {
-    //        var top = stack.shift()
-    //        m = TRACE_RE.exec(top)
-    //        if (m != null) {
-    //            break
-    //        }
-    //    }
-    //    var url
-    //    if (m != null) {
-    //        // Remove line number and column number
-    //        // No need to check, can't be wrong at this point
-    //        var url = URL_RE.exec(m[1])[1]
-    //    }
-    //    // Set
-    //    loaderPath = url
-    //    // Set loaderDir
-    //    loaderDir = dirname(url || cwd)
-    //    // This happens with inline worker.
-    //    // When entrance script's location.href is a blob url,
-    //    // cwd will not be available.
-    //    // Fall back to loaderDir.
-    //    if (cwd === '') {
-    //        cwd = loaderDir
-    //    }
-    //}
-    //else {
+
     var doc = document;
     var scripts = doc.scripts;
 
@@ -542,30 +352,12 @@
     loaderPath = getScriptAbsoluteSrc(loaderScript);
     // When `sea.js` is inline, set loaderDir to current working directory
     loaderDir = dirname(loaderPath || cwd);
-    //}
 
     /**
      * util-request.js - The utilities for requesting script and style files
      * ref: tests/research/load-js-css/test.html
      */
-    // @coolie ignore webworker
-    //if (isWebWorker) {
-    //    function requestFromWebWorker(url, callback, charset, crossorigin) {
-    //        // Load with importScripts
-    //        var error
-    //        try {
-    //            importScripts(url)
-    //        } catch (e) {
-    //            error = e
-    //        }
-    //        callback(error)
-    //    }
-    //
-    //    // For Developers
-    //    seajs.request = requestFromWebWorker
-    //}
-    //else {
-    //var doc = document;
+
     var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
     var baseElement = head.getElementsByTagName("base")[0];
 
@@ -637,7 +429,6 @@
     // For Developers
     seajs.request = request;
 
-    //}
 
     var interactiveScript;
 
@@ -665,248 +456,6 @@
             }
         }
     }
-
-    ///**
-    // * util-deps.js - The parser for dependencies
-    // * ref: tests/research/parse-dependencies/test.html
-    // * ref: https://github.com/seajs/crequire
-    // */
-    //
-    //function parseDependencies(s) {
-    //    if (s.indexOf('require') === -1) {
-    //        return [];
-    //    }
-    //    var index = 0, peek = '', length = s.length, isReg = 1, modName = 0, res = [];
-    //    var parentheseState = 0, parentheseStack = [];
-    //    var braceState, braceStack = [], isReturn;
-    //    while (index < length) {
-    //        readch();
-    //        if (isBlank()) {
-    //            if (isReturn && (peek === '\n' || peek === '\r')) {
-    //                braceState = 0;
-    //                isReturn = 0;
-    //            }
-    //        }
-    //        else if (isQuote()) {
-    //            dealQuote();
-    //            isReg = 1;
-    //            isReturn = 0;
-    //            braceState = 0;
-    //        }
-    //        else if (peek === '/') {
-    //            readch();
-    //            if (peek === '/') {
-    //                index = s.indexOf('\n', index);
-    //                if (index === -1) {
-    //                    index = s.length;
-    //                }
-    //            }
-    //            else if (peek === '*') {
-    //                var i = s.indexOf('\n', index);
-    //                index = s.indexOf('*/', index);
-    //                if (index === -1) {
-    //                    index = length;
-    //                }
-    //                else {
-    //                    index += 2;
-    //                }
-    //                if (isReturn && i !== -1 && i < index) {
-    //                    braceState = 0;
-    //                    isReturn = 0;
-    //                }
-    //            }
-    //            else if (isReg) {
-    //                dealReg();
-    //                isReg = 0;
-    //                isReturn = 0;
-    //                braceState = 0;
-    //            }
-    //            else {
-    //                index--;
-    //                isReg = 1;
-    //                isReturn = 0;
-    //                braceState = 1;
-    //            }
-    //        }
-    //        else if (isWord()) {
-    //            dealWord();
-    //        }
-    //        else if (isNumber()) {
-    //            dealNumber();
-    //            isReturn = 0;
-    //            braceState = 0;
-    //        }
-    //        else if (peek === '(') {
-    //            parentheseStack.push(parentheseState);
-    //            isReg = 1;
-    //            isReturn = 0;
-    //            braceState = 1;
-    //        }
-    //        else if (peek === ')') {
-    //            isReg = parentheseStack.pop();
-    //            isReturn = 0;
-    //            braceState = 0;
-    //        }
-    //        else if (peek === '{') {
-    //            if (isReturn) {
-    //                braceState = 1;
-    //            }
-    //            braceStack.push(braceState);
-    //            isReturn = 0;
-    //            isReg = 1;
-    //        }
-    //        else if (peek === '}') {
-    //            braceState = braceStack.pop();
-    //            isReg = !braceState;
-    //            isReturn = 0;
-    //        }
-    //        else {
-    //            var next = s.charAt(index);
-    //            if (peek === ';') {
-    //                braceState = 0;
-    //            }
-    //            else if (peek === '-' && next === '-' || peek === '+' && next === '+' || peek === '=' && next === '>') {
-    //                braceState = 0;
-    //                index++;
-    //            }
-    //            else {
-    //                braceState = 1;
-    //            }
-    //            isReg = peek !== ']';
-    //            isReturn = 0;
-    //        }
-    //    }
-    //    return res;
-    //    function readch() {
-    //        peek = s.charAt(index++);
-    //    }
-    //
-    //    function isBlank() {
-    //        return /\s/.test(peek);
-    //    }
-    //
-    //    function isQuote() {
-    //        return peek === '"' || peek === "'";
-    //    }
-    //
-    //    function dealQuote() {
-    //        var start = index;
-    //        var c = peek;
-    //        var end = s.indexOf(c, start);
-    //        if (end === -1) {
-    //            index = length;
-    //        }
-    //        else if (s.charAt(end - 1) !== '\\') {
-    //            index = end + 1;
-    //        }
-    //        else {
-    //            while (index < length) {
-    //                readch();
-    //                if (peek === '\\') {
-    //                    index++;
-    //                }
-    //                else if (peek === c) {
-    //                    break;
-    //                }
-    //            }
-    //        }
-    //        if (modName) {
-    //            res.push(s.slice(start, index - 1));
-    //            modName = 0;
-    //        }
-    //    }
-    //
-    //    function dealReg() {
-    //        index--;
-    //        while (index < length) {
-    //            readch();
-    //            if (peek === '\\') {
-    //                index++;
-    //            }
-    //            else if (peek === '/') {
-    //                break;
-    //            }
-    //            else if (peek === '[') {
-    //                while (index < length) {
-    //                    readch();
-    //                    if (peek === '\\') {
-    //                        index++;
-    //                    }
-    //                    else if (peek === ']') {
-    //                        break;
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    //
-    //    function isWord() {
-    //        return /[a-z_$]/i.test(peek);
-    //    }
-    //
-    //    function dealWord() {
-    //        var s2 = s.slice(index - 1);
-    //        var r = /^[\w$]+/.exec(s2)[0];
-    //        parentheseState = {
-    //            'if': 1,
-    //            'for': 1,
-    //            'while': 1,
-    //            'with': 1
-    //        }[r];
-    //        isReg = {
-    //            'break': 1,
-    //            'case': 1,
-    //            'continue': 1,
-    //            'debugger': 1,
-    //            'delete': 1,
-    //            'do': 1,
-    //            'else': 1,
-    //            'false': 1,
-    //            'if': 1,
-    //            'in': 1,
-    //            'instanceof': 1,
-    //            'return': 1,
-    //            'typeof': 1,
-    //            'void': 1
-    //        }[r];
-    //        isReturn = r === 'return';
-    //        braceState = {
-    //            'instanceof': 1,
-    //            'delete': 1,
-    //            'void': 1,
-    //            'typeof': 1,
-    //            'return': 1
-    //        }.hasOwnProperty(r);
-    //        modName = /^require\s*\(\s*(['"]).+?\1\s*\)/.test(s2);
-    //        if (modName) {
-    //            r = /^require\s*\(\s*['"]/.exec(s2)[0];
-    //            index += r.length - 2;
-    //        }
-    //        else {
-    //            index += /^[\w$]+(?:\s*\.\s*[\w$]+)*/.exec(s2)[0].length - 1;
-    //        }
-    //    }
-    //
-    //    function isNumber() {
-    //        return /\d/.test(peek) || peek === '.' && /\d/.test(s.charAt(index));
-    //    }
-    //
-    //    function dealNumber() {
-    //        var s2 = s.slice(index - 1);
-    //        var r;
-    //        if (peek === '.') {
-    //            r = /^\.\d+(?:E[+-]?\d*)?\s*/i.exec(s2)[0];
-    //        }
-    //        else if (/^0x[\da-f]*/i.test(s2)) {
-    //            r = /^0x[\da-f]*\s*/i.exec(s2)[0];
-    //        }
-    //        else {
-    //            r = /^\d+\.?\d*(?:E[+-]?\d*)?\s*/i.exec(s2)[0];
-    //        }
-    //        index += r.length - 1;
-    //        isReg = 0;
-    //    }
-    //}
 
 
     /**
