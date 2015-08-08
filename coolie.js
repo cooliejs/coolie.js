@@ -1,1297 +1,1196 @@
-/*!
- * coolie 苦力
- * @author ydr.me
- * @version 0.14.6
- * @license MIT
- */
-
-
 /**
- * 路径关系
- * coolie.js => page
- * coolie-config.js => coolie.js
- * base => coolie-config.js
+ * Sea.js 3.0.1 | seajs.org/LICENSE.md
  */
+(function(global, undefined) {
 
+// Avoid conflicting when `sea.js` is loaded multiple times
+    if (global.seajs) {
+        return
+    }
 
-(function () {
-    'use strict';
+    var seajs = global.seajs = {
+        // The current version of Sea.js being used
+        version: "3.0.1"
+    }
 
-    var win = this;
+    var data = seajs.data = {}
+
 
     /**
-     * 如果 coolie 已经运行完毕，则不必重新运行
+     * util-lang.js - The minimal language enhancement
      */
-    if (win.coolie) {
-        return;
+
+    function isType(type) {
+        return function(obj) {
+            return {}.toString.call(obj) == "[object " + type + "]"
+        }
+    }
+
+    var isObject = isType("Object")
+    var isString = isType("String")
+    var isArray = Array.isArray || isType("Array")
+    var isFunction = isType("Function")
+    var isUndefined = isType("Undefined")
+
+    var _cid = 0
+    function cid() {
+        return _cid++
+    }
+
+    /**
+     * util-events.js - The minimal events support
+     */
+
+    var events = data.events = {}
+
+// Bind event
+    seajs.on = function(name, callback) {
+        var list = events[name] || (events[name] = [])
+        list.push(callback)
+        return seajs
+    }
+
+// Remove event. If `callback` is undefined, remove all callbacks for the
+// event. If `event` and `callback` are both undefined, remove all callbacks
+// for all events
+    seajs.off = function(name, callback) {
+        // Remove *all* events
+        if (!(name || callback)) {
+            events = data.events = {}
+            return seajs
+        }
+
+        var list = events[name]
+        if (list) {
+            if (callback) {
+                for (var i = list.length - 1; i >= 0; i--) {
+                    if (list[i] === callback) {
+                        list.splice(i, 1)
+                    }
+                }
+            }
+            else {
+                delete events[name]
+            }
+        }
+
+        return seajs
+    }
+
+// Emit event, firing all bound callbacks. Callbacks receive the same
+// arguments as `emit` does, apart from the event name
+    var emit = seajs.emit = function(name, data) {
+        var list = events[name]
+
+        if (list) {
+            // Copy callback lists to prevent modification
+            list = list.slice()
+
+            // Execute event callbacks, use index because it's the faster.
+            for(var i = 0, len = list.length; i < len; i++) {
+                list[i](data)
+            }
+        }
+
+        return seajs
+    }
+
+    /**
+     * util-path.js - The utilities for operating path such as id, uri
+     */
+
+    var DIRNAME_RE = /[^?#]*\//
+
+    var DOT_RE = /\/\.\//g
+    var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//
+    var MULTI_SLASH_RE = /([^:/])\/+\//g
+
+// Extract the directory portion of a path
+// dirname("a/b/c.js?t=123#xx/zz") ==> "a/b/"
+// ref: http://jsperf.com/regex-vs-split/2
+    function dirname(path) {
+        return path.match(DIRNAME_RE)[0]
+    }
+
+// Canonicalize a path
+// realpath("http://test.com/a//./b/../c") ==> "http://test.com/a/c"
+    function realpath(path) {
+        // /a/b/./c/./d ==> /a/b/c/d
+        path = path.replace(DOT_RE, "/")
+
+        /*
+         @author wh1100717
+         a//b/c ==> a/b/c
+         a///b/////c ==> a/b/c
+         DOUBLE_DOT_RE matches a/b/c//../d path correctly only if replace // with / first
+         */
+        path = path.replace(MULTI_SLASH_RE, "$1/")
+
+        // a/b/c/../../d  ==>  a/b/../d  ==>  a/d
+        while (path.match(DOUBLE_DOT_RE)) {
+            path = path.replace(DOUBLE_DOT_RE, "/")
+        }
+
+        return path
+    }
+
+// Normalize an id
+// normalize("path/to/a") ==> "path/to/a.js"
+// NOTICE: substring is faster than negative slice and RegExp
+    function normalize(path) {
+        var last = path.length - 1
+        var lastC = path.charCodeAt(last)
+
+        // If the uri ends with `#`, just return it without '#'
+        if (lastC === 35 /* "#" */) {
+            return path.substring(0, last)
+        }
+
+        return (path.substring(last - 2) === ".js" ||
+        path.indexOf("?") > 0 ||
+        lastC === 47 /* "/" */) ? path : path + ".js"
     }
 
 
-    // 常量
-    var CONST_IMAGE = 'image';
-    var CONST_JSON = 'json';
-    var CONST_TEXT = 'text';
-    var CONST_JS = 'js';
-    var CONST_SRC = 'src';
-    var CONST_SCRIPT = 'script';
-    var CONST_COOLIE_MODULES = 'coolie modules';
+    var PATHS_RE = /^([^/:]+)(\/.+)$/
+    var VARS_RE = /{([^{]+)}/g
 
-    /**
-     * coolie
-     * @type {Object}
-     */
-    var coolie = {};
+    function parseAlias(id) {
+        var alias = data.alias
+        return alias && isString(alias[id]) ? alias[id] : id
+    }
 
+    function parsePaths(id) {
+        var paths = data.paths
+        var m
 
-    /**
-     * coolie 版本号
-     * @type {string}
-     */
-    coolie.version = '0.14.6';
+        if (paths && (m = id.match(PATHS_RE)) && isString(paths[m[1]])) {
+            id = paths[m[1]] + m[2]
+        }
 
+        return id
+    }
 
-    /**
-     * @type {undefined}
-     */
-    var udf;
+    function parseVars(id) {
+        var vars = data.vars
 
+        if (vars && id.indexOf("{") > -1) {
+            id = id.replace(VARS_RE, function(m, key) {
+                return isString(vars[key]) ? vars[key] : m
+            })
+        }
 
-    /**
-     * 获取当前时间戳
-     * @returns {Number}
-     */
-    var now = function () {
-        return new Date().getTime();
-    };
+        return id
+    }
 
+    function parseMap(uri) {
+        var map = data.map
+        var ret = uri
 
-    /**
-     * 当前时间
-     * @type {Number}
-     */
-    var timeNow = 0;
+        if (map) {
+            for (var i = 0, len = map.length; i < len; i++) {
+                var rule = map[i]
 
+                ret = isFunction(rule) ?
+                    (rule(uri) || uri) :
+                    uri.replace(rule[0], rule[1])
 
-    /**
-     * document
-     * @type {HTMLDocument}
-     */
-    var doc = win.document;
-
-
-    /**
-     * 是否为旧的IE（ie6、ie7、ie8、ie9）
-     * @type {boolean}
-     */
-    var isOldIE = !!doc.attachEvent;
-
-
-    /**
-     * coolie 配置
-     * @property base {String} 模块入口基准路径
-     * @property version {Object|String} 入口模块版本 map
-     * @property [debug=true] {Boolean} 是否为调试模式
-     * @type {Object}
-     */
-    var coolieConfig = {};
-
-
-    /**
-     * coolie 回调列表
-     * @type {Array}
-     */
-    var coolieCallbacks = [];
-
-
-    /**
-     * 判断数据类型
-     * @param obj
-     * @returns {string}
-     */
-    var typeis = function (obj) {
-        return Object.prototype.toString.call(obj).slice(8, -1).toLowerCase();
-    };
-
-
-    /**
-     * 判断是否为数组
-     * @param obj
-     * @returns {Boolean}
-     * @private
-     */
-    var isArray = function (obj) {
-        return typeis(obj) === 'array';
-    };
-
-
-    /**
-     * 判断是否为函数
-     * @param obj
-     * @returns {Boolean}
-     * @private
-     */
-    var isFunction = function (obj) {
-        return typeis(obj) === 'function';
-    };
-
-
-    /**
-     * 判断是否为字符串
-     * @param obj
-     * @returns {Boolean}
-     * @private
-     */
-    var isString = function (obj) {
-        return typeis(obj) === 'string';
-    };
-
-
-    /**
-     * 遍历
-     * @param list
-     * @param callback {Function} 返回 false，中断当前循环
-     * @param [isReverse=false] {Boolean} 是否反序
-     * @private
-     */
-    var each = function (list, callback, isReverse) {
-        var i;
-        var j;
-
-        if (isArray(list)) {
-            for (i = isReverse ? list.length - 1 : 0, j = isReverse ? 0 : list.length;
-                 isReverse ? i > j : i < j;
-                 isReverse ? i-- : i++) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
-            }
-        } else if (typeof(list) === 'object') {
-            for (i in list) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
+                // Only apply the first matched rule
+                if (ret !== uri) break
             }
         }
-    };
 
+        return ret
+    }
+
+
+    var ABSOLUTE_RE = /^\/\/.|:\//
+    var ROOT_DIR_RE = /^.*?\/\/.*?\//
+
+    function addBase(id, refUri) {
+        var ret
+        var first = id.charCodeAt(0)
+
+        // Absolute
+        if (ABSOLUTE_RE.test(id)) {
+            ret = id
+        }
+        // Relative
+        else if (first === 46 /* "." */) {
+            ret = (refUri ? dirname(refUri) : data.cwd) + id
+        }
+        // Root
+        else if (first === 47 /* "/" */) {
+            var m = data.cwd.match(ROOT_DIR_RE)
+            ret = m ? m[0] + id.substring(1) : id
+        }
+        // Top-level
+        else {
+            ret = data.base + id
+        }
+
+        // Add default protocol when uri begins with "//"
+        if (ret.indexOf("//") === 0) {
+            ret = location.protocol + ret
+        }
+
+        return realpath(ret)
+    }
+
+    function id2Uri(id, refUri) {
+        if (!id) return ""
+
+        id = parseAlias(id)
+        id = parsePaths(id)
+        id = parseAlias(id)
+        id = parseVars(id)
+        id = parseAlias(id)
+        id = normalize(id)
+        id = parseAlias(id)
+
+        var uri = addBase(id, refUri)
+        uri = parseAlias(uri)
+        uri = parseMap(uri)
+
+        return uri
+    }
+
+// For Developers
+    seajs.resolve = id2Uri
+
+// Check environment
+    var isWebWorker = typeof window === 'undefined' && typeof importScripts !== 'undefined' && isFunction(importScripts)
+
+// Ignore about:xxx and blob:xxx
+    var IGNORE_LOCATION_RE = /^(about|blob):/
+    var loaderDir
+// Sea.js's full path
+    var loaderPath
+// Location is read-only from web worker, should be ok though
+    var cwd = (!location.href || IGNORE_LOCATION_RE.test(location.href)) ? '' : dirname(location.href)
+
+    if (isWebWorker) {
+        // Web worker doesn't create DOM object when loading scripts
+        // Get sea.js's path by stack trace.
+        var stack
+        try {
+            var up = new Error()
+            throw up
+        } catch (e) {
+            // IE won't set Error.stack until thrown
+            stack = e.stack.split('\n')
+        }
+        // First line is 'Error'
+        stack.shift()
+
+        var m
+        // Try match `url:row:col` from stack trace line. Known formats:
+        // Chrome:  '    at http://localhost:8000/script/sea-worker-debug.js:294:25'
+        // FireFox: '@http://localhost:8000/script/sea-worker-debug.js:1082:1'
+        // IE11:    '   at Anonymous function (http://localhost:8000/script/sea-worker-debug.js:295:5)'
+        // Don't care about older browsers since web worker is an HTML5 feature
+        var TRACE_RE = /.*?((?:http|https|file)(?::\/{2}[\w]+)(?:[\/|\.]?)(?:[^\s"]*)).*?/i
+        // Try match `url` (Note: in IE there will be a tailing ')')
+        var URL_RE = /(.*?):\d+:\d+\)?$/
+        // Find url of from stack trace.
+        // Cannot simply read the first one because sometimes we will get:
+        // Error
+        //  at Error (native) <- Here's your problem
+        //  at http://localhost:8000/_site/dist/sea.js:2:4334 <- What we want
+        //  at http://localhost:8000/_site/dist/sea.js:2:8386
+        //  at http://localhost:8000/_site/tests/specs/web-worker/worker.js:3:1
+        while (stack.length > 0) {
+            var top = stack.shift()
+            m = TRACE_RE.exec(top)
+            if (m != null) {
+                break
+            }
+        }
+        var url
+        if (m != null) {
+            // Remove line number and column number
+            // No need to check, can't be wrong at this point
+            var url = URL_RE.exec(m[1])[1]
+        }
+        // Set
+        loaderPath = url
+        // Set loaderDir
+        loaderDir = dirname(url || cwd)
+        // This happens with inline worker.
+        // When entrance script's location.href is a blob url,
+        // cwd will not be available.
+        // Fall back to loaderDir.
+        if (cwd === '') {
+            cwd = loaderDir
+        }
+    }
+    else {
+        var doc = document
+        var scripts = doc.scripts
+
+        // Recommend to add `seajsnode` id for the `sea.js` script element
+        var loaderScript = doc.getElementById("seajsnode") ||
+            scripts[scripts.length - 1]
+
+        function getScriptAbsoluteSrc(node) {
+            return node.hasAttribute ? // non-IE6/7
+                node.src :
+                // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
+                node.getAttribute("src", 4)
+        }
+        loaderPath = getScriptAbsoluteSrc(loaderScript)
+        // When `sea.js` is inline, set loaderDir to current working directory
+        loaderDir = dirname(loaderPath || cwd)
+    }
 
     /**
-     * 定义 console，防止出错
+     * util-request.js - The utilities for requesting script and style files
+     * ref: tests/research/load-js-css/test.html
      */
-    var console = (function () {
-        var ret = {};
-        var hasConsole = win.console;
-        var arr = ['log', 'warn', 'group', 'groupEnd'];
+    if (isWebWorker) {
+        function requestFromWebWorker(url, callback, charset, crossorigin) {
+            // Load with importScripts
+            var error
+            try {
+                importScripts(url)
+            } catch (e) {
+                error = e
+            }
+            callback(error)
+        }
+        // For Developers
+        seajs.request = requestFromWebWorker
+    }
+    else {
+        var doc = document
+        var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement
+        var baseElement = head.getElementsByTagName("base")[0]
 
-        each(arr, function (index, key) {
-            ret[key] = function () {
-                if (coolieConfig.debug === false) {
-                    return;
+        var currentlyAddingScript
+
+        function request(url, callback, charset, crossorigin) {
+            var node = doc.createElement("script")
+
+            if (charset) {
+                node.charset = charset
+            }
+
+            if (!isUndefined(crossorigin)) {
+                node.setAttribute("crossorigin", crossorigin)
+            }
+
+            addOnload(node, callback, url)
+
+            node.async = true
+            node.src = url
+
+            // For some cache cases in IE 6-8, the script executes IMMEDIATELY after
+            // the end of the insert execution, so use `currentlyAddingScript` to
+            // hold current node, for deriving url in `define` call
+            currentlyAddingScript = node
+
+            // ref: #185 & http://dev.jquery.com/ticket/2709
+            baseElement ?
+                head.insertBefore(node, baseElement) :
+                head.appendChild(node)
+
+            currentlyAddingScript = null
+        }
+
+        function addOnload(node, callback, url) {
+            var supportOnload = "onload" in node
+
+            if (supportOnload) {
+                node.onload = onload
+                node.onerror = function() {
+                    emit("error", { uri: url, node: node })
+                    onload(true)
                 }
-
-                if (hasConsole && hasConsole[key]) {
-                    try {
-                        hasConsole[key].apply(hasConsole, arguments);
-                    } catch (err) {
-                        //ignore
+            }
+            else {
+                node.onreadystatechange = function() {
+                    if (/loaded|complete/.test(node.readyState)) {
+                        onload()
                     }
                 }
-            };
-        });
-
-        return ret;
-    })();
-
-
-    /**
-     * 非目录结尾
-     * @type {RegExp}
-     */
-    var REG_PATH_DIR = /\/[^/]+$/;
-
-
-    /**
-     * host
-     * @type {RegExp}
-     */
-    var REG_HOST = /^((ftp|file|https?):)?\/\/[^\/]*/;
-
-
-    /**
-     * 忽略协议
-     * @type {RegExp}
-     */
-    var REG_IGNORE_PROTOCOL = /^\/\//;
-
-
-    /**
-     * 获取路径所在的目录
-     * @param path {String} 路径或目录
-     * @param [isDir=false] {Boolean} 本身是目录
-     * @returns {*}
-     */
-    var getPathDir = function (path, isDir) {
-        path = path.replace(REG_HOST, '');
-
-        if (path === '/') {
-            return path;
-        }
-
-        return REG_PATH_DIR.test(path) ? (isDir ? path + '/' : path.replace(REG_PATH_DIR, '/')) : path;
-    };
-
-
-    /**
-     * 判断是否为绝对路径
-     * @type {RegExp}
-     */
-    var REG_PATH_ABSOLUTE = /^\/|((http|ftp)s?:\/\/)/;
-
-
-    /**
-     * 判断是否相对路径
-     * @type {RegExp}
-     */
-    var REG_PATH_RELATIVE = /^(\.{1,2})\//;
-
-
-    /**
-     * 路径结尾
-     * @type {RegExp}
-     */
-    var REG_PATH_END = /(\/[^/]+?)?\/$/;
-
-
-    /**
-     * 路径合并
-     * @param from {String} 标准的起始目录
-     * @param to {String} 标准的目标路径
-     * @returns {string} 标准的合并路径
-     *
-     * @example
-     * path.j('/', '/');
-     * // => '/'
-     *
-     * path.j('/a/b/c/', '/d/e/f');
-     * // => '/d/e/f'
-     *
-     * path.j('/a/b/c/', './d/e/f');
-     * // => '/a/b/c/d/e/f'
-     *
-     * path.j('/a/b/c/', '../../d/e/f');
-     * // => '/a/d/e/f'
-     */
-    var getPathJoin = function (from, to) {
-        if (!to || REG_PATH_ABSOLUTE.test(to)) {
-            return to;
-        }
-
-        var mathes;
-
-        to = './' + to;
-
-        while ((mathes = to.match(REG_PATH_RELATIVE))) {
-            to = to.replace(REG_PATH_RELATIVE, '');
-
-            if (mathes[1].length === 2) {
-                from = from.replace(REG_PATH_END, '/');
-            }
-        }
-
-        return from + to;
-    };
-
-
-    /**
-     * 获取标签列表
-     * @param tagName {String} 标签名称
-     * @param [$parent] {Node|HTMLElement} 父节点
-     * @returns {NodeList|*}
-     */
-    var getNodeList = function (tagName, $parent) {
-        return ($parent || doc).getElementsByTagName(tagName);
-    };
-
-
-    /**
-     * 文件后缀
-     * @type {RegExp}
-     */
-    var REG_SUFFIX = /[\?#].*?$/;
-
-
-    /**
-     * 脚本后缀
-     * @type {RegExp}
-     */
-    var REG_JS = /\.js($|\?)/i;
-
-
-    /**
-     * 清理 url
-     * @param url {String} 原始 URL
-     * @param [isSingleURL=false] 是否为独立 URL
-     * @returns {String}
-     */
-    var cleanURL = function (url, isSingleURL) {
-        url = url.replace(REG_SUFFIX, '');
-
-        if (isSingleURL) {
-            return url;
-        }
-
-        if (REG_PATH_END.test(url)) {
-            url += 'index';
-        }
-
-        return url + (REG_JS.test(url) ? '' : '.' + CONST_JS);
-    };
-
-
-    /**
-     * 获取 script 的绝对路径
-     * @param script
-     * @returns {*}
-     */
-    var getScriptURL = function (script) {
-        return cleanURL(script.hasAttribute ?
-            // non-IE6/7
-            script.src :
-            // @see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            script.getAttribute(CONST_SRC, 4));
-    };
-
-
-    /**
-     * 获取 node 的 dataset 值
-     * @param node
-     * @param dataKey
-     * @returns {string}
-     */
-    var getNodeDataset = function (node, dataKey) {
-        return node.getAttribute('data-' + dataKey);
-    };
-
-
-    /**
-     * 创建一个元素
-     * @param tagName
-     * @param [properties]
-     * @returns {Element}
-     */
-    var createElement = function (tagName, properties) {
-        var $node = doc.createElement(tagName);
-
-        each(properties, function (key, val) {
-            $node[key] = val;
-        });
-
-        return $node;
-    };
-
-
-    /**
-     * 插入一个元素
-     * @param $ele
-     * @param [$parent]
-     */
-    var appendChild = function ($ele, $parent) {
-        ($parent || $body || $html).appendChild($ele);
-    };
-
-
-    /**
-     * 移除一个 element
-     * @param $ele
-     * @param $parent
-     */
-    var removeElement = function ($ele, $parent) {
-        try {
-            $ele.remove();
-        } catch (err) {
-            try {
-                ($parent || doc).removeChild($ele);
-            } catch (err) {
-                // ignore
-            }
-        }
-    };
-
-
-    /**
-     * 是否加载完毕
-     * @type {RegExp}
-     */
-    var REG_LOAD_COMPLETE = /loaded|complete/;
-
-
-    /**
-     * html
-     * @type {HTMLHtmlElement|*}
-     */
-    var $html = doc.documentElement;
-
-
-    /**
-     * body
-     * @type {HTMLBodyElement|*}
-     */
-    var $body = doc.body;
-
-
-    /**
-     * 为了增加安全性，coolie 会复制一个 coolie.js 到文档末尾，
-     * 然后，所有的模块都载入到一个独立的缓存块里，
-     * 防止电信广告影响
-     */
-    var $cache = createElement('div', {
-        id: CONST_COOLIE_MODULES + now()
-    });
-
-
-    // 添加到 body 里
-    appendChild($cache);
-
-
-    /**
-     * 文件后缀
-     * @type {RegExp}
-     */
-    var REG_EXT = /\.[^.]*$/;
-
-
-    /**
-     * 构造版本 URL
-     * @param url
-     * @returns {*}
-     */
-    var buildVersionURL = function (url) {
-        if (!coolieConfig._v) {
-            return url;
-        }
-
-        var version = isString(coolieConfig._v) ? coolieConfig._v : coolieConfig._v[url];
-
-        if (!version) {
-            return url;
-        }
-
-        return url.replace(REG_EXT, '.' + version + '$&');
-    };
-
-
-    /**
-     * 脚本加载列表，IE10、chrome、firefox 按照添加的脚本队列，按照顺序执行，
-     * 而 IE 需要通过遍历判断来获取
-     */
-    var appendModuleScriptList = [];
-
-
-    /**
-     * 最后一个添加的脚本
-     * @type {Object}
-     */
-    var $lastAppendModuleScript;
-
-
-    /**
-     * 需要加载的模块脚本长度
-     * @type {number}
-     */
-    var loadModuleLength = 0;
-
-
-    /**
-     * 加载脚本
-     * @param url {String} 脚本 URL
-     * @param [isNotModule=false] {Boolean} 是否为非模块
-     */
-    var loadScript = function (url, isNotModule) {
-        if (isNotModule !== true) {
-            loadModuleLength++;
-        }
-
-        var url2 = buildVersionURL(url);
-        var $script = createElement(CONST_SCRIPT, {
-            src: url2 + (coolieConfig.cache === false ? '?_=' + now() : ''),
-            id: url,
-            async: true
-        });
-        var hasReady = false;
-        var onready = function (eve) {
-            if (hasReady) {
-                return;
             }
 
-            hasReady = true;
+            function onload(error) {
+                // Ensure only run once and handle memory leak in IE
+                node.onload = node.onerror = node.onreadystatechange = null
 
-            if (eve && eve.type === 'error') {
-                throw 'load script error\n' + url2;
-            }
-
-            if (isNotModule !== true) {
-                loadModuleLength--;
-            }
-        };
-
-        if ($script.onload !== udf) {
-            $script.onload = $script.onerror = onready;
-        } else {
-            $script.onreadystatechange = function (eve) {
-                if (REG_LOAD_COMPLETE.test($script.readyState)) {
-                    eve = eve || win.event;
-                    onready(eve);
+                // Remove the script to reduce memory leak
+                if (!data.debug) {
+                    head.removeChild(node)
                 }
-            };
-        }
 
-        if (isNotModule !== true) {
-            $lastAppendModuleScript = $script;
-        }
+                // Dereference the node
+                node = null
 
-        appendChild($script, $cache);
-    };
-
-
-    /**
-     * 解析字符串为 JSON 对象
-     * @param url {String} url 地址
-     * @param text {String} JSON 字符串
-     * @returns {{}}
-     */
-    var parseJSON = function (url, text) {
-        var json = {};
-
-        try {
-            json = JSON.parse(text);
-        } catch (err1) {
-            try {
-                /* jshint evil: true */
-                var fn = new Function('', 'return ' + text);
-                json = fn();
-            } catch (err2) {
-                throw 'parse json error ' + url;
+                callback(error)
             }
         }
 
-        return json;
-    };
+        // For Developers
+        seajs.request = request
 
+    }
 
-    /**
-     * 加载文本模块
-     * @param url {String} 文本 URL
-     * @param type {String} 文本类型
-     */
-    var ajaxText = function (url, type) {
-        loadModuleLength++;
-        var url2 = buildVersionURL(url);
-        var xhr = new XMLHttpRequest();
-        var hasComplete;
-        var onready = function () {
-            if (xhr.readyState === 4 && !hasComplete) {
-                hasComplete = true;
-                if (xhr.status === 200 || xhr.status === 304) {
-                    defineModule({
-                        _isAn: mainModule._isAn,
-                        id: url,
-                        url: url2,
-                        deps: [],
-                        factory: function () {
-                            var code = xhr.responseText;
+    var interactiveScript
 
-                            if (code && type === CONST_JSON) {
-                                code = parseJSON(url, code);
-                            }
+    function getCurrentScript() {
+        if (currentlyAddingScript) {
+            return currentlyAddingScript
+        }
 
-                            return code;
-                        }
-                    });
-                    loadModuleLength--;
-                } else {
-                    throw 'ajax error\n' + url2;
-                }
-            }
-        };
-
-        xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
-        xhr.open('GET', url2);
-        xhr.send(null);
-    };
-
-
-    /**
-     * 包裹图片模块
-     * @param id
-     */
-    var wrapImageModule = function (id) {
-        defineModule({
-            _isAn: mainModule._isAn,
-            id: id,
-            url: buildVersionURL(id),
-            deps: [],
-            factory: function () {
-                return id;
-            }
-        });
-    };
-
-
-    /**
-     * 获取当前脚本
-     * @param [$parent] {*} 父级
-     * @returns {*}
-     */
-    var getCurrentScript = function ($parent) {
-        var scripts = getNodeList(CONST_SCRIPT, $parent);
-
-        return scripts[scripts.length - 1];
-    };
-
-
-    /**
-     * 获得当前运行的脚本，为 IE 服务
-     * @returns {*}
-     */
-    var getInteractiveScript = function () {
         // For IE6-9 browsers, the script onload event may not fire right
         // after the script is evaluated. Kris Zyp found that it
         // could query the script nodes and the one that is in "interactive"
         // mode indicates the current script
         // ref: http://goo.gl/JHfFW
-        var scripts = getNodeList('script', $cache);
+        if (interactiveScript && interactiveScript.readyState === "interactive") {
+            return interactiveScript
+        }
+
+        var scripts = head.getElementsByTagName("script")
 
         for (var i = scripts.length - 1; i >= 0; i--) {
-            var script = scripts[i];
-
-            if (script.readyState === 'interactive') {
-                console.log('readyState' + '=>' + script.readyState + '=>' + script.src);
-                return script;
+            var script = scripts[i]
+            if (script.readyState === "interactive") {
+                interactiveScript = script
+                return interactiveScript
             }
         }
-    };
-
-
-    /**
-     * 当前运行的脚本
-     * @type {Node}
-     */
-    var $currentScript = getCurrentScript();
-
-
-    // 添加到缓存区
-    appendChild($currentScript, $cache);
-
-
-    //            -   -
-    // 看我眼神，这种方式根本没办法阻止电信广告
-    //
-    //// 克隆一个伪脚本
-    //var $cloneCoolie = createElement(CONST_SCRIPT, {
-    //    src: currentScript.src
-    //});
-    //
-    //
-    //appendChild($cloneCoolie);
-
+    }
 
     /**
-     * 获取 URL 的 host
-     * @param url
-     * @returns {*}
+     * util-deps.js - The parser for dependencies
+     * ref: tests/research/parse-dependencies/test.html
+     * ref: https://github.com/seajs/crequire
      */
-    var getHost = function (url) {
-        if (REG_IGNORE_PROTOCOL.test(url)) {
-            url = location.protocol + url;
+
+    function parseDependencies(s) {
+        if(s.indexOf('require') == -1) {
+            return []
         }
-
-        return (url.match(REG_HOST) || [])[0];
-    };
-
-
-    /**
-     * coolie.js 绝对路径
-     * @type {String}
-     */
-    var coolieJSURL = coolie.coolieJSURL = getScriptURL($currentScript);
-
-
-    /**
-     * coolie.js host
-     * @type {String}
-     */
-    var coolieJSHost = getHost(coolieJSURL);
-
-
-    /**
-     * coolie.js data-config
-     * @type {string}
-     */
-    var coolieJSDataConfig = getNodeDataset($currentScript, 'config');
-
-
-    /**
-     * coolie.js data-main
-     * @type {string}
-     */
-    var coolieJSDataMain = getNodeDataset($currentScript, 'main');
-
-
-    /**
-     * coolie.js 绝对目录
-     * @type {String}
-     */
-    var coolieJSAbsolutelyDir = getPathDir(coolieJSURL);
-
-
-    /**
-     * coolie-config.js 路径
-     * @type {string}
-     */
-    var coolieConfigJSPath = coolieJSDataConfig ? getPathJoin(coolieJSAbsolutelyDir, coolieJSDataConfig) : null;
-
-
-    /**
-     * coolie-config.js 路径
-     * @type {string}
-     */
-    var coolieConfigJSDir = coolieJSDataConfig ? getPathDir(coolieConfigJSPath) : null;
-
-
-    /**
-     * coolie-config.js URL
-     * @type {string}
-     */
-    var coolieConfigJSURL = coolieJSDataConfig ? getPathJoin(coolieJSHost, coolieConfigJSPath) : null;
-
-
-    /**
-     * coolie-config.js host
-     * @type {String}
-     */
-    var coolieConfigJSHost = (function () {
-        if (!coolieJSDataConfig) {
-            return null;
-        }
-
-        var host = getHost(coolieConfigJSURL);
-
-        if (host) {
-            return host;
-        }
-
-        host = coolieJSHost;
-        coolieConfigJSURL = host + coolieConfigJSURL;
-
-        return host;
-    }());
-
-
-    /**
-     * 入口模块的基准路径
-     * @type {String}
-     */
-    var mainModuleBaseDir = coolieConfigJSDir;
-
-
-    /**
-     * 入口模块
-     * @type {Object}
-     */
-    var mainModule = {};
-
-
-    /**
-     * 是否已经执行了入口模块
-     * @type {boolean}
-     */
-    var hasExecuteMain = false;
-
-
-    /**
-     * 依赖的模块
-     * @type {{}}
-     */
-    var dependenceModules = {};
-
-
-    /**
-     * 定义模块数组
-     * @type {Array}
-     */
-    var defineList = [];
-
-
-    /**
-     * 模块
-     * @type {{}}
-     */
-    var modules = {};
-
-
-    /**
-     * coolie 配置
-     * @param config
-     */
-    coolie.config = function (config) {
-        //config.debug = true;
-        coolieConfig = config;
-        coolieConfig.version = coolieConfig.version || {};
-
-        if (coolieConfigJSURL) {
-            mainModuleBaseDir = getPathJoin(coolieConfigJSDir, getPathDir(coolieConfig.base, true));
-        } else {
-            coolieConfigJSHost = getHost(config.base);
-            mainModuleBaseDir = getPathDir(config.base)
-        }
-
-        if (isString(coolieConfig.version)) {
-            coolieConfig._v = coolieConfig.version;
-        } else {
-            coolieConfig._v = {};
-            each(coolieConfig.version, function (path, version) {
-                coolieConfig._v[coolieConfigJSHost + getPathJoin(mainModuleBaseDir, path)] = version;
-            });
-        }
-
-        if (coolieJSDataMain) {
-            var mainModuleId = mainModule.url = cleanURL(coolieConfigJSHost + getPathJoin(mainModuleBaseDir, coolieJSDataMain));
-
-            mainModule._dfn = false;
-            dependenceModules[mainModuleId] = mainModule;
-        }
-
-        /**
-         * 会在 config.debug 不为 false 的时候
-         * 添加一个 DEBUG 到 window 上
-         * @namespace DEBUG
-         * @type {boolean}
-         */
-        win.DEBUG = config.debug = config.debug !== false;
-
-        return coolie;
-    };
-
-
-    /**
-     * 开始执行入口模块
-     * @param [main] 手动指定入口模块地址
-     * @returns {Object}
-     */
-    coolie.use = function (main) {
-        if (hasExecuteMain) {
-            return coolie;
-        }
-
-        hasExecuteMain = true;
-        timeNow = now();
-
-        if (main) {
-            mainModule.url = coolieConfigJSHost + getPathJoin(mainModuleBaseDir, main);
-            dependenceModules[mainModule.url] = mainModule;
-        }
-
-        if (!mainModule.url) {
-            return coolie;
-        }
-
-        loadScript(mainModule.url);
-
-        console.group(CONST_COOLIE_MODULES);
-
-        return coolie;
-    };
-
-
-    /**
-     * 添加模块加载器回调
-     * @param callback
-     */
-    coolie.callback = function (callback) {
-        if (mainModule._exd && isFunction(callback)) {
-            callback.call(coolie, mainModule.exports);
-
-            return coolie;
-        }
-
-        if (isFunction(callback)) {
-            coolieCallbacks.push(callback);
-        }
-
-        return coolie;
-    };
-
-
-    /**
-     * require 正则
-     * @type {RegExp}
-     * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js
-     */
-    var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
-
-
-    /**
-     * 反斜杠
-     * @type {RegExp}
-     */
-    var REG_SLASH = /\\\\/g;
-
-
-    /**
-     * require 类型
-     * @type {RegExp}
-     */
-    var REG_REQUIRE_TYPE = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
-
-
-    /**
-     * 模块类型别名
-     * @type {{image: string, text: string, html: string, css: string}}
-     */
-    var moduleTypeMap = {
-        image: CONST_IMAGE,
-        text: CONST_TEXT,
-        html: CONST_TEXT,
-        json: CONST_JSON,
-        css: CONST_TEXT
-    };
-
-
-    /**
-     * 解析代码里的依赖信息
-     * @param code {String} 代码
-     */
-    var parseDependencies = function (code) {
-        var requires = [];
-
-        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
-            if ($2) {
-                var matches = $2.match(REG_REQUIRE_TYPE);
-                // require('1.js', 'js');
-                var dep = {
-                    name: cleanURL(matches[1], !!matches[2]),
-                    type: matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : CONST_JS
-                };
-
-                requires.push(dep);
+        var index = 0, peek, length = s.length, isReg = 1, modName = 0, res = []
+        var parentheseState = 0, parentheseStack = []
+        var braceState, braceStack = [], isReturn
+        while(index < length) {
+            readch()
+            if(isBlank()) {
+                if(isReturn && (peek == '\n' || peek == '\r')) {
+                    braceState = 0
+                    isReturn = 0
+                }
             }
-        });
-
-        return requires;
-    };
-
-
-    /**
-     * 分析脚本模块
-     */
-    var analyScriptModule = function () {
-        var isAn = true;
-        var $interactiveScript = isOldIE ? getInteractiveScript() : $lastAppendModuleScript;
-        console.log($interactiveScript);
-        var args = defineList.shift();
-
-        if (!args) {
-            return;
-        }
-
-        var id = args[0];
-        var deps = args[1];
-        var factory = args[2];
-        var interactiveScriptId = $interactiveScript.id;
-        var interactiveScriptURL = getScriptURL($interactiveScript);
-        var interactiveScriptPath = getPathDir(interactiveScriptId);
-
-        // define(id, deps, factory);
-        if (isFunction(args[2])) {
-            isAn = false;
-        }
-        // define(id, factory);
-        else if (isFunction(args[1])) {
-            id = null;
-            deps = [];
-            factory = args[1];
-        }
-        // define(factory);
-        else if (isFunction(args[0])) {
-            factory = args[0];
-            deps = parseDependencies(factory.toString());
-            id = null;
-        }
-
-        id = mainModule._dfn && mainModule._isAn ? interactiveScriptId : id || interactiveScriptId;
-
-        var module = {
-            _isAn: isAn,
-            _path: interactiveScriptPath,
-            _node: $interactiveScript,
-            id: id,
-            url: interactiveScriptURL,
-            deps: deps,
-            factory: factory
-        };
-
-        if (!mainModule.id) {
-            // 具名模块
-            if (!isAn) {
-                dependenceModules[id] = dependenceModules[mainModule.url];
-                delete dependenceModules[mainModule.url];
+            else if(isQuote()) {
+                dealQuote()
+                isReg = 1
+                isReturn = 0
+                braceState = 0
             }
-
-            module._isMain = true;
-            mainModule = module;
-            mainModule._dfn = true;
-        }
-
-        var deps2 = [];
-
-        each(deps, function (index, dep) {
-            // ['1', '2']
-            if (isString(dep)) {
-                dep = {
-                    id: dep
-                };
-            }
-
-            if (mainModule._isAn) {
-                var path = getPathJoin(interactiveScriptPath, dep.name);
-
-                dep.id = cleanURL(coolieConfigJSHost + path, dep.type !== CONST_JS);
-            }
-
-            if (id === dep.id) {
-                throw 'required myself: \n' + id;
-            }
-
-            if (modules[dep.id]) {
-                each(modules[dep.id].deps, function (index, dep) {
-                    if (dep === id) {
-                        throw 'required circle: \n' + dep + '\n' + id;
+            else if(peek == '/') {
+                readch()
+                if(peek == '/') {
+                    index = s.indexOf('\n', index)
+                    if(index == -1) {
+                        index = s.length
                     }
-                });
+                }
+                else if(peek == '*') {
+                    var i = s.indexOf('\n', index)
+                    index = s.indexOf('*/', index)
+                    if(index == -1) {
+                        index = length
+                    }
+                    else {
+                        index += 2
+                    }
+                    if(isReturn && i != -1 && i < index) {
+                        braceState = 0
+                        isReturn = 0
+                    }
+                }
+                else if(isReg) {
+                    dealReg()
+                    isReg = 0
+                    isReturn = 0
+                    braceState = 0
+                }
+                else {
+                    index--
+                    isReg = 1
+                    isReturn = 0
+                    braceState = 1
+                }
             }
-
-            if (!dependenceModules[dep.id]) {
-                deps2.push(dep.id);
-                dependenceModules[dep.id] = true;
-
-                if (mainModule._isAn) {
-                    switch (dep.type) {
-                        case CONST_TEXT:
-                        case CONST_JSON:
-                            ajaxText(dep.id, dep.type);
-                            break;
-
-                        case CONST_IMAGE:
-                            wrapImageModule(dep.id);
-                            break;
-
-                        default :
-                            loadScript(dep.id);
+            else if(isWord()) {
+                dealWord()
+            }
+            else if(isNumber()) {
+                dealNumber()
+                isReturn = 0
+                braceState = 0
+            }
+            else if(peek == '(') {
+                parentheseStack.push(parentheseState)
+                isReg = 1
+                isReturn = 0
+                braceState = 1
+            }
+            else if(peek == ')') {
+                isReg = parentheseStack.pop()
+                isReturn = 0
+                braceState = 0
+            }
+            else if(peek == '{') {
+                if(isReturn) {
+                    braceState = 1
+                }
+                braceStack.push(braceState)
+                isReturn = 0
+                isReg = 1
+            }
+            else if(peek == '}') {
+                braceState = braceStack.pop();
+                isReg = !braceState
+                isReturn = 0
+            }
+            else {
+                var next = s.charAt(index)
+                if(peek == ';') {
+                    braceState = 0
+                }
+                else if(peek == '-' && next == '-'
+                    || peek == '+' && next == '+'
+                    || peek == '=' && next == '>') {
+                    braceState = 0
+                    index++
+                }
+                else {
+                    braceState = 1
+                }
+                isReg = peek != ']'
+                isReturn = 0
+            }
+        }
+        return res
+        function readch() {
+            peek = s.charAt(index++)
+        }
+        function isBlank() {
+            return /\s/.test(peek)
+        }
+        function isQuote() {
+            return peek == '"' || peek == "'"
+        }
+        function dealQuote() {
+            var start = index
+            var c = peek
+            var end = s.indexOf(c, start)
+            if(end == -1) {
+                index = length
+            }
+            else if(s.charAt(end - 1) != '\\') {
+                index = end + 1
+            }
+            else {
+                while(index < length) {
+                    readch()
+                    if(peek == '\\') {
+                        index++
+                    }
+                    else if(peek == c) {
+                        break
                     }
                 }
             }
-        });
-
-        module.deps = deps2;
-        defineModule(module);
-    };
-
-
-    /**
-     * 定时器
-     */
-    var timeId;
-
-
-    /**
-     * 定义 module
-     * @param module
-     * @returns module
-     */
-    var defineModule = function (module) {
-        module.exports = {};
-        module._exe = (function () {
-            var require = function (id, type) {
-                var dep;
-
-                if (mainModule._isAn) {
-                    dep = {
-                        name: id,
-                        type: type || CONST_JS
-                    };
-
-                    id = coolieConfigJSHost + cleanURL(getPathJoin(module._path, dep.name), dep.type !== CONST_JS);
-                }
-
-                if (!modules[id]) {
-                    throw 'can not found module \n' + id + '\nbut required in\n' + module.id;
-                }
-
-                return modules[id]._exe();
-            };
-
-            return function () {
-                var id = module.id;
-
-                if (module._exd) {
-                    return modules[id].exports;
-                } else {
-                    module._exd = true;
-                    modules[id].exports = module.factory.call(win, require, module.exports, module) || module.exports;
-
-                    return modules[id].exports;
-                }
-            };
-        })();
-
-        modules[module.id] = module;
-        console.log(module.id);
-
-
-        // 加载完成的条件：
-        // 1. 定义的模块都分析完毕
-        // 2. 当前没有正在加载的脚本
-        if (!defineList.length) {
-            clearTimeout(timeId);
-            timeId = setTimeout(function () {
-                //win.console.log(loadScriptsLength);
-                if (loadModuleLength) {
-                    return;
-                }
-
-                console.log('past ' + ( now() - timeNow) + 'ms');
-
-                if (coolieConfig.debug === false) {
-                    removeElement($cache, $body);
-                }
-
-                console.groupEnd(CONST_COOLIE_MODULES);
-                mainModule._exe();
-                each(coolieCallbacks, function (index, callback) {
-                    callback.call(coolie, mainModule.exports);
-                });
-            }, 1);
+            if(modName) {
+                res.push(s.slice(start, index - 1))
+                modName = 0
+            }
         }
-    };
-
-
+        function dealReg() {
+            index--
+            while(index < length) {
+                readch()
+                if(peek == '\\') {
+                    index++
+                }
+                else if(peek == '/') {
+                    break
+                }
+                else if(peek == '[') {
+                    while(index < length) {
+                        readch()
+                        if(peek == '\\') {
+                            index++
+                        }
+                        else if(peek == ']') {
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        function isWord() {
+            return /[a-z_$]/i.test(peek)
+        }
+        function dealWord() {
+            var s2 = s.slice(index - 1)
+            var r = /^[\w$]+/.exec(s2)[0]
+            parentheseState = {
+                'if': 1,
+                'for': 1,
+                'while': 1,
+                'with': 1
+            }[r]
+            isReg = {
+                'break': 1,
+                'case': 1,
+                'continue': 1,
+                'debugger': 1,
+                'delete': 1,
+                'do': 1,
+                'else': 1,
+                'false': 1,
+                'if': 1,
+                'in': 1,
+                'instanceof': 1,
+                'return': 1,
+                'typeof': 1,
+                'void': 1
+            }[r]
+            isReturn = r == 'return'
+            braceState = {
+                'instanceof': 1,
+                'delete': 1,
+                'void': 1,
+                'typeof': 1,
+                'return': 1
+            }.hasOwnProperty(r);
+            modName = /^require\s*\(\s*(['"]).+?\1\s*\)/.test(s2)
+            if(modName) {
+                r = /^require\s*\(\s*['"]/.exec(s2)[0]
+                index += r.length - 2
+            }
+            else {
+                index += /^[\w$]+(?:\s*\.\s*[\w$]+)*/.exec(s2)[0].length - 1
+            }
+        }
+        function isNumber() {
+            return /\d/.test(peek)
+                || peek == '.' && /\d/.test(s.charAt(index))
+        }
+        function dealNumber() {
+            var s2 = s.slice(index - 1)
+            var r
+            if(peek == '.') {
+                r = /^\.\d+(?:E[+-]?\d*)?\s*/i.exec(s2)[0]
+            }
+            else if(/^0x[\da-f]*/i.test(s2)) {
+                r = /^0x[\da-f]*\s*/i.exec(s2)[0]
+            }
+            else {
+                r = /^\d+\.?\d*(?:E[+-]?\d*)?\s*/i.exec(s2)[0]
+            }
+            index += r.length - 1
+            isReg = 0
+        }
+    }
     /**
-     * 定义一个模块
-     * @param {String} [id] 模块id
-     * @param {Array} [deps] 模块依赖
-     * @param {Function} factory 模块方法
+     * module.js - The core of module loader
      */
-    var define = function (id, deps, factory) {
-        defineList.push([id, deps, factory]);
-        analyScriptModule();
-    };
 
+    var cachedMods = seajs.cache = {}
+    var anonymousMeta
 
-    // 加载配置脚本
-    if (coolieJSDataConfig) {
-        loadScript(coolieConfigJSURL, true);
+    var fetchingList = {}
+    var fetchedList = {}
+    var callbackList = {}
+
+    var STATUS = Module.STATUS = {
+        // 1 - The `module.uri` is being fetched
+        FETCHING: 1,
+        // 2 - The meta data has been saved to cachedMods
+        SAVED: 2,
+        // 3 - The `module.dependencies` are being loaded
+        LOADING: 3,
+        // 4 - The module are ready to execute
+        LOADED: 4,
+        // 5 - The module is being executed
+        EXECUTING: 5,
+        // 6 - The `module.exports` is available
+        EXECUTED: 6,
+        // 7 - 404
+        ERROR: 7
     }
 
 
+    function Module(uri, deps) {
+        this.uri = uri
+        this.dependencies = deps || []
+        this.deps = {} // Ref the dependence modules
+        this.status = 0
+
+        this._entry = []
+    }
+
+// Resolve module.dependencies
+    Module.prototype.resolve = function() {
+        var mod = this
+        var ids = mod.dependencies
+        var uris = []
+
+        for (var i = 0, len = ids.length; i < len; i++) {
+            uris[i] = Module.resolve(ids[i], mod.uri)
+        }
+        return uris
+    }
+
+    Module.prototype.pass = function() {
+        var mod = this
+
+        var len = mod.dependencies.length
+
+        for (var i = 0; i < mod._entry.length; i++) {
+            var entry = mod._entry[i]
+            var count = 0
+            for (var j = 0; j < len; j++) {
+                var m = mod.deps[mod.dependencies[j]]
+                // If the module is unload and unused in the entry, pass entry to it
+                if (m.status < STATUS.LOADED && !entry.history.hasOwnProperty(m.uri)) {
+                    entry.history[m.uri] = true
+                    count++
+                    m._entry.push(entry)
+                    if(m.status === STATUS.LOADING) {
+                        m.pass()
+                    }
+                }
+            }
+            // If has passed the entry to it's dependencies, modify the entry's count and del it in the module
+            if (count > 0) {
+                entry.remain += count - 1
+                mod._entry.shift()
+                i--
+            }
+        }
+    }
+
+// Load module.dependencies and fire onload when all done
+    Module.prototype.load = function() {
+        var mod = this
+
+        // If the module is being loaded, just wait it onload call
+        if (mod.status >= STATUS.LOADING) {
+            return
+        }
+
+        mod.status = STATUS.LOADING
+
+        // Emit `load` event for plugins such as combo plugin
+        var uris = mod.resolve()
+        emit("load", uris)
+
+        for (var i = 0, len = uris.length; i < len; i++) {
+            mod.deps[mod.dependencies[i]] = Module.get(uris[i])
+        }
+
+        // Pass entry to it's dependencies
+        mod.pass()
+
+        // If module has entries not be passed, call onload
+        if (mod._entry.length) {
+            mod.onload()
+            return
+        }
+
+        // Begin parallel loading
+        var requestCache = {}
+        var m
+
+        for (i = 0; i < len; i++) {
+            m = cachedMods[uris[i]]
+
+            if (m.status < STATUS.FETCHING) {
+                m.fetch(requestCache)
+            }
+            else if (m.status === STATUS.SAVED) {
+                m.load()
+            }
+        }
+
+        // Send all requests at last to avoid cache bug in IE6-9. Issues#808
+        for (var requestUri in requestCache) {
+            if (requestCache.hasOwnProperty(requestUri)) {
+                requestCache[requestUri]()
+            }
+        }
+    }
+
+// Call this method when module is loaded
+    Module.prototype.onload = function() {
+        var mod = this
+        mod.status = STATUS.LOADED
+
+        // When sometimes cached in IE, exec will occur before onload, make sure len is an number
+        for (var i = 0, len = (mod._entry || []).length; i < len; i++) {
+            var entry = mod._entry[i]
+            if (--entry.remain === 0) {
+                entry.callback()
+            }
+        }
+
+        delete mod._entry
+    }
+
+// Call this method when module is 404
+    Module.prototype.error = function() {
+        var mod = this
+        mod.onload()
+        mod.status = STATUS.ERROR
+    }
+
+// Execute a module
+    Module.prototype.exec = function () {
+        var mod = this
+
+        // When module is executed, DO NOT execute it again. When module
+        // is being executed, just return `module.exports` too, for avoiding
+        // circularly calling
+        if (mod.status >= STATUS.EXECUTING) {
+            return mod.exports
+        }
+
+        mod.status = STATUS.EXECUTING
+
+        if (mod._entry && !mod._entry.length) {
+            delete mod._entry
+        }
+
+        //non-cmd module has no property factory and exports
+        if (!mod.hasOwnProperty('factory')) {
+            mod.non = true
+            return
+        }
+
+        // Create require
+        var uri = mod.uri
+
+        function require(id) {
+            var m = mod.deps[id] || Module.get(require.resolve(id))
+            if (m.status == STATUS.ERROR) {
+                throw new Error('module was broken: ' + m.uri)
+            }
+            return m.exec()
+        }
+
+        require.resolve = function(id) {
+            return Module.resolve(id, uri)
+        }
+
+        require.async = function(ids, callback) {
+            Module.use(ids, callback, uri + "_async_" + cid())
+            return require
+        }
+
+        // Exec factory
+        var factory = mod.factory
+
+        var exports = isFunction(factory) ?
+            factory.call(mod.exports = {}, require, mod.exports, mod) :
+            factory
+
+        if (exports === undefined) {
+            exports = mod.exports
+        }
+
+        // Reduce memory leak
+        delete mod.factory
+
+        mod.exports = exports
+        mod.status = STATUS.EXECUTED
+
+        // Emit `exec` event
+        emit("exec", mod)
+
+        return mod.exports
+    }
+
+// Fetch a module
+    Module.prototype.fetch = function(requestCache) {
+        var mod = this
+        var uri = mod.uri
+
+        mod.status = STATUS.FETCHING
+
+        // Emit `fetch` event for plugins such as combo plugin
+        var emitData = { uri: uri }
+        emit("fetch", emitData)
+        var requestUri = emitData.requestUri || uri
+
+        // Empty uri or a non-CMD module
+        if (!requestUri || fetchedList.hasOwnProperty(requestUri)) {
+            mod.load()
+            return
+        }
+
+        if (fetchingList.hasOwnProperty(requestUri)) {
+            callbackList[requestUri].push(mod)
+            return
+        }
+
+        fetchingList[requestUri] = true
+        callbackList[requestUri] = [mod]
+
+        // Emit `request` event for plugins such as text plugin
+        emit("request", emitData = {
+            uri: uri,
+            requestUri: requestUri,
+            onRequest: onRequest,
+            charset: isFunction(data.charset) ? data.charset(requestUri) : data.charset,
+            crossorigin: isFunction(data.crossorigin) ? data.crossorigin(requestUri) : data.crossorigin
+        })
+
+        if (!emitData.requested) {
+            requestCache ?
+                requestCache[emitData.requestUri] = sendRequest :
+                sendRequest()
+        }
+
+        function sendRequest() {
+            seajs.request(emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin)
+        }
+
+        function onRequest(error) {
+            delete fetchingList[requestUri]
+            fetchedList[requestUri] = true
+
+            // Save meta data of anonymous module
+            if (anonymousMeta) {
+                Module.save(uri, anonymousMeta)
+                anonymousMeta = null
+            }
+
+            // Call callbacks
+            var m, mods = callbackList[requestUri]
+            delete callbackList[requestUri]
+            while ((m = mods.shift())) {
+                // When 404 occurs, the params error will be true
+                if(error === true) {
+                    m.error()
+                }
+                else {
+                    m.load()
+                }
+            }
+        }
+    }
+
+// Resolve id to uri
+    Module.resolve = function(id, refUri) {
+        // Emit `resolve` event for plugins such as text plugin
+        var emitData = { id: id, refUri: refUri }
+        emit("resolve", emitData)
+
+        return emitData.uri || seajs.resolve(emitData.id, refUri)
+    }
+
+// Define a module
+    Module.define = function (id, deps, factory) {
+        var argsLen = arguments.length
+
+        // define(factory)
+        if (argsLen === 1) {
+            factory = id
+            id = undefined
+        }
+        else if (argsLen === 2) {
+            factory = deps
+
+            // define(deps, factory)
+            if (isArray(id)) {
+                deps = id
+                id = undefined
+            }
+            // define(id, factory)
+            else {
+                deps = undefined
+            }
+        }
+
+        // Parse dependencies according to the module factory code
+        if (!isArray(deps) && isFunction(factory)) {
+            deps = typeof parseDependencies === "undefined" ? [] : parseDependencies(factory.toString())
+        }
+
+        var meta = {
+            id: id,
+            uri: Module.resolve(id),
+            deps: deps,
+            factory: factory
+        }
+
+        // Try to derive uri in IE6-9 for anonymous modules
+        if (!isWebWorker && !meta.uri && doc.attachEvent && typeof getCurrentScript !== "undefined") {
+            var script = getCurrentScript()
+
+            if (script) {
+                meta.uri = script.src
+            }
+
+            // NOTE: If the id-deriving methods above is failed, then falls back
+            // to use onload event to get the uri
+        }
+
+        // Emit `define` event, used in nocache plugin, seajs node version etc
+        emit("define", meta)
+
+        meta.uri ? Module.save(meta.uri, meta) :
+            // Save information for "saving" work in the script onload event
+            anonymousMeta = meta
+    }
+
+// Save meta data to cachedMods
+    Module.save = function(uri, meta) {
+        var mod = Module.get(uri)
+
+        // Do NOT override already saved modules
+        if (mod.status < STATUS.SAVED) {
+            mod.id = meta.id || uri
+            mod.dependencies = meta.deps || []
+            mod.factory = meta.factory
+            mod.status = STATUS.SAVED
+
+            emit("save", mod)
+        }
+    }
+
+// Get an existed module or create a new one
+    Module.get = function(uri, deps) {
+        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps))
+    }
+
+// Use function is equal to load a anonymous module
+    Module.use = function (ids, callback, uri) {
+        var mod = Module.get(uri, isArray(ids) ? ids : [ids])
+
+        mod._entry.push(mod)
+        mod.history = {}
+        mod.remain = 1
+
+        mod.callback = function() {
+            var exports = []
+            var uris = mod.resolve()
+
+            for (var i = 0, len = uris.length; i < len; i++) {
+                exports[i] = cachedMods[uris[i]].exec()
+            }
+
+            if (callback) {
+                callback.apply(global, exports)
+            }
+
+            delete mod.callback
+            delete mod.history
+            delete mod.remain
+            delete mod._entry
+        }
+
+        mod.load()
+    }
+
+
+// Public API
+
+    seajs.use = function(ids, callback) {
+        Module.use(ids, callback, data.cwd + "_use_" + cid())
+        return seajs
+    }
+
+    Module.define.cmd = {}
+    global.define = Module.define
+
+
+// For Developers
+
+    seajs.Module = Module
+    data.fetchedList = fetchedList
+    data.cid = cid
+
+    seajs.require = function(id) {
+        var mod = Module.get(Module.resolve(id))
+        if (mod.status < STATUS.EXECUTING) {
+            mod.onload()
+            mod.exec()
+        }
+        return mod.exports
+    }
+
     /**
-     * @namespace coolie
-     * @type {Object}
+     * config.js - The configuration for the loader
      */
-    win.coolie = coolie;
 
+// The root path to use for id2uri parsing
+    data.base = loaderDir
 
-    /**
-     * 当前使用的模块
-     * @name coolie.modules
-     * @property getHost {Function}
-     */
-    win.coolie.modules = modules;
+// The loader directory
+    data.dir = loaderDir
 
+// The loader's full path
+    data.loader = loaderPath
 
-    /**
-     * 当前使用的模块
-     * @name coolie.dependences
-     * @property getHost {Function}
-     */
-    win.coolie.dependences = dependenceModules;
+// The current working directory
+    data.cwd = cwd
 
+// The charset for requesting files
+    data.charset = "utf-8"
 
-    /**
-     * 数组、对象遍历
-     * @name coolie.each
-     * @property getHost {Function}
-     */
-    win.coolie.each = each;
+// @Retention(RetentionPolicy.SOURCE)
+// The CORS options, Do't set CORS on default.
+//
+//data.crossorigin = undefined
 
+// data.alias - An object containing shorthands of module id
+// data.paths - An object containing path shorthands in module id
+// data.vars - The {xxx} variables in module id
+// data.map - An array containing rules to map module uri
+// data.debug - Debug mode. The default value is false
 
-    /**
-     * 获得 host
-     * @name coolie.getHost
-     * @property getHost {Function}
-     */
-    win.coolie.getHost = getHost;
+    seajs.config = function(configData) {
 
+        for (var key in configData) {
+            var curr = configData[key]
+            var prev = data[key]
 
-    /**
-     * 路径合并
-     * @name coolie.getPathJoin
-     * @property getHost {Function}
-     */
-    win.coolie.getPathJoin = getPathJoin;
+            // Merge object config such as alias, vars
+            if (prev && isObject(prev)) {
+                for (var k in curr) {
+                    prev[k] = curr[k]
+                }
+            }
+            else {
+                // Concat array config such as map
+                if (isArray(prev)) {
+                    curr = prev.concat(curr)
+                }
+                // Make sure that `data.base` is an absolute path
+                else if (key === "base") {
+                    // Make sure end with "/"
+                    if (curr.slice(-1) !== "/") {
+                        curr += "/"
+                    }
+                    curr = addBase(curr)
+                }
 
+                // Set config
+                data[key] = curr
+            }
+        }
 
-    /**
-     * 获得目录
-     * @name coolie.getPathDir
-     * @property getPathDir {Function}
-     */
-    win.coolie.getPathDir = getPathDir;
+        emit("config", configData)
+        return seajs
+    }
 
-
-    /**
-     * 获得当前脚本
-     * @name coolie.getCurrentScript
-     * @property getCurrentScript {Function}
-     */
-    win.coolie.getCurrentScript = getCurrentScript;
-
-
-    /**
-     * 获得脚本地址
-     * @name coolie.getScriptURL
-     * @property getScriptURL {Function}
-     */
-    win.coolie.getScriptURL = getScriptURL;
-
-
-    /**
-     * coolie 脚本标签 Node 对象
-     * @name coolie.script
-     * @property script {HTMLScriptElement}
-     */
-    win.coolie.script = $currentScript;
-
-
-    /**
-     * 加载 chunk 脚本
-     * @name coolie.chunk
-     * @param chunkList {String|Array}
-     * @type {Function}
-     */
-    win.coolie.chunk = function (chunkList) {
-        chunkList = isArray(chunkList) ? chunkList : [chunkList];
-
-        each(chunkList, function (index, chunkId) {
-            loadScript(coolieConfigJSHost + getPathJoin(mainModuleBaseDir, chunkId) + '.js');
-        });
-    };
-
-
-    /**
-     * @namespace define
-     * @type {define}
-     */
-    win.define = define;
-    win.define.amd = {};
-    win.define.cmd = {};
-}.call(this));
+})(this);
