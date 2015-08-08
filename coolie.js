@@ -170,7 +170,7 @@
         };
 
         xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
-        xhr.open('GET', url2);
+        xhr.open('GET', url);
         xhr.send(null);
     };
 
