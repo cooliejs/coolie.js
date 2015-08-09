@@ -580,7 +580,6 @@
 
     Module.prototype.pass = function () {
         var mod = this;
-
         var len = mod.dependencies.length;
 
         for (var i = 0; i < mod._entry.length; i++) {
@@ -589,7 +588,7 @@
             for (var j = 0; j < len; j++) {
                 var m = mod.deps[mod.dependencies[j]];
                 // If the module is unload and unused in the entry, pass entry to it
-                if (m.status < STATUS.LOADED && !entry.history.hasOwnProperty(m.uri)) {
+                if (m.status < STATUS.LOADED && !entry.history[m.uri]) {
                     entry.history[m.uri] = true;
                     count++;
                     m._entry.push(entry);
@@ -858,6 +857,7 @@
             }
         }
 
+        // 如果入口为 cmd，则重写后续所有模块都为 cmd
         if (Module.cmd) {
             id = deps = undefined;
         }
@@ -880,7 +880,7 @@
         // @coolie ignore webworker
         // Try to derive uri in IE6-9 for anonymous modules
         //if (!isWebWorker && !meta.uri && doc.attachEvent && typeof getCurrentScript !== "undefined") {
-        if (!meta.uri && doc.attachEvent && typeof getCurrentScript !== "undefined") {
+        if (!meta.uri && doc.attachEvent) {
             var script = getCurrentScript();
 
             if (script) {
@@ -917,28 +917,37 @@
 
     // Get an existed module or create a new one
     Module.get = function (uri, deps, type) {
-        debugger;
         return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type));
     };
 
     // Use function is equal to load a anonymous module
+    Module.entry = [];
     Module.use = function (ids, callback, uri) {
         var mod = Module.get(uri, isArray(ids) ? ids : [ids]);
 
+        Module.entry.push(mod);
         mod._entry.push(mod);
         mod.history = {};
         mod.remain = 1;
-
         mod.callback = function () {
+            // 如果为非 cmd，则入口模块为 0
+            if (!Module.cmd) {
+                mod.dependencies = ['0'];
+                mod.deps = {
+                    0: cachedMods[0]
+                };
+                mod.history = {
+                    0: true
+                };
+            }
+
             // 当前如果还有分块没有加载完成
-            debugger;
             if (chunkLength) {
                 return;
             }
 
             var exports = [];
-            // 如果为非 cmd，则入口模块为 0
-            var uris = Module.cmd ? mod.resolve() : ['0'];
+            var uris = mod.resolve();
 
             emit('ready');
 
@@ -1073,8 +1082,13 @@
 
             return version ? url.replace(REG_EXT, '.' + version + '$&') : url;
         };
+        var timeid;
 
-        seajs.on('request', function (meta) {
+        seajs.on('resolve', function (meta) {
+            if (!Module.cmd) {
+                meta.uri = meta.id;
+            }
+        }).on('request', function (meta) {
             meta.requestVersionUri = buldVersion(meta.requestUri);
         }).on('request', function (meta) {
             var id = meta.requestUri;
@@ -1207,8 +1221,15 @@
                 //urls = isArray(urls) ? urls : [urls];
                 each(urls, function (index, url) {
                     chunkLength++;
-                    request(buldVersion(id2Uri(url, baseURL)), function () {
-                        //chunkLength--;
+                    url = id2Uri(url, baseURL);
+                    request(buldVersion(url), function () {
+                        chunkLength--;
+                        clearTimeout(timeid);
+                        timeid = setTimeout(function () {
+                            each(Module.entry, function (index, entry) {
+                                entry.callback();
+                            });
+                        }, 1);
                     });
                 });
 
