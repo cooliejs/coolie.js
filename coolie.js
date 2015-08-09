@@ -197,9 +197,13 @@
             list = list.slice();
 
             // Execute event callbacks, use index because it's the faster.
-            for (var i = 0, len = list.length; i < len; i++) {
-                list[i](data);
-            }
+            //for (var i = 0, len = list.length; i < len; i++) {
+            //    list[i](data);
+            //}
+            //
+            each(list, function (index, callback) {
+                callback(data);
+            });
         }
 
         return seajs;
@@ -458,13 +462,14 @@
 
         var scripts = head.getElementsByTagName("script");
 
-        for (var i = scripts.length - 1; i >= 0; i--) {
-            var script = scripts[i];
+        each(scripts, function (index, script) {
             if (script.readyState === "interactive") {
                 interactiveScript = script;
-                return interactiveScript;
+                return false;
             }
-        }
+        }, true);
+
+        return interactiveScript;
     }
 
 
@@ -574,9 +579,12 @@
         var ids = mod.dependencies;
         var uris = [];
 
-        for (var i = 0, len = ids.length; i < len; i++) {
-            uris[i] = Module.resolve(ids[i], mod.uri, mod.types ? mod.types[i] : 'js');
-        }
+        //for (var i = 0, len = ids.length; i < len; i++) {
+        //    uris[i] = Module.resolve(ids[i], mod.uri, mod.types ? mod.types[i] : 'js');
+        //}
+        each(ids, function (index, id) {
+            uris[index] = Module.resolve(id, mod.uri, mod.types ? mod.types[index] : 'js');
+        });
 
         return uris;
     };
@@ -624,9 +632,12 @@
         var uris = mod.resolve();
         emit("load", uris);
 
-        for (var i = 0, len = uris.length; i < len; i++) {
-            mod.deps[mod.dependencies[i]] = Module.get(uris[i], [], mod.types ? mod.types[i] : 'js');
-        }
+        //for (var i = 0, len = uris.length; i < len; i++) {
+        //    mod.deps[mod.dependencies[i]] = Module.get(uris[i], [], mod.types ? mod.types[i] : 'js');
+        //}
+        each(uris, function (index, uri) {
+            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js');
+        });
 
         // Pass entry to it's dependencies
         mod.pass();
@@ -639,10 +650,21 @@
 
         // Begin parallel loading
         var requestCache = {};
-        var m;
+        //var m;
+        //
+        //for (i = 0; i < len; i++) {
+        //    m = cachedMods[uris[i]];
+        //
+        //    if (m.status < STATUS.FETCHING) {
+        //        m.fetch(requestCache);
+        //    }
+        //    else if (m.status === STATUS.SAVED) {
+        //        m.load();
+        //    }
+        //}
 
-        for (i = 0; i < len; i++) {
-            m = cachedMods[uris[i]];
+        each(uris, function (index, uri) {
+            var m = cachedMods[uri];
 
             if (m.status < STATUS.FETCHING) {
                 m.fetch(requestCache);
@@ -650,14 +672,19 @@
             else if (m.status === STATUS.SAVED) {
                 m.load();
             }
-        }
+        });
 
         // Send all requests at last to avoid cache bug in IE6-9. Issues#808
-        for (var requestUri in requestCache) {
-            if (requestCache.hasOwnProperty(requestUri)) {
-                requestCache[requestUri]();
+        //for (var requestUri in requestCache) {
+        //    if (requestCache.hasOwnProperty(requestUri)) {
+        //        requestCache[requestUri]();
+        //    }
+        //}
+        each(requestCache, function (key, val) {
+            if (requestCache[key]) {
+                requestCache[key]();
             }
-        }
+        });
     };
 
     // Call this method when module is loaded
@@ -666,12 +693,17 @@
         mod.status = STATUS.LOADED;
 
         // When sometimes cached in IE, exec will occur before onload, make sure len is an number
-        for (var i = 0, len = (mod._entry || []).length; i < len; i++) {
-            var entry = mod._entry[i];
+        //for (var i = 0, len = (mod._entry || []).length; i < len; i++) {
+        //    var entry = mod._entry[i];
+        //    if (--entry.remain === 0) {
+        //        entry.callback();
+        //    }
+        //}
+        each(mod._entry || [], function (index, entry) {
             if (--entry.remain === 0) {
                 entry.callback();
             }
-        }
+        });
 
         delete mod._entry;
     };
@@ -954,9 +986,12 @@
 
             emit('ready');
 
-            for (var i = 0, len = uris.length; i < len; i++) {
-                exports[i] = cachedMods[uris[i]].exec();
-            }
+            //for (var i = 0, len = uris.length; i < len; i++) {
+            //    exports[i] = cachedMods[uris[i]].exec();
+            //}
+            each(uris, function (index, uri) {
+                exports[index] = cachedMods[uri].exec();
+            });
 
             emit('execed');
 
@@ -1086,7 +1121,7 @@
         };
         var buildCache = function (url) {
             if (coolieConfig.cache === false) {
-                return url + (url.indexOf('?') ? '&' : '?') + '_=' + now();
+                return url + (url.indexOf('?') > 0 ? '&' : '?') + '_=' + now();
             }
 
             return url;
@@ -1196,9 +1231,9 @@
                 seajs.use(main ? id2Uri(main, baseURL) : mainURL, function () {
                     mainModule = cachedMods[mainURL];
 
-                    for (var i = 0, len = mainCallbackList.length; i < len; i++) {
-                        mainCallbackList[i](mainModule.exports);
-                    }
+                    each(mainCallbackList, function (index, callback) {
+                        callback(mainModule.exports);
+                    });
                 });
 
                 return this;
