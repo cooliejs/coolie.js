@@ -217,10 +217,10 @@
      */
 
     var DIRNAME_RE = /[^?#]*\//;
-
     var DOT_RE = /\/\.\//g;
     var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
     var MULTI_SLASH_RE = /([^:/])\/+\//g;
+    var REG_START = /^([./]|ftp|file|https?)/;
 
     // Extract the directory portion of a path
     // dirname("a/b/c.js?t=123#xx/zz") ==> "a/b/"
@@ -257,6 +257,10 @@
     function normalize(path, isSingle) {
         var last = path.length - 1;
         var lastC = path.charCodeAt(last);
+
+        if (!REG_START.test(path)) {
+            path = './' + path;
+        }
 
         // If the uri ends with `#`, just return it without '#'
         if (lastC === 35 /* "#" */) {
@@ -527,6 +531,7 @@
     var fetchingList = {};
     var fetchedList = {};
     var callbackList = {};
+    var chunkLength = 0;
 
     var STATUS = Module.STATUS = {
         // 1 - The `module.uri` is being fetched
@@ -912,6 +917,7 @@
 
     // Get an existed module or create a new one
     Module.get = function (uri, deps, type) {
+        debugger;
         return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type));
     };
 
@@ -924,6 +930,12 @@
         mod.remain = 1;
 
         mod.callback = function () {
+            // 当前如果还有分块没有加载完成
+            debugger;
+            if (chunkLength) {
+                return;
+            }
+
             var exports = [];
             // 如果为非 cmd，则入口模块为 0
             var uris = Module.cmd ? mod.resolve() : ['0'];
@@ -1056,12 +1068,14 @@
         var CONST_COOLIE_MODULES = 'coolie modules';
         var timeStart = now();
         var REG_EXT = /\.[^.]*$/;
+        var buldVersion = function (url) {
+            var version = coolieConfig._v[url];
+
+            return version ? url.replace(REG_EXT, '.' + version + '$&') : url;
+        };
 
         seajs.on('request', function (meta) {
-            var url = meta.requestUri;
-            var version = coolieConfig._v[meta.requestUri];
-
-            meta.requestVersionUri = version ? url.replace(REG_EXT, '.' + version + '$&') : url;
+            meta.requestVersionUri = buldVersion(meta.requestUri);
         }).on('request', function (meta) {
             var id = meta.requestUri;
             var url = meta.requestVersionUri || id;
@@ -1101,6 +1115,7 @@
         configURL = id2Uri(configURL, loaderPath);
         global.coolie = {
             modules: cachedMods,
+
             /**
              * 配置模块
              * @param config
@@ -1191,8 +1206,10 @@
             chunk: function (urls) {
                 //urls = isArray(urls) ? urls : [urls];
                 each(urls, function (index, url) {
-
-                    request(url, noop);
+                    chunkLength++;
+                    request(buldVersion(id2Uri(url, baseURL)), function () {
+                        //chunkLength--;
+                    });
                 });
 
                 return this;
