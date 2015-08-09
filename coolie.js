@@ -247,7 +247,7 @@
     // Normalize an id
     // normalize("path/to/a") ==> "path/to/a.js"
     // NOTICE: substring is faster than negative slice and RegExp
-    function normalize(path , isSingle) {
+    function normalize(path, isSingle) {
         var last = path.length - 1;
         var lastC = path.charCodeAt(last);
 
@@ -792,7 +792,7 @@
         }
 
         function sendRequest() {
-            seajs.request(emitData.requestVersionUri || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
+            seajs.request(emitData._url || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
         }
 
         function onRequest(error) {
@@ -1084,6 +1084,13 @@
 
             return version ? url.replace(REG_EXT, '.' + version + '$&') : url;
         };
+        var buildCache = function (url) {
+            if (coolieConfig.cache === false) {
+                return url + (url.indexOf('?') ? '&' : '?') + '_=' + now();
+            }
+
+            return url;
+        };
         var timeid;
 
         seajs.on('resolve', function (meta) {
@@ -1091,10 +1098,11 @@
                 meta.uri = meta.id;
             }
         }).on('request', function (meta) {
-            meta.requestVersionUri = buldVersion(meta.requestUri);
+            meta._url = buldVersion(meta.requestUri);
+            meta._url = buildCache(meta._url);
         }).on('request', function (meta) {
             var id = meta.requestUri;
-            var url = meta.requestVersionUri || id;
+            var url = meta._url || id;
 
             switch (meta.type) {
                 case 'text':
@@ -1143,6 +1151,10 @@
 
                 if (config.debug !== false) {
                     config.debug = true;
+                }
+
+                if (config.cache !== false) {
+                    config.cache = true;
                 }
 
                 global.DEBUG = !!config.debug;
