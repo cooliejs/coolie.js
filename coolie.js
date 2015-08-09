@@ -1,3 +1,11 @@
+/*!
+ * coolie 苦力
+ * @author seajs.org ydr.me
+ * @version 0.15.0
+ * @license MIT
+ */
+
+
 /**
  * Sea.js 3.0.1 | seajs.org/LICENSE.md
  */
@@ -7,15 +15,6 @@
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-/*!
- * coolie 苦力
- * @author seajs.org ydr.me
- * @version 0.15.0
- * @license MIT
- */
-
 (function (global, undefined) {
     'use strict';
 
@@ -61,12 +60,6 @@
     var isArray = Array.isArray || isType("Array");
     var isFunction = isType("Function");
     var isUndefined = isType("Undefined");
-
-    var _cid = 0;
-
-    function cid() {
-        return _cid++;
-    }
 
 
     /**
@@ -308,7 +301,15 @@
 
 
     function id2Uri(id, refUri, isSingle) {
-        if (!id) return refUri;
+        if (!id) {
+            return refUri;
+        }
+
+        // 相对于当前域的根目录
+        if (id[0] === '~') {
+            id = id.substr(1);
+            refUri = location.protocol + '//' + location.host + '/';
+        }
 
         //id = parseAlias(id);
         //id = parsePaths(id);
@@ -512,7 +513,7 @@
             if ($2) {
                 var matches = $2.match(REG_REQUIRE_TYPE);
 
-                deps.push(id2Uri(matches[1], '', matches[2]));
+                deps.push(realpath(matches[1]));
                 types.push(matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js');
             }
         });
@@ -719,7 +720,7 @@
         };
 
         require.async = function (ids, callback) {
-            Module.use(ids, callback, uri + "_async_" + cid());
+            Module.use(ids, callback, uri + now());
             return require;
         };
 
@@ -974,7 +975,7 @@
     // Public API
 
     seajs.use = function (ids, callback) {
-        Module.use(ids, callback, data.cwd + "_use_" + cid());
+        Module.use(ids, callback, data.cwd + now());
         return seajs;
     };
 
@@ -987,7 +988,6 @@
 
     seajs.Module = Module;
     data.fetchedList = fetchedList;
-    data.cid = cid;
 
     seajs.require = function (id, type) {
         var mod = Module.get(Module.resolve(id), [], type);
