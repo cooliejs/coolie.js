@@ -247,7 +247,7 @@
     // Normalize an id
     // normalize("path/to/a") ==> "path/to/a.js"
     // NOTICE: substring is faster than negative slice and RegExp
-    function normalize(path, isSingle) {
+    function normalize(path , isSingle) {
         var last = path.length - 1;
         var lastC = path.charCodeAt(last);
 
@@ -260,9 +260,11 @@
             return path.substring(0, last);
         }
 
-        return (path.substring(last - 2) === ".js" ||
-        path.indexOf("?") > 0 ||
-        lastC === 47 /* "/" */) || isSingle ? path : path + ".js";
+        if (lastC === 47 /* "/" */) {
+            return path + 'index.js';
+        }
+
+        return (path.substring(last - 2) === ".js" || isSingle || path.indexOf("?") > 0) ? path : path + ".js";
     }
 
 
@@ -275,28 +277,28 @@
 
         // Absolute
         if (ABSOLUTE_RE.test(id)) {
-            ret = id
+            ret = id;
         }
         // Relative
         else if (first === 46 /* "." */) {
-            ret = (refUri ? dirname(refUri) : data.cwd) + id
+            ret = (refUri ? dirname(refUri) : data.cwd) + id;
         }
         // Root
         else if (first === 47 /* "/" */) {
             var m = data.cwd.match(ROOT_DIR_RE);
-            ret = m ? m[0] + id.substring(1) : id
+            ret = m ? m[0] + id.substring(1) : id;
         }
         // Top-level
         else {
-            ret = data.base + id
+            ret = data.base + id;
         }
 
         // Add default protocol when uri begins with "//"
         if (ret.indexOf("//") === 0) {
-            ret = location.protocol + ret
+            ret = location.protocol + ret;
         }
 
-        return realpath(ret)
+        return realpath(ret);
     }
 
 
@@ -1136,7 +1138,7 @@
              * @returns {global.coolie}
              */
             config: function (config) {
-                baseURL = id2Uri(config.base, configURL);
+                baseURL = dirname(id2Uri(config.base, configURL));
                 mainURL = id2Uri(mainURL, baseURL);
 
                 if (config.debug !== false) {
@@ -1179,7 +1181,7 @@
              * @returns {global.coolie}
              */
             use: function (main) {
-                seajs.use(main ? id2Uri(main, baseURL) : mainURL, function (modules) {
+                seajs.use(main ? id2Uri(main, baseURL) : mainURL, function () {
                     mainModule = cachedMods[mainURL];
 
                     for (var i = 0, len = mainCallbackList.length; i < len; i++) {
