@@ -1174,8 +1174,8 @@
         global.coolie = {
             modules: cachedMods,
             version: VERSION,
-            url: loaderPath,
-            path: dirname(loaderPath),
+            path: loaderPath,
+            dirname: dirname(loaderPath),
 
             /**
              * 配置模块
