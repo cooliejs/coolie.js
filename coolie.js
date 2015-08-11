@@ -857,7 +857,7 @@
         var emitData = {id: id, refUri: refUri, type: type};
         emit("resolve", emitData);
 
-        return emitData.uri || id2Uri(emitData.id, refUri, type);
+        return emitData.uri || id2Uri(emitData.id, refUri, type !== 'js');
     };
 
     // Define a module
@@ -1230,7 +1230,7 @@
              * @returns {global.coolie}
              */
             use: function (main) {
-                seajs.use(main ? id2Uri(main, baseURL) : mainURL, function () {
+                seajs.use(mainURL = main ? id2Uri(main, baseURL) : mainURL, function () {
                     mainModule = cachedMods[mainURL];
 
                     each(mainCallbackList, function (index, callback) {
