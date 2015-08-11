@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 0.15.0
+ * @version 1.0.0
  * @license MIT
  */
 
@@ -23,8 +23,7 @@
     }
 
     var win = window;
-
-
+    var VERSION = '1.0.0';
     var noop = function () {
         // ignore
     };
@@ -55,7 +54,7 @@
     }
 
     var isObject = isType("Object");
-    var isString = isType("String");
+    //var isString = isType("String");
     var isBoolean = isType("Boolean");
     var isArray = Array.isArray || isType("Array");
     var isFunction = isType("Function");
@@ -680,7 +679,7 @@
         //        requestCache[requestUri]();
         //    }
         //}
-        each(requestCache, function (key, val) {
+        each(requestCache, function (key) {
             if (requestCache[key]) {
                 requestCache[key]();
             }
@@ -1174,6 +1173,9 @@
         configURL = id2Uri(configURL, loaderPath);
         global.coolie = {
             modules: cachedMods,
+            version: VERSION,
+            url: loaderPath,
+            path: dirname(loaderPath),
 
             /**
              * 配置模块

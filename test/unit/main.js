@@ -8,13 +8,8 @@
 describe('main', function () {
     'use strict';
 
-    var currentScript = coolie.getCurrentScript();
-    var currentScriptURL = coolie.getScriptURL(currentScript);
-    var host = coolie.getHost(currentScriptURL);
-    var dir = coolie.getPathDir(currentScriptURL);
-
     coolie.config({
-        base: host + coolie.getPathJoin(dir, '../modules/'),
+        base: coolie.path + '../modules/',
         version: {
             './module5.js': 'abc123'
         }
