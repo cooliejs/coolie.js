@@ -1,6 +1,6 @@
 {
   "name": "coolie",
-  "version": "0.14.5",
+  "version": "1.0.0",
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
