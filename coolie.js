@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.0.2
+ * @version 1.0.3
  * @license MIT
  */
 
@@ -23,7 +23,7 @@
     }
 
     var win = window;
-    var VERSION = '1.0.2';
+    var VERSION = '1.0.3';
     var noop = function () {
         // ignore
     };
@@ -403,6 +403,8 @@
             head.appendChild(node);
 
         currentlyAddingScript = null;
+
+        return node;
     }
 
     function addOnload(node, callback, url) {
@@ -823,7 +825,9 @@
         }
 
         function sendRequest() {
-            seajs.request(emitData._url || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
+            var node = seajs.request(emitData._url || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
+
+            node.id = emitData.requestUri;
         }
 
         function onRequest(error) {
@@ -918,7 +922,7 @@
             var script = getCurrentScript();
 
             if (script) {
-                meta.uri = script.src;
+                meta.uri = script.id || script.src;
             }
 
             // NOTE: If the id-deriving methods above is failed, then falls back
@@ -937,7 +941,7 @@
     // Save meta data to cachedMods
     Module.save = function (uri, meta) {
         var id = meta.id || uri;
-        var mod = Module.get(id, []);
+        var mod = Module.get(id);
 
         // Do NOT override already saved modules
         if (mod.status < STATUS.SAVED) {
