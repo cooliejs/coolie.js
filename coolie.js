@@ -23,7 +23,7 @@
     }
 
     var win = window;
-    var VERSION = '1.0.0';
+    var VERSION = '1.0.1';
     var noop = function () {
         // ignore
     };
