@@ -260,14 +260,14 @@
 
         // If the uri ends with `#`, just return it without '#'
         if (lastC === 35 /* "#" */) {
-            return path.substring(0, last);
+            return path.slice(0, -1);
         }
 
         if (lastC === 47 /* "/" */) {
             return path + 'index.js';
         }
 
-        return (path.substring(last - 2) === ".js" || isSingle || path.indexOf("?") > 0) ? path : path + ".js";
+        return (path.substr(-3) === ".js" || isSingle || path.indexOf("?") > 0) ? path : path + ".js";
     }
 
 
