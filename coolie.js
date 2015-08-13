@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.0.0
+ * @version 1.0.1
  * @license MIT
  */
 
@@ -519,7 +519,7 @@
             if ($2) {
                 var matches = $2.match(REG_REQUIRE_TYPE);
 
-                deps.push(realpath(matches[1]));
+                deps.push(matches[1]);
                 types.push(matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js');
             }
         });
@@ -989,6 +989,10 @@
             //    exports[i] = cachedMods[uris[i]].exec();
             //}
             each(uris, function (index, uri) {
+                if (!cachedMods[uri]) {
+                    throw 'can not found main module:\n`' + uri + '`';
+                }
+
                 exports[index] = cachedMods[uri].exec();
             });
 
@@ -1175,7 +1179,17 @@
             modules: cachedMods,
             version: VERSION,
             path: loaderPath,
+            realpath: realpath,
             dirname: dirname(loaderPath),
+            /**
+             * 路径合并
+             * @param from {String} 起始路径
+             * @param to {String} 终点路径
+             * @returns {String}
+             */
+            resolve: function (from, to) {
+                return id2Uri(to, from, true);
+            },
 
             /**
              * 配置模块
