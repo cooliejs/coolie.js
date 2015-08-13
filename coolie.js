@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.0.1
+ * @version 1.0.2
  * @license MIT
  */
 
@@ -23,7 +23,7 @@
     }
 
     var win = window;
-    var VERSION = '1.0.1';
+    var VERSION = '1.0.2';
     var noop = function () {
         // ignore
     };
@@ -216,6 +216,7 @@
     var DOT_RE = /\/\.\//g;
     var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
     var MULTI_SLASH_RE = /([^:/])\/+\//g;
+    var REG_JS_EXT = /\.js$/i;
     var REG_START = /^([./]|ftp|file|https?)/;
 
     // Extract the directory portion of a path
@@ -251,8 +252,7 @@
     // normalize("path/to/a") ==> "path/to/a.js"
     // NOTICE: substring is faster than negative slice and RegExp
     function normalize(path, isSingle) {
-        var last = path.length - 1;
-        var lastC = path.charCodeAt(last);
+        var lastC = path.charCodeAt(path.length - 1);
 
         if (!REG_START.test(path)) {
             path = './' + path;
@@ -267,7 +267,7 @@
             return path + 'index.js';
         }
 
-        return (path.substr(-3) === ".js" || isSingle || path.indexOf("?") > 0) ? path : path + ".js";
+        return (REG_JS_EXT.test(path) || isSingle || path.indexOf("?") > 0) ? path : path + ".js";
     }
 
 
@@ -311,8 +311,8 @@
         }
 
         // 相对于当前域的根目录
-        if (id[0] === '~') {
-            id = id.substr(1);
+        if (id.slice(0, 1) === '~') {
+            id = id.slice(1);
             refUri = location.protocol + '//' + location.host + '/';
         }
 
