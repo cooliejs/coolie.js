@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.0.3
+ * @version 1.1.0
  * @license MIT
  */
 
@@ -23,7 +23,7 @@
     }
 
     var win = window;
-    var VERSION = '1.0.3';
+    var VERSION = '1.1.0';
     var noop = function () {
         // ignore
     };
