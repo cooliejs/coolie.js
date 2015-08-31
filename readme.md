@@ -1,16 +1,42 @@
-# coolie.js@1.0.3 苦力 
+# coolie.js@1.1.0 苦力 
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
 
 苦力——一个纯净、易用、智能的模块加载器。
 
+## 语法
+```
+require("path_to_module"[, "moduleType|outputType"]);
+```
+
+## 示例
 ```
 require('some.js');
+
 require('some.css', 'css');
+require('some.css', 'css|url');
+require('some.css', 'css|base64');
+require('some.css', 'css|text');
+
+require('some.txt', 'text');
+require('some.txt', 'text|url');
+require('some.txt', 'text|base64');
+require('some.txt', 'text|text');
+
 require('some.html', 'html');
+require('some.html', 'html|url');
+require('some.html', 'html|base64');
+require('some.html', 'html|text');
+
 require('some.jpg', 'image');
+require('some.jpg', 'image|url');
+require('some.jpg', 'image|base64');
+
 require('some.json', 'json');
+require('some.json', 'json|url');
+require('some.json', 'json|base64');
+require('some.json', 'json|text');
 ```
 
 
