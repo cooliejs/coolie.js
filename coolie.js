@@ -22,7 +22,6 @@
         return;
     }
 
-    var win = window;
     var VERSION = '1.1.0';
     var noop = function () {
         // ignore
@@ -91,7 +90,7 @@
      */
     var console = (function () {
         var ret = {};
-        var hasConsole = win.console;
+        var hasConsole = global.console;
         var arr = ['log', 'warn', 'group', 'groupEnd'];
 
         each(arr, function (index, key) {
@@ -150,7 +149,7 @@
      * @param callback {Function} 加载回调
      */
     var ajaxText = function (url, callback) {
-        var xhr = XMLHttpRequest ? new XMLHttpRequest() : new win.ActiveXObject("Microsoft.XMLHTTP");
+        var xhr = XMLHttpRequest ? new XMLHttpRequest() : new global.ActiveXObject("Microsoft.XMLHTTP");
         var hasComplete;
         var onready = function () {
             if (xhr.readyState === 4 && !hasComplete) {
