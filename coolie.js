@@ -1230,7 +1230,6 @@
             modules: cachedMods,
             version: VERSION,
             path: loaderPath,
-            realpath: realpath,
             dirname: dirname(loaderPath),
             /**
              * 路径合并
