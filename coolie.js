@@ -1195,7 +1195,7 @@
                                     outTypes: [],
                                     deps: [],
                                     factory: function () {
-                                        return meta.type === 'json' ? parseJSON(url, text) : text;
+                                        return meta.type === 'json' && meta.outType === 'json' ? parseJSON(url, text) : text;
                                     }
                                 });
                                 meta.onRequest();
