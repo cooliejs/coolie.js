@@ -36,7 +36,7 @@ define(function (require) {
 
     // json
     //var json = require('../image/coolie.json', 'json');
-    //var json = require('../image/coolie.json', 'json|url');
+    var json = require('../image/coolie.json', 'json|url');
     //var json = require('../image/coolie.json', 'json|base64');
     //var json = require('../image/coolie.json', 'json|text');
 
