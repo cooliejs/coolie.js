@@ -980,7 +980,7 @@
     Module.use = function (ids, callback, uri) {
         var mod = Module.get(uri, isArray(ids) ? ids : [ids]);
 
-        Module.entry.push(mod);
+
         mod._entry.push(mod);
         mod.history = {};
         mod.remain = 1;
@@ -1028,7 +1028,7 @@
             delete mod.remain;
             delete mod._entry;
         };
-
+        Module.entry.push(mod);
         mod.load();
     };
 
@@ -1341,7 +1341,9 @@
                         clearTimeout(timeid);
                         timeid = nextTick(function () {
                             each(Module.entry, function (index, entry) {
-                                entry.callback();
+                                if (entry.callback) {
+                                    entry.callback();
+                                }
                             });
                         });
                     });
