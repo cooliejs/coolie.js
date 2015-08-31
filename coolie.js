@@ -35,10 +35,7 @@
     //}
 
     //var seajs = global.seajs = {
-    var seajs = {
-        // The current version of Sea.js being used
-        version: "3.0.1"
-    };
+    var seajs = {};
 
     var data = seajs.data = {};
 
@@ -498,9 +495,10 @@
 
     /**
      * 模块类型别名
-     * @type {{image: string, text: string, html: string, css: string}}
+     * @type {{js: string, image: string, text: string, html: string, css: string}}
      */
     var moduleTypeMap = {
+        js: 'js',
         image: 'image',
         text: 'text',
         html: 'text',
@@ -520,9 +518,10 @@
         code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
             if ($2) {
                 var matches = $2.match(REG_REQUIRE_TYPE);
+                var pipeline = (matches[2] ? matches[2].toLowerCase() : 'js').split('|');
 
                 deps.push(matches[1]);
-                types.push(matches[2] ? moduleTypeMap[matches[2].toLowerCase()] : 'js');
+                types.push(moduleTypeMap[pipeline[0]]);
             }
         });
 

@@ -9,7 +9,7 @@ define(function (require) {
     var c = require('../libs/c.js?a=312');
     var c = require('../libs/c.js?a=312');
     var c = require('../libs/c.js?a=312');
-    var text = require('../text/some.txt', 'text');
+    var text = require('../text/some.txt', 'text|url');
     var image = require('../image/arrow1.png', 'image');
     var json = require('../image/coolie.json', 'json');
     var wx = require('../libs/wx.js');
