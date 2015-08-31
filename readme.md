@@ -3,7 +3,7 @@
 [![Coverage Status][coveralls-img]][coveralls-url]
 
 
-苦力——一个纯净、易用、智能的模块加载器。
+苦力——基于 C/AMD 的纯净、易用、智能的模块加载器。
 
 ## 语法
 ```
