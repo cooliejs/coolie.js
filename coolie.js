@@ -170,6 +170,17 @@
 
 
     /**
+     * 下一次
+     * @param callback
+     */
+    var nextTick = function (callback) {
+        setTimeout(function () {
+            callback();
+        }, 1);
+    };
+
+
+    /**
      * util-events.js - The minimal events support
      */
 
@@ -514,6 +525,7 @@
     var parseDependencies = function (code) {
         var deps = [];
         var types = [];
+        var outTypes = [];
 
         code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
             if ($2) {
@@ -522,10 +534,11 @@
 
                 deps.push(matches[1]);
                 types.push(moduleTypeMap[pipeline[0]]);
+                outTypes.push(pipeline[1]);
             }
         });
 
-        return [deps, types];
+        return [deps, types, outTypes];
     };
 
 
@@ -559,14 +572,17 @@
     };
 
 
-    function Module(uri, deps, type) {
-        this.uri = uri;
-        this.dependencies = deps;
-        this.deps = {}; // Ref the dependence modules
-        this.status = 0;
-        this.id = uri;
-        this.type = type || 'js';
-        this._entry = [];
+    function Module(uri, deps, type, outType) {
+        var the = this;
+
+        the.uri = uri;
+        the.dependencies = deps;
+        the.deps = {}; // Ref the dependence modules
+        the.status = 0;
+        the.id = uri;
+        the.type = type || 'js';
+        the.outType = outType || the.type;
+        the._entry = [];
     }
 
     // 默认为 cmd，当第一次 define 为匿名时，后续模块都视为匿名
@@ -636,7 +652,7 @@
         //    mod.deps[mod.dependencies[i]] = Module.get(uris[i], [], mod.types ? mod.types[i] : 'js');
         //}
         each(uris, function (index, uri) {
-            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js');
+            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js');
         });
 
         // Pass entry to it's dependencies
@@ -810,6 +826,7 @@
         // Emit `request` event for plugins such as text plugin
         emit("request", emitData = {
             type: mod.type,
+            outType: mod.outType,
             uri: uri,
             requestUri: requestUri,
             onRequest: onRequest,
@@ -911,6 +928,7 @@
             uri: Module.resolve(id),
             deps: depList ? depList[0] : deps,
             types: depList ? depList[1] : [],
+            outTypes: depList ? depList[2] : [],
             factory: factory
         };
 
@@ -945,6 +963,7 @@
         // Do NOT override already saved modules
         if (mod.status < STATUS.SAVED) {
             mod.types = meta.types;
+            mod.outTypes = meta.outTypes;
             mod.dependencies = meta.deps;
             mod.factory = meta.factory;
             mod.status = STATUS.SAVED;
@@ -953,8 +972,8 @@
     };
 
     // Get an existed module or create a new one
-    Module.get = function (uri, deps, type) {
-        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type));
+    Module.get = function (uri, deps, type, outType) {
+        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type, outType));
     };
 
     // Use function is equal to load a anonymous module
@@ -1148,31 +1167,60 @@
             switch (meta.type) {
                 case 'text':
                 case 'json':
-                    ajaxText(url, function (text) {
-                        Module.save(id, {
-                            id: id,
-                            types: [],
-                            deps: [],
-                            factory: function () {
-                                return meta.type === 'json' ? parseJSON(url, text) : text;
-                            }
-                        });
-                        meta.onRequest();
-                    });
-                    meta.requested = true;
+                    switch (meta.outType) {
+                        case 'url':
+                        case 'base64':
+                            Module.save(id, {
+                                id: id,
+                                types: [],
+                                outTypes: [],
+                                deps: [],
+                                factory: function () {
+                                    return url;
+                                }
+                            });
+                            nextTick(function () {
+                                meta.onRequest();
+                            });
+                            meta.requested = true;
+                            break;
+
+                        // text
+                        // js
+                        default :
+                            ajaxText(url, function (text) {
+                                Module.save(id, {
+                                    id: id,
+                                    types: [],
+                                    outTypes: [],
+                                    deps: [],
+                                    factory: function () {
+                                        return meta.type === 'json' ? parseJSON(url, text) : text;
+                                    }
+                                });
+                                meta.onRequest();
+                            });
+                            meta.requested = true;
+                    }
                     break;
 
                 case 'image':
+                    // url
+                    // text
+                    // base64
                     Module.save(id, {
                         id: id,
                         types: [],
+                        outTypes: [],
                         deps: [],
                         factory: function () {
                             return url;
                         }
                     });
+                    nextTick(function () {
+                        meta.onRequest();
+                    });
                     meta.requested = true;
-                    meta.onRequest();
                     break;
             }
         });
@@ -1293,11 +1341,11 @@
                     request(buldVersion(url), function () {
                         chunkLength--;
                         clearTimeout(timeid);
-                        timeid = setTimeout(function () {
+                        timeid = nextTick(function () {
                             each(Module.entry, function (index, entry) {
                                 entry.callback();
                             });
-                        }, 1);
+                        });
                     });
                 });
 
