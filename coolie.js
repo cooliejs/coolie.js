@@ -991,7 +991,6 @@
             // 如果为非 cmd，则入口模块为 0
             if (!Module.cmd && mainId !== '0') {
                 cachedMods[mainId] = cachedMods[0];
-                delete(cachedMods[0]);
             }
 
             // 当前如果还有分块没有加载完成
@@ -1025,8 +1024,7 @@
             delete mod.history;
             delete mod.remain;
             delete mod._entry;
-            // 主模块已经加载完毕
-            Module.main = Module.main || mod.id;
+            delete(cachedMods[0]);
         };
         Module.entry.push(mod);
         mod.load();
