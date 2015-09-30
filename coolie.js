@@ -669,18 +669,6 @@
 
         // Begin parallel loading
         var requestCache = {};
-        //var m;
-        //
-        //for (i = 0; i < len; i++) {
-        //    m = cachedMods[uris[i]];
-        //
-        //    if (m.status < STATUS.FETCHING) {
-        //        m.fetch(requestCache);
-        //    }
-        //    else if (m.status === STATUS.SAVED) {
-        //        m.load();
-        //    }
-        //}
 
         each(uris, function (index, uri) {
             var m = cachedMods[uri];
@@ -754,7 +742,7 @@
         //non-cmd module has no property factory and exports
         if (!mod.hasOwnProperty('factory')) {
             mod.non = true;
-            return;
+            throw 'can not found module: ' + mod.uri;
         }
 
         // Create require
@@ -763,7 +751,7 @@
         function require(id, type) {
             var m = mod.deps[id] || Module.get(require.resolve(id, type), [], type);
             if (m.status === STATUS.ERROR) {
-                throw new Error('module was broken: ' + m.uri);
+                throw 'module was broken: ' + m.uri;
             }
             return m.exec();
         }

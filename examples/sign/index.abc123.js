@@ -1,6 +1,6 @@
-define('0', ['1', '2', '3'], function (r) {
+define('0', ['1', '2'], function (r) {
     alert(r('1') + r('2'));
-    r('3');
+    r.async('3');
 });
 
 define('1', [], function (r, e, m) {

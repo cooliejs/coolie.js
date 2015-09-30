@@ -20,6 +20,7 @@ module.exports = {
         }
     },
     "files": [
+        "./coolie.js",
         './examples/**'
     ],
     "watchOptions": {},
