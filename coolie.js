@@ -766,10 +766,14 @@
             }
 
             each(ids, function (index, id) {
-                ids[index] = id2Uri(id, Module.base);
+                ids[index] = id2Uri(id, Module.asyncBase);
             });
             // 加上时间戳以区别主入口模块
-            Module.use(ids, callback, uri + now());
+            var mod = Module.use(ids, callback, uri + now());
+
+            // 异步加载的模块
+            mod.async = true;
+
             return require;
         };
 
@@ -984,8 +988,8 @@
         mod.history = {};
         mod.remain = 1;
         mod.callback = function () {
-            // 如果为非 cmd，则入口模块为 0
-            if (!Module.cmd) {
+            // 如果为非 cmd && 同步模块，则入口模块为 0
+            if (!Module.cmd && !mod.async) {
                 mod.dependencies = ['0'];
                 mod.deps = {
                     0: cachedMods[0]
@@ -1029,6 +1033,8 @@
         };
         Module.entry.push(mod);
         mod.load();
+
+        return mod;
     };
 
 
@@ -1242,11 +1248,20 @@
             /**
              * 配置模块
              * @param config
+             * @param [config.base="./"] {String} APP 入口基准路径
+             * @param [config.async="async"] {String} async 模块入口标记【只对 cmd 模式作用】
+             * @param [config.chunk="chunk"] {String} chunk 模块入口标记【只对 cmd 模式作用】
+             * @param [config.debug=false] {Boolean} 是否启用调试模式
+             * @param [config.cache=true] {Boolean} 是否启用缓存
+             * @param [config.version] {Object} 版本信息
+             * @param [config._v] {Object} 内置版本信息
              * @returns {global.coolie}
              */
             config: function (config) {
                 baseURL = dirname(id2Uri(config.base, configURL));
-                Module.base = baseURL;
+                Module.mainBase = baseURL;
+                Module.asyncBase = baseURL + (config.async || 'async') + '/';
+                Module.chunkBase = baseURL + (config.chunk || 'chunk') + '/';
                 mainURL = id2Uri(mainURL, baseURL);
 
                 if (config.debug !== false) {
