@@ -424,7 +424,7 @@
         if (supportOnload) {
             node.onload = onload;
             node.onerror = function () {
-                emit("error", {uri: url, node: node});
+                emit('error', {uri: url, node: node});
                 onload(true);
             };
         }
@@ -649,7 +649,7 @@
 
         // Emit `load` event for plugins such as combo plugin
         var uris = mod.resolve();
-        emit("load", uris);
+        emit('load', uris);
 
         //for (var i = 0, len = uris.length; i < len; i++) {
         //    mod.deps[mod.dependencies[i]] = Module.get(uris[i], [], mod.types ? mod.types[i] : 'js');
@@ -773,6 +773,7 @@
         };
 
         require.async = function (ids, callback) {
+            // 加上时间戳以区别主入口模块
             Module.use(ids, callback, uri + now());
             return require;
         };
@@ -795,7 +796,7 @@
         mod.status = STATUS.EXECUTED;
 
         // Emit `exec` event
-        emit("exec", mod);
+        emit('exec', mod);
 
         return mod.exports;
     };
@@ -809,7 +810,7 @@
 
         // Emit `fetch` event for plugins such as combo plugin
         var emitData = {uri: uri};
-        emit("fetch", emitData);
+        emit('fetch', emitData);
         var requestUri = emitData.requestUri || uri;
 
         // Empty uri or a non-CMD module
@@ -827,7 +828,7 @@
         callbackList[requestUri] = [mod];
 
         // Emit `request` event for plugins such as text plugin
-        emit("request", emitData = {
+        emit('request', emitData = {
             type: mod.type,
             outType: mod.outType,
             uri: uri,
@@ -878,7 +879,7 @@
     Module.resolve = function (id, refUri, type) {
         // Emit `resolve` event for plugins such as text plugin
         var emitData = {id: id, refUri: refUri, type: type};
-        emit("resolve", emitData);
+        emit('resolve', emitData);
 
         return emitData.uri || id2Uri(emitData.id, refUri, type !== 'js');
     };
@@ -950,7 +951,7 @@
         }
 
         // Emit `define` event, used in nocache plugin, seajs node version etc
-        emit("define", meta);
+        emit('define', meta);
 
         meta.uri ? Module.save(meta.uri, meta) :
             // Save information for "saving" work in the script onload event
@@ -970,7 +971,7 @@
             mod.dependencies = meta.deps;
             mod.factory = meta.factory;
             mod.status = STATUS.SAVED;
-            emit("save", mod);
+            emit('save', mod);
         }
     };
 
@@ -1122,7 +1123,7 @@
             }
         }
 
-        emit("config", configData);
+        emit('config', configData);
         return seajs;
     };
 

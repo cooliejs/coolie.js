@@ -8,5 +8,5 @@
 define(function (require, exports, module) {
     'use strict';
 
-    alert('index-async');
+    alert(require('../libs/c.js'));
 });

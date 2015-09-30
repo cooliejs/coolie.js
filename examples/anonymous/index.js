@@ -1,8 +1,7 @@
 define(function (require) {
-
     setTimeout(function () {
         require.async('./index-async.js');
-    }, 1000);
+    }, 3000);
 
     //var a = require('../a');
     //console.log('before b');
