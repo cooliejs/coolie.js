@@ -549,7 +549,8 @@
      * module.js - The core of module loader
      */
 
-    var cachedMods = seajs.cache = {};
+    var cachedMods = {};
+    var cachedAsyncMods = {};
     var anonymousMeta;
 
     var fetchingList = {};
@@ -651,11 +652,8 @@
         var uris = mod.resolve();
         emit('load', uris);
 
-        //for (var i = 0, len = uris.length; i < len; i++) {
-        //    mod.deps[mod.dependencies[i]] = Module.get(uris[i], [], mod.types ? mod.types[i] : 'js');
-        //}
         each(uris, function (index, uri) {
-            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js');
+            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js', mod._async);
         });
 
         // Pass entry to it's dependencies
@@ -671,7 +669,7 @@
         var requestCache = {};
 
         each(uris, function (index, uri) {
-            var m = cachedMods[uri];
+            var m = Module.get(uri);
 
             if (m.status < STATUS.FETCHING) {
                 m.fetch(requestCache);
@@ -760,19 +758,13 @@
             return Module.cmd ? Module.resolve(id, uri, type) : id;
         };
 
-        require.async = function (ids, callback) {
-            if (!isArray(ids)) {
-                ids = [ids];
-            }
+        require.async = function (mainId, callback) {
+            // 非同步执行
+            nextTick(function () {
+                debugger;
 
-            each(ids, function (index, id) {
-                ids[index] = id2Uri(id, Module.asyncBase);
+                Module.use(mainId, callback, Module.main);
             });
-            // 加上时间戳以区别主入口模块
-            var mod = Module.use(ids, callback, uri + now());
-
-            // 异步加载的模块
-            mod.async = true;
 
             return require;
         };
@@ -952,9 +944,12 @@
         // Emit `define` event, used in nocache plugin, seajs node version etc
         emit('define', meta);
 
-        meta.uri ? Module.save(meta.uri, meta) :
+        if (meta.uri) {
+            Module.save(meta.uri, meta);
+        } else {
             // Save information for "saving" work in the script onload event
             anonymousMeta = meta;
+        }
     };
 
 
@@ -975,24 +970,32 @@
     };
 
     // Get an existed module or create a new one
-    Module.get = function (uri, deps, type, outType) {
-        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type, outType));
+    Module.get = function (uri, deps, type, outType, async) {
+        var id = async || now();
+        var cached = Module.main ? (cachedAsyncMods[id] = cachedAsyncMods[id] || {}) : cachedMods;
+
+        cached[uri] = cached[uri] || (cached[uri] = new Module(uri, deps, type, outType));
+        cached[uri]._async = Module.main ? id : 0;
+
+        return cached[uri];
     };
 
     // Use function is equal to load a anonymous module
     Module.entry = [];
-    Module.use = function (ids, callback, uri) {
-        var mod = Module.get(uri, isArray(ids) ? ids : [ids]);
+    Module.use = function (mainId, callback, uri) {
+        var mod = Module.get(uri, [mainId]);
 
         mod._entry.push(mod);
         mod.history = {};
         mod.remain = 1;
         mod.callback = function () {
+            var cached = Module.main ? cachedAsyncMods[mod._async] : cachedMods;
+
             // 如果为非 cmd && 同步模块，则入口模块为 0
             if (!Module.cmd && !mod.async) {
                 mod.dependencies = ['0'];
                 mod.deps = {
-                    0: cachedMods[0]
+                    0: cached[0]
                 };
                 mod.history = {
                     0: true
@@ -1009,15 +1012,12 @@
 
             emit('ready');
 
-            //for (var i = 0, len = uris.length; i < len; i++) {
-            //    exports[i] = cachedMods[uris[i]].exec();
-            //}
             each(uris, function (index, uri) {
-                if (!cachedMods[uri]) {
+                if (!cached[uri]) {
                     throw 'can not found main module:\n`' + uri + '`';
                 }
 
-                exports[index] = cachedMods[uri].exec();
+                exports[index] = cached[uri].exec();
             });
 
             emit('execed');
@@ -1030,6 +1030,8 @@
             delete mod.history;
             delete mod.remain;
             delete mod._entry;
+            // 主模块已经加载完毕
+            Module.main = Module.main || mod.id;
         };
         Module.entry.push(mod);
         mod.load();
@@ -1231,7 +1233,6 @@
 
         configURL = id2Uri(configURL, loaderPath);
         global.coolie = {
-            modules: cachedMods,
             version: VERSION,
             path: loaderPath,
             dirname: dirname(loaderPath),
@@ -1249,8 +1250,8 @@
              * 配置模块
              * @param config
              * @param [config.base="./"] {String} APP 入口基准路径
-             * @param [config.async="async"] {String} async 模块入口标记【只对 cmd 模式作用】
-             * @param [config.chunk="chunk"] {String} chunk 模块入口标记【只对 cmd 模式作用】
+             * @param [config.async="./"] {String} async 模块入口标记，相对于 base【只对 cmd 模式作用】
+             * @param [config.chunk="./"] {String} chunk 模块入口标记，相对于 base【只对 cmd 模式作用】
              * @param [config.debug=false] {Boolean} 是否启用调试模式
              * @param [config.cache=true] {Boolean} 是否启用缓存
              * @param [config.version] {Object} 版本信息
@@ -1258,10 +1259,12 @@
              * @returns {global.coolie}
              */
             config: function (config) {
-                baseURL = dirname(id2Uri(config.base, configURL));
-                Module.mainBase = baseURL;
-                Module.asyncBase = baseURL + (config.async || 'async') + '/';
-                Module.chunkBase = baseURL + (config.chunk || 'chunk') + '/';
+                config.base = config.base || './';
+                config.async = config.async || './';
+                config.chunk = config.chunk || './';
+                Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
+                Module.asyncBase = dirname(id2Uri(config.async, baseURL));
+                Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
                 mainURL = id2Uri(mainURL, baseURL);
 
                 if (config.debug !== false) {
@@ -1309,7 +1312,7 @@
              */
             use: function (main) {
                 seajs.use(mainURL = main ? id2Uri(main, baseURL) : mainURL, function () {
-                    mainModule = cachedMods[mainURL];
+                    mainModule = Module.get(mainURL);
 
                     each(mainCallbackList, function (index, callback) {
                         callback(mainModule.exports);
