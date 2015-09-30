@@ -4,15 +4,15 @@
  * @create 2015-09-30 11:04
  */
 
-define('0', ['3', '4'], function (r) {
-    alert(r('3') + r('4'));
+define('0', ['20', '21'], function (r) {
+    alert(r('20') + r('21'));
 });
 
-define('3', [], function (r, e, m) {
-    m.exports = '3';
+define('20', [], function (r, e, m) {
+    m.exports = '20';
 });
 
-define('4', [], function (r, e, m) {
-    m.exports = '4';
+define('21', [], function (r, e, m) {
+    m.exports = '21';
 });
 
