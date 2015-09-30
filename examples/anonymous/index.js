@@ -1,4 +1,9 @@
 define(function (require) {
+
+    setTimeout(function () {
+        require.async('./index-async.js');
+    }, 1000);
+
     //var a = require('../a');
     //console.log('before b');
     //var b = require('./b/index.js');
@@ -39,7 +44,6 @@ define(function (require) {
     var json = require('../image/coolie.json', 'json|url');
     //var json = require('../image/coolie.json', 'json|base64');
     //var json = require('../image/coolie.json', 'json|text');
-
 
 
     //var wx = require('../libs/wx.js');

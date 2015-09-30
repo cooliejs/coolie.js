@@ -137,6 +137,10 @@
             } catch (err2) {
                 throw 'parse json error ' + url;
             }
+
+            if (!isObject(json) && !isArray(json)) {
+                throw 'parse json error ' + url;
+            }
         }
 
         return json;
@@ -979,7 +983,6 @@
     Module.entry = [];
     Module.use = function (ids, callback, uri) {
         var mod = Module.get(uri, isArray(ids) ? ids : [ids]);
-
 
         mod._entry.push(mod);
         mod.history = {};
