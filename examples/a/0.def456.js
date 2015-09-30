@@ -5,7 +5,6 @@
  */
 
 define('0', ['3', '4'], function (r) {
-    debugger;
     alert(r('3') + r('4'));
 });
 

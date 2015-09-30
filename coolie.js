@@ -550,7 +550,6 @@
      */
 
     var cachedMods = {};
-    var cachedAsyncMods = {};
     var anonymousMeta;
 
     var fetchingList = {};
@@ -653,7 +652,10 @@
         emit('load', uris);
 
         each(uris, function (index, uri) {
-            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js');
+            var depMod = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js');
+
+            depMod.async = mod.async;
+            mod.deps[mod.dependencies[index]] = depMod;
         });
 
         // Pass entry to it's dependencies
@@ -761,11 +763,10 @@
         require.async = function (mainId, callback) {
             // 非同步执行
             nextTick(function () {
-                debugger;
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(mainId, callback, Module.main);
+                Module.use(mainId, callback, data.cwd + now(), true);
             });
 
             return require;
@@ -822,7 +823,7 @@
 
         // Emit `request` event for plugins such as text plugin
         emit('request', emitData = {
-            _async: mod._async,
+            async: mod.async,
             type: mod.type,
             outType: mod.outType,
             uri: uri,
@@ -974,37 +975,23 @@
 
     // Get an existed module or create a new one
     Module.get = function (uri, deps, type, outType) {
-        var cached = Module.main ? (cachedAsyncMods[uri] = cachedAsyncMods[uri] || {}) : cachedMods;
-
-        cached[uri] = cached[uri] || (cached[uri] = new Module(uri, deps, type, outType));
-
-        if (Module.main) {
-            debugger;
-        }
-
-        return cached[uri];
+        return cachedMods[uri] || (cachedMods[uri] = new Module(uri, deps, type, outType));
     };
 
     // Use function is equal to load a anonymous module
     Module.entry = [];
-    Module.use = function (mainId, callback, uri) {
+    Module.use = function (mainId, callback, uri, async) {
         var mod = Module.get(uri, [mainId]);
 
+        mod.async = async;
         mod._entry.push(mod);
         mod.history = {};
         mod.remain = 1;
         mod.callback = function () {
-            var cached = Module.main ? cachedAsyncMods[mod._async] : cachedMods;
-
-            // 如果为非 cmd && 同步模块，则入口模块为 0
-            if (!Module.cmd && !mod.async) {
-                mod.dependencies = ['0'];
-                mod.deps = {
-                    0: cached[0]
-                };
-                mod.history = {
-                    0: true
-                };
+            // 如果为非 cmd，则入口模块为 0
+            if (!Module.cmd && mainId !== '0') {
+                cachedMods[mainId] = cachedMods[0];
+                delete(cachedMods[0]);
             }
 
             // 当前如果还有分块没有加载完成
@@ -1017,12 +1004,15 @@
 
             emit('ready');
 
+            //for (var i = 0, len = uris.length; i < len; i++) {
+            //    exports[i] = cachedMods[uris[i]].exec();
+            //}
             each(uris, function (index, uri) {
-                if (!cached[uri]) {
+                if (!cachedMods[uri]) {
                     throw 'can not found main module:\n`' + uri + '`';
                 }
 
-                exports[index] = cached[uri].exec();
+                exports[index] = cachedMods[uri].exec();
             });
 
             emit('execed');
@@ -1047,8 +1037,8 @@
 
     // Public API
 
-    seajs.use = function (ids, callback) {
-        Module.use(ids, callback, data.cwd + now());
+    seajs.use = function (id, callback) {
+        Module.use(id, callback, data.cwd + now());
         return seajs;
     };
 
@@ -1170,7 +1160,7 @@
             }
         }).on('request', function (meta) {
             // 异步模块
-            if (meta._async) {
+            if (meta.async) {
                 meta.requestUri = id2Uri(meta.requestUri, Module.asyncBase);
             }
 
@@ -1243,6 +1233,7 @@
 
         configURL = id2Uri(configURL, loaderPath);
         global.coolie = {
+            modules: cachedMods,
             version: VERSION,
             path: loaderPath,
             dirname: dirname(loaderPath),
