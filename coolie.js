@@ -653,7 +653,7 @@
         emit('load', uris);
 
         each(uris, function (index, uri) {
-            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js', mod._async);
+            mod.deps[mod.dependencies[index]] = Module.get(uri, [], mod.types ? mod.types[index] : 'js', mod.outTypes ? mod.outTypes[index] : 'js');
         });
 
         // Pass entry to it's dependencies
@@ -762,7 +762,9 @@
             // 非同步执行
             nextTick(function () {
                 debugger;
-
+                fetchingList = {};
+                fetchedList = {};
+                callbackList = {};
                 Module.use(mainId, callback, Module.main);
             });
 
@@ -820,6 +822,7 @@
 
         // Emit `request` event for plugins such as text plugin
         emit('request', emitData = {
+            _async: mod._async,
             type: mod.type,
             outType: mod.outType,
             uri: uri,
@@ -970,12 +973,14 @@
     };
 
     // Get an existed module or create a new one
-    Module.get = function (uri, deps, type, outType, async) {
-        var id = async || now();
-        var cached = Module.main ? (cachedAsyncMods[id] = cachedAsyncMods[id] || {}) : cachedMods;
+    Module.get = function (uri, deps, type, outType) {
+        var cached = Module.main ? (cachedAsyncMods[uri] = cachedAsyncMods[uri] || {}) : cachedMods;
 
         cached[uri] = cached[uri] || (cached[uri] = new Module(uri, deps, type, outType));
-        cached[uri]._async = Module.main ? id : 0;
+
+        if (Module.main) {
+            debugger;
+        }
 
         return cached[uri];
     };
@@ -1164,6 +1169,11 @@
                 meta.uri = meta.id;
             }
         }).on('request', function (meta) {
+            // 异步模块
+            if (meta._async) {
+                meta.requestUri = id2Uri(meta.requestUri, Module.asyncBase);
+            }
+
             meta._url = buldVersion(meta.requestUri);
             meta._url = buildCache(meta._url);
         }).on('request', function (meta) {
