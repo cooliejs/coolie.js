@@ -761,6 +761,13 @@
         };
 
         require.async = function (ids, callback) {
+            if (!isArray(ids)) {
+                ids = [ids];
+            }
+
+            each(ids, function (index, id) {
+                ids[index] = id2Uri(id, Module.base);
+            });
             // 加上时间戳以区别主入口模块
             Module.use(ids, callback, uri + now());
             return require;
@@ -1239,6 +1246,7 @@
              */
             config: function (config) {
                 baseURL = dirname(id2Uri(config.base, configURL));
+                Module.base = baseURL;
                 mainURL = id2Uri(mainURL, baseURL);
 
                 if (config.debug !== false) {

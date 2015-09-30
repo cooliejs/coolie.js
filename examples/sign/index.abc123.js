@@ -1,6 +1,9 @@
 define('0', ['1', '2'], function (r) {
     alert(r('1') + r('2'));
-    r.async('3');
+
+    setTimeout(function () {
+        r.async('async/0');
+    }, 2000);
 });
 
 define('1', [], function (r, e, m) {

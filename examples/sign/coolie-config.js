@@ -1,7 +1,8 @@
 coolie.config({
     base: '../',
     version: {
-        './sign/index.js': 'abc123'
+        './sign/index.js': 'abc123',
+        './async/0.js': 'def456'
     },
     debug: false
 }).use().callback(function () {
