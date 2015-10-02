@@ -986,7 +986,7 @@
         var mainMod = cachedMods[mainId];
 
         // 模块重新加载，直接返回结果
-        if (mainMod && mainMod.status === STATUS.EXECUTED) {
+        if (mainMod && mainMod.status > STATUS.LOADED) {
             return callback.call(global, mainMod.exports);
         }
 
