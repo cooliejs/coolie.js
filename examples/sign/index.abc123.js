@@ -1,13 +1,23 @@
 define('0', ['1', '2'], function (r) {
-    alert(r('1') + r('2'));
+    console.log(r('1') + r('2'));
 
     setTimeout(function () {
-        r.async('a');
+        r.async('a', function (ret) {
+            console.log(ret);
+        });
     }, 2000);
 
     setTimeout(function () {
-        r.async('b');
+        r.async('b', function (ret) {
+            console.log(ret);
+        });
     }, 3000);
+
+    setTimeout(function () {
+        r.async('c', function (ret) {
+            console.log(ret);
+        });
+    }, 4000);
 });
 
 define('1', [], function (r, e, m) {

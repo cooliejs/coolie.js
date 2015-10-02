@@ -1352,7 +1352,7 @@
                 //urls = isArray(urls) ? urls : [urls];
                 each(urls, function (index, url) {
                     chunkLength++;
-                    url = id2Uri(url, baseURL);
+                    url = id2Uri(url, Module.chunkBase);
                     request(buldVersion(url), function () {
                         chunkLength--;
                         clearTimeout(timeid);

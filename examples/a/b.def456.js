@@ -1,5 +1,5 @@
-define('0', ['30', '31', '10'], function (r) {
-    alert(r('30') + r('31') + r('10'));
+define('0', ['30', '31', '10'], function (r, e, m) {
+    m.exports = r('30') + r('31') + r('10');
 });
 
 define('30', [], function (r, e, m) {
