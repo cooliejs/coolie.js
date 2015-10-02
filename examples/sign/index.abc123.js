@@ -5,15 +5,22 @@ define('0', ['1', '2'], function (r) {
         r.async('a', function (ret) {
             console.log(ret);
         });
-    }, 2000);
+    }, 1000);
 
     setTimeout(function () {
         r.async('b', function (ret) {
             console.log(ret);
         });
+    }, 2000);
+
+    setTimeout(function () {
+        r.async('c', function (ret) {
+            console.log(ret);
+        });
     }, 3000);
 
     setTimeout(function () {
+        debugger;
         r.async('c', function (ret) {
             console.log(ret);
         });

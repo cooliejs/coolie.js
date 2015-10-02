@@ -592,8 +592,10 @@
     // 否则为 amd
     Module.cmd = null;
 
+    var pro = Module.prototype;
+
     // Resolve module.dependencies
-    Module.prototype.resolve = function () {
+    pro.resolve = function () {
         var mod = this;
         var ids = mod.dependencies;
         var uris = [];
@@ -608,7 +610,7 @@
         return uris;
     };
 
-    Module.prototype.pass = function () {
+    pro.pass = function () {
         var mod = this;
         var len = mod.dependencies.length;
 
@@ -637,7 +639,7 @@
     };
 
     // Load module.dependencies and fire onload when all done
-    Module.prototype.load = function () {
+    pro.load = function () {
         var mod = this;
 
         // If the module is being loaded, just wait it onload call
@@ -695,7 +697,7 @@
     };
 
     // Call this method when module is loaded
-    Module.prototype.onload = function () {
+    pro.onload = function () {
         var mod = this;
         mod.status = STATUS.LOADED;
 
@@ -716,14 +718,14 @@
     };
 
     // Call this method when module is 404
-    Module.prototype.error = function () {
+    pro.error = function () {
         var mod = this;
         mod.onload();
         mod.status = STATUS.ERROR;
     };
 
     // Execute a module
-    Module.prototype.exec = function () {
+    pro.exec = function () {
         var mod = this;
 
         // When module is executed, DO NOT execute it again. When module
@@ -796,7 +798,7 @@
     };
 
     // Fetch a module
-    Module.prototype.fetch = function (requestCache) {
+    pro.fetch = function (requestCache) {
         var mod = this;
         var uri = mod.uri;
 
@@ -981,6 +983,13 @@
     // Use function is equal to load a anonymous module
     Module.entry = [];
     Module.use = function (mainId, callback, uri, async) {
+        var mainMod = cachedMods[mainId];
+
+        // 模块重新加载，直接返回结果
+        if (mainMod && mainMod.status === STATUS.EXECUTED) {
+            return callback.call(global, mainMod.exports);
+        }
+
         var mod = Module.get(uri, [mainId]);
 
         mod.async = async;
