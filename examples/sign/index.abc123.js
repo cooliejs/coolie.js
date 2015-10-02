@@ -3,6 +3,10 @@ define('0', ['1', '2'], function (r) {
 
     setTimeout(function () {
         r.async('0');
+    }, 1000);
+
+    setTimeout(function () {
+        r.async('0');
     }, 2000);
 });
 
