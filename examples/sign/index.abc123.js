@@ -2,12 +2,12 @@ define('0', ['1', '2'], function (r) {
     alert(r('1') + r('2'));
 
     setTimeout(function () {
-        r.async('0');
-    }, 1000);
+        r.async('a');
+    }, 2000);
 
     setTimeout(function () {
-        r.async('0');
-    }, 2000);
+        r.async('b');
+    }, 3000);
 });
 
 define('1', [], function (r, e, m) {

@@ -4,7 +4,9 @@ coolie.config({
     chunk: './c/',
     version: {
         './sign/index.js': 'abc123',
-        './a/0.js': 'def456'
+        './a/a.js': 'def456',
+        './a/b.js': 'def456',
+        './c/0.js': 'abc123',
     },
     debug: false
 }).use().callback(function () {
