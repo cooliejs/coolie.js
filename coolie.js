@@ -18,11 +18,12 @@
 (function (global, undefined) {
     'use strict';
 
+    var VERSION = '1.2.0';
+
     if (global.coolie) {
         return;
     }
 
-    var VERSION = '1.2.0';
     var noop = function () {
         // ignore
     };
