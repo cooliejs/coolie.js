@@ -684,11 +684,6 @@
         });
 
         // Send all requests at last to avoid cache bug in IE6-9. Issues#808
-        //for (var requestUri in requestCache) {
-        //    if (requestCache.hasOwnProperty(requestUri)) {
-        //        requestCache[requestUri]();
-        //    }
-        //}
         each(requestCache, function (key) {
             if (requestCache[key]) {
                 requestCache[key]();
@@ -742,7 +737,7 @@
         }
 
         //non-cmd module has no property factory and exports
-        if (!mod.hasOwnProperty('factory')) {
+        if (!mod.factory) {
             mod.non = true;
             throw 'can not found module: ' + mod.uri;
         }
@@ -768,7 +763,7 @@
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(mainId, callback, Module.asyncBase + now(), true);
+                Module.use(Module.cmd ? id2Uri(mainId, Module.asyncBase) : mainId, callback, Module.asyncBase + now(), true);
             });
 
             return require;
@@ -784,9 +779,6 @@
         if (exports === undefined) {
             exports = mod.exports;
         }
-
-        // Reduce memory leak
-        delete mod.factory;
 
         mod.exports = exports;
         mod.status = STATUS.EXECUTED;
@@ -810,12 +802,12 @@
         var requestUri = emitData.requestUri || uri;
 
         // Empty uri or a non-CMD module
-        if (!requestUri || fetchedList.hasOwnProperty(requestUri)) {
+        if (!requestUri || fetchedList[requestUri]) {
             mod.load();
             return;
         }
 
-        if (fetchingList.hasOwnProperty(requestUri)) {
+        if (fetchingList[requestUri]) {
             callbackList[requestUri].push(mod);
             return;
         }
@@ -987,7 +979,14 @@
 
         // 模块重新加载，直接返回结果
         if (mainMod && mainMod.status > STATUS.LOADED) {
-            return callback.call(global, mainMod.exports);
+            mainMod.status = STATUS.LOADED;
+            mainMod.exec();
+
+            if (isFunction(callback)) {
+                callback.call(global, mainMod.exports);
+            }
+
+            return;
         }
 
         var mod = Module.get(uri, [mainId]);
@@ -1036,6 +1035,7 @@
             delete(cachedMods[0]);
         };
         Module.entry.push(mod);
+        emit('start');
         mod.load();
 
         return mod;
@@ -1145,7 +1145,6 @@
         var mainModule;
         var coolieConfig;
         var CONST_COOLIE_MODULES = 'coolie modules';
-        var timeStart = now();
         var REG_EXT = /\.[^.]*$/;
         var REG_DIRNAME = /\/$/;
         var buldVersion = function (url) {
@@ -1293,9 +1292,15 @@
                     debug: config.debug
                 });
 
+                var timeStart = 0;
+                seajs.on('start', function () {
+                    timeStart = now();
+                });
+
                 if (config.debug) {
-                    console.group(CONST_COOLIE_MODULES);
-                    seajs.on('request', function (meta) {
+                    seajs.on('start', function () {
+                        console.group(CONST_COOLIE_MODULES);
+                    }).on('request', function (meta) {
                         console.log(meta.requestUri);
                     }).on('ready', function () {
                         console.log('past ' + (now() - timeStart) + 'ms');
