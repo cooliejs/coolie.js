@@ -578,11 +578,10 @@
     function Module(uri, deps, type, outType) {
         var the = this;
 
-        the.uri = uri;
+        the.raw = the.uri = the.id = uri;
         the.dependencies = deps;
         the.deps = {}; // Ref the dependence modules
         the.status = 0;
-        the.id = uri;
         the.type = type || 'js';
         the.outType = outType || the.type;
         the._entry = [];
@@ -648,6 +647,7 @@
         }
 
         mod.status = STATUS.LOADING;
+
 
         // Emit `load` event for plugins such as combo plugin
         var uris = mod.resolve();
@@ -768,7 +768,7 @@
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(mainId, callback, data.cwd + now(), true);
+                Module.use(mainId, callback, Module.asyncBase + now(), true);
             });
 
             return require;
@@ -1147,6 +1147,7 @@
         var CONST_COOLIE_MODULES = 'coolie modules';
         var timeStart = now();
         var REG_EXT = /\.[^.]*$/;
+        var REG_DIRNAME = /\/$/;
         var buldVersion = function (url) {
             var version = coolieConfig._v[url];
 
@@ -1160,6 +1161,9 @@
             return url;
         };
         var timeid;
+        var fixDirname = function (p) {
+            return p + (REG_DIRNAME.test(p) ? '' : '/');
+        };
 
         seajs.on('resolve', function (meta) {
             if (!Module.cmd) {
@@ -1267,9 +1271,9 @@
              * @returns {global.coolie}
              */
             config: function (config) {
-                config.base = config.base || './';
-                config.async = config.async || './';
-                config.chunk = config.chunk || './';
+                config.base = fixDirname(config.base || './');
+                config.async = fixDirname(config.async || './');
+                config.chunk = fixDirname(config.chunk || './');
                 Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
                 Module.asyncBase = dirname(id2Uri(config.async, baseURL));
                 Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
