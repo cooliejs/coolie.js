@@ -38,9 +38,6 @@
   },
   "licenses": "MIT",
   "devDependencies": {
-    "gulp": "^3.8.11",
-    "gulp-react": "^3.0.1",
-    "gulp-watch": "^4.2.4",
     "jasmine-core": "^2.2.0",
     "karma": "^0.12.31",
     "karma-coverage": "^0.3.1",
