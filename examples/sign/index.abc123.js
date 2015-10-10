@@ -20,7 +20,6 @@ define('0', ['1', '2'], function (r) {
     }, 3000);
 
     setTimeout(function () {
-        debugger;
         r.async('c', function (ret) {
             console.log(ret);
         });
