@@ -754,6 +754,8 @@
             return m.exec();
         }
 
+        require.url = mod.id;
+
         require.resolve = function (id, type) {
             return Module.cmd ? Module.resolve(id, uri, type) : id;
         };
@@ -764,7 +766,7 @@
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(Module.cmd ? id2Uri(mainId, Module.asyncBase) : mainId, callback, Module.asyncBase + now(), true);
+                Module.use(Module.cmd ? id2Uri(mainId, require.url) : mainId, callback, Module.asyncBase + now(), true);
             });
 
             return require;
