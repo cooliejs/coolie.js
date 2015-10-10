@@ -13,6 +13,7 @@ require("path_to_module"[, "moduleType|outputType"]);
 ## 示例
 ```
 require('some.js');
+require.async('some.js');
 
 require('some.css', 'css');
 require('some.css', 'css|url');

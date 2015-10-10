@@ -1,7 +1,11 @@
 define(function (require) {
+    'use strict';
+
+    require('./a/hh.js');
+
     setTimeout(function () {
-        require.async('./index-async.js');
-    }, 3000);
+        require.async('./b/async.js');
+    }, 1000);
 
     //var a = require('../a');
     //console.log('before b');
@@ -39,8 +43,8 @@ define(function (require) {
     //var css = require('../text/some.css', 'css|text');
 
     // json
-    //var json = require('../image/coolie.json', 'json');
-    var json = require('../image/coolie.json', 'json|url');
+    var json = require('../image/coolie.json', 'json');
+    //var json = require('../image/coolie.json', 'json|url');
     //var json = require('../image/coolie.json', 'json|base64');
     //var json = require('../image/coolie.json', 'json|text');
 
