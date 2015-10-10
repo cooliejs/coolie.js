@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.2.0
+ * @version 1.2.1
  * @license MIT
  */
 
@@ -18,7 +18,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.2.0';
+    var VERSION = '1.2.1';
 
     if (global.coolie) {
         return;
@@ -557,6 +557,7 @@
     var fetchedList = {};
     var callbackList = {};
     var chunkLength = 0;
+    var chunkMods = {};
 
     var STATUS = Module.STATUS = {
         // 1 - The `module.uri` is being fetched
@@ -1370,12 +1371,18 @@
              * @returns {global.coolie}
              */
             chunk: function (urls) {
-                //urls = isArray(urls) ? urls : [urls];
                 each(urls, function (index, url) {
+                    if (chunkMods[url]) {
+                        return;
+                    }
+
                     chunkLength++;
-                    url = id2Uri(url, Module.chunkBase);
-                    request(buldVersion(url), function () {
+                    chunkMods[url] = false;
+                    var url2 = id2Uri(url, Module.chunkBase);
+                    url2 = buldVersion(url2);
+                    request(url2, function () {
                         chunkLength--;
+                        chunkMods[url] = true;
                         clearTimeout(timeid);
                         timeid = nextTick(function () {
                             each(Module.entry, function (index, entry) {
