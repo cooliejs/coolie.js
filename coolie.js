@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.2.1
+ * @version 1.2.2
  * @license MIT
  */
 
@@ -18,7 +18,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.2.1';
+    var VERSION = '1.2.2';
 
     if (global.coolie) {
         return;
@@ -1148,7 +1148,7 @@
         var mainCallbackList = [];
         var mainModule;
         var coolieConfig;
-        var CONST_COOLIE_MODULES = 'coolie modules';
+        var CONST_COOLIE_MODULES = 'coolie modules [' + VERSION + ']';
         var REG_EXT = /\.[^.]*$/;
         var REG_DIRNAME = /\/$/;
         var buldVersion = function (url) {
