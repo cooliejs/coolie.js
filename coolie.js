@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.2.2
+ * @version 1.2.3
  * @license MIT
  */
 
@@ -18,7 +18,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.2.2';
+    var VERSION = '1.2.3';
 
     if (global.coolie) {
         return;
@@ -856,7 +856,7 @@
             // Call callbacks
             var m, mods = callbackList[requestUri];
             delete callbackList[requestUri];
-            while ((m = mods.shift())) {
+            while (mods && (m = mods.shift())) {
                 // When 404 occurs, the params error will be true
                 if (error === true) {
                     m.error();
