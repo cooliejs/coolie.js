@@ -1,7 +1,7 @@
 /*!
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.2.4
+ * @version 1.2.5
  * @license MIT
  */
 
@@ -18,7 +18,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.2.4';
+    var VERSION = '1.2.5';
 
     if (global.coolie) {
         return;
@@ -1173,6 +1173,11 @@
                 meta.uri = meta.id;
             }
         }).on('request', function (meta) {
+            // 异步模块
+            if (meta.async && !Module.cmd) {
+                meta.requestUri = id2Uri(meta.requestUri, Module.asyncBase);
+            }
+
             meta._url = buldVersion(meta.requestUri);
             meta._url = buildCache(meta._url);
         }).on('request', function (meta) {
