@@ -1,11 +1,15 @@
 define(function (require) {
     'use strict';
 
-    require('./a/hh.js');
+    var $ = require('./jquery.min-1.7.js');
 
-    setTimeout(function () {
-        require.async('./b/async.js');
-    }, 1000);
+    $('body').html('jQuery');
+
+    //require('./a/hh.js');
+    //
+    //setTimeout(function () {
+    //    require.async('./b/async.js');
+    //}, 1000);
 
     //var a = require('../a');
     //console.log('before b');
@@ -43,7 +47,7 @@ define(function (require) {
     //var css = require('../text/some.css', 'css|text');
 
     // json
-    var json = require('../image/coolie.json', 'json');
+    //var json = require('../image/coolie.json', 'json');
     //var json = require('../image/coolie.json', 'json|url');
     //var json = require('../image/coolie.json', 'json|base64');
     //var json = require('../image/coolie.json', 'json|text');
@@ -56,7 +60,7 @@ define(function (require) {
     //console.log(text);
     //console.log(image);
     //console.log(css);
-    console.log(json);
+    //console.log(json);
     //jquery('body').css('background', '#000');
     //a();
     //var json = require('./b/1.json', 'json');
