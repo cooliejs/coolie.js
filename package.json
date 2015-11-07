@@ -6,7 +6,7 @@
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
     "test": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters progress",
     "live": "browser-sync start --config bs-config.js",
-    "publish": "cp coolie.js ./release && cp coolie.min.js ./release && cd release && zip coolie.zip coolie.js coolie.min.js && alioss upload && rm -rf coolie.zip coolie.js coolie.min.js"
+    "publish": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js && cp coolie.js ./release && cp coolie.min.js ./release && cd release && zip coolie.zip coolie.js coolie.min.js && alioss upload && rm -rf coolie.zip coolie.js coolie.min.js"
   },
   "preferGlobal": false,
   "bin": {},

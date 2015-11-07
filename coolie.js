@@ -1,4 +1,4 @@
-/*!
+/**
  * coolie 苦力
  * @author seajs.org ydr.me
  * @version 1.2.6
