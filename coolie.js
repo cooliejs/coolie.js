@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.2.6
+ * @version 1.3.0
  * @license MIT
  */
 
