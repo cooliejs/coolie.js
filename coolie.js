@@ -160,6 +160,7 @@
                 hasComplete = true;
                 if (xhr.status === 200 || xhr.status === 304) {
                     callback(xhr.responseText);
+                    xhr = null;
                 } else {
                     throw 'ajax error\n' + url;
                 }
