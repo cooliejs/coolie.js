@@ -183,10 +183,10 @@
     };
 
 
-    var eStyle = doc.createElement('style');
-    eStyle.setAttribute('type', 'text/css');
-    head.appendChild(eStyle);
-    var stylesheet = eStyle.stylesheet;
+    var styleEle = doc.createElement('style');
+    styleEle.setAttribute('type', 'text/css');
+    head.appendChild(styleEle);
+    var stylesheet = styleEle.stylesheet;
 
 
     /**
@@ -197,8 +197,10 @@
         if (stylesheet) {
             stylesheet.cssText += cssText;
         } else {
-            eStyle.innerHTML += cssText;
+            styleEle.innerHTML += cssText;
         }
+
+        return styleEle;
     };
 
 
@@ -1228,12 +1230,11 @@
                                     factory: function () {
                                         if (meta.type === 'json' && meta.outType === 'json') {
                                             return parseJSON(url, text);
-                                        } else {
-                                            if (meta.outType === 'style') {
-                                                importStyle(text);
-                                            }
-                                            return text;
+                                        } else if (meta.outType === 'style') {
+                                            return importStyle(text);
                                         }
+
+                                        return text;
                                     }
                                 });
                                 meta.onRequest();
@@ -1267,7 +1268,9 @@
         global.coolie = {
             modules: cachedMods,
             version: VERSION,
-            path: loaderPath,
+            url: loaderPath,
+            configURL: configURL,
+            styleEle: styleEle,
             importStyle: importStyle,
             dirname: dirname(loaderPath),
             /**
@@ -1296,10 +1299,10 @@
                 config.base = fixDirname(config.base || './');
                 config.async = fixDirname(config.async || './');
                 config.chunk = fixDirname(config.chunk || './');
-                Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
-                Module.asyncBase = dirname(id2Uri(config.async, baseURL));
-                Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
-                mainURL = id2Uri(mainURL, baseURL);
+                coolie.mainBaseURL = Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
+                coolie.asyncBaseURL = Module.asyncBase = dirname(id2Uri(config.async, baseURL));
+                coolie.chunkBaseURL = Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
+                coolie.mainURL = mainURL = id2Uri(mainURL, baseURL);
 
                 if (config.debug !== false) {
                     config.debug = true;
