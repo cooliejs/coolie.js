@@ -7,7 +7,7 @@
 
 ## 语法
 ```
-require("path_to_module"[, "moduleType|outputType"]);
+require("relative/path/to/module"[, "moduleType|outputType"]);
 ```
 
 ## 示例
