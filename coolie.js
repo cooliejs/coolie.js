@@ -511,14 +511,16 @@
 
     /**
      * 模块类型别名
-     * @type {{js: string, image: string, text: string, html: string, css: string}}
+     * @type {{js: string, image: string, file: string, text: string, html: string, json: string, style: string, css: string}}
      */
     var moduleTypeMap = {
         js: 'js',
         image: 'image',
+        file: 'file',
         text: 'text',
         html: 'text',
         json: 'json',
+        style: 'style',
         css: 'text'
     };
 
@@ -1226,7 +1228,11 @@
                     }
                     break;
 
+                case 'style':
+                    break;
+
                 case 'image':
+                case 'file':
                     // url
                     // text
                     // base64
