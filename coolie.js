@@ -20,6 +20,7 @@
     'use strict';
 
     var VERSION = '1.3.0';
+    var COOLIE = 'coolie';
 
     if (global.coolie) {
         return;
@@ -154,10 +155,8 @@
      */
     var ajaxText = function (url, callback) {
         var xhr = XMLHttpRequest ? new XMLHttpRequest() : new global.ActiveXObject("Microsoft.XMLHTTP");
-        var hasComplete;
         var onready = function () {
-            if (xhr.readyState === 4 && !hasComplete) {
-                hasComplete = true;
+            if (xhr && xhr.readyState === 4) {
                 if (xhr.status === 200 || xhr.status === 304) {
                     callback(xhr.responseText);
                     xhr = null;
@@ -186,6 +185,7 @@
 
     var styleEle = doc.createElement('style');
     styleEle.setAttribute('type', 'text/css');
+    styleEle.setAttribute('id', COOLIE + '-' + VERSION + '-style');
     head.appendChild(styleEle);
     var stylesheet = styleEle.stylesheet;
 
@@ -1162,7 +1162,7 @@
         var mainCallbackList = [];
         var mainModule;
         var coolieConfig;
-        var CONST_COOLIE_MODULES = 'coolie modules [' + VERSION + ']';
+        var CONST_COOLIE_MODULES = COOLIE + ' modules [' + VERSION + ']';
         var REG_EXT = /\.[^.]*$/;
         var REG_DIRNAME = /\/$/;
         var buldVersion = function (url) {
