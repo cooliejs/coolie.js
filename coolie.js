@@ -31,19 +31,17 @@
 
 
     // Avoid conflicting when `sea.js` is loaded multiple times
-    //if (global.seajs) {
-    //    return;
-    //}
+    if (global.seajs) {
+        return;
+    }
 
     //var seajs = global.seajs = {
     var seajs = {};
 
     var data = seajs.data = {};
-
-
-    /**
-     * util-lang.js - The minimal language enhancement
-     */
+    var win = window;
+    var doc = win.document;
+    var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 
     function isType(type) {
         return function (obj) {
@@ -182,6 +180,25 @@
         setTimeout(function () {
             callback();
         }, 1);
+    };
+
+
+    var eStyle = doc.createElement('style');
+    eStyle.setAttribute('type', 'text/css');
+    head.appendChild(eStyle);
+    var stylesheet = eStyle.stylesheet;
+
+
+    /**
+     * 导入 style 样式
+     * @param cssText
+     */
+    var importStyle = function (cssText) {
+        if (stylesheet) {
+            stylesheet.cssText += cssText;
+        } else {
+            eStyle.innerHTML += cssText;
+        }
     };
 
 
@@ -358,9 +375,6 @@
     var loaderPath;
     // Location is read-only from web worker, should be ok though
     var cwd = (!location.href || IGNORE_LOCATION_RE.test(location.href)) ? '' : dirname(location.href);
-
-
-    var doc = document;
     var scripts = doc.scripts;
 
     // Recommend to add `seajsnode` id for the `sea.js` script element
@@ -383,9 +397,6 @@
      * util-request.js - The utilities for requesting script and style files
      * ref: tests/research/load-js-css/test.html
      */
-
-    var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
-    var baseElement = head.getElementsByTagName("base")[0];
 
     var currentlyAddingScript;
 
@@ -410,10 +421,7 @@
         // hold current node, for deriving url in `define` call
         currentlyAddingScript = node;
 
-        // ref: #185 & http://dev.jquery.com/ticket/2709
-        baseElement ?
-            head.insertBefore(node, baseElement) :
-            head.appendChild(node);
+        head.appendChild(node);
 
         currentlyAddingScript = null;
 
@@ -515,12 +523,11 @@
      */
     var moduleTypeMap = {
         js: 'js',
-        image: 'image',
+        image: 'file',
         file: 'file',
         text: 'text',
         html: 'text',
         json: 'json',
-        style: 'style',
         css: 'text'
     };
 
@@ -1057,7 +1064,7 @@
     };
 
     /*兼容 1.10 以下版本的 jQuery*/
-    Module.define.amd = {jQuery:true};
+    Module.define.amd = {jQuery: true};
     Module.define.cmd = {};
     global.define = Module.define;
 
@@ -1219,7 +1226,14 @@
                                     outTypes: [],
                                     deps: [],
                                     factory: function () {
-                                        return meta.type === 'json' && meta.outType === 'json' ? parseJSON(url, text) : text;
+                                        if (meta.type === 'json' && meta.outType === 'json') {
+                                            return parseJSON(url, text);
+                                        } else {
+                                            if (meta.outType === 'style') {
+                                                importStyle(text);
+                                            }
+                                            return text;
+                                        }
                                     }
                                 });
                                 meta.onRequest();
@@ -1228,10 +1242,6 @@
                     }
                     break;
 
-                case 'style':
-                    break;
-
-                case 'image':
                 case 'file':
                     // url
                     // text
@@ -1258,6 +1268,7 @@
             modules: cachedMods,
             version: VERSION,
             path: loaderPath,
+            importStyle: importStyle,
             dirname: dirname(loaderPath),
             /**
              * 路径合并

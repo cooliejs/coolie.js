@@ -14,5 +14,7 @@ define(function (require, exports, module) {
 
     var style = require('./style.css', 'css|style');
 
+    debugger;
+
     console.log(style);
 });
