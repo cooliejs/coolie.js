@@ -12,9 +12,7 @@ define(function (require, exports, module) {
 
     'use strict';
 
-    var style = require('./style.css', 'css|style');
+    var styleEle = require('./style.css', 'css|style');
 
-    debugger;
-
-    console.log(style);
+    console.log(styleEle);
 });
