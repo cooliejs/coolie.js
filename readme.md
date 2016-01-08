@@ -48,6 +48,10 @@ require('some.json', 'json|text');
 - 内核：<http://seajs.org/>
 
 
+# Version
+[coolie 版本日志](http://coolie.ydr.me/version/)
+
+
 # 接口
 ## `coolie.config.base`
 模块的参考路径。该值参考于`coolie-config.js`。
