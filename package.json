@@ -29,13 +29,13 @@
     "email": "cloudcome@163.com",
     "url": "http://ydr.me"
   },
-  "homepage": "https://github.com/cloudcome/coolie",
+  "homepage": "https://github.com/cooliejs/coolie.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cloudcome/coolie"
+    "url": "https://github.com/cooliejs/coolie.js"
   },
   "bugs": {
-    "url": "https://github.com/cloudcome/coolie/issues"
+    "url": "https://github.com/cooliejs/coolie.js/issues"
   },
   "licenses": "MIT",
   "devDependencies": {

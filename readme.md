@@ -2,6 +2,11 @@
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
+[travis-img]: https://travis-ci.org/cooliejs/coolie.js.svg?branch=master
+[travis-url]: https://travis-ci.org/cooliejs/coolie.js
+[coveralls-img]: https://coveralls.io/repos/cooliejs/coolie.js/badge.svg
+[coveralls-url]: https://coveralls.io/r/cooliejs/coolie.js
+
 
 苦力——基于 C/AMD 的纯净、易用、智能的模块加载器。
 
@@ -98,7 +103,3 @@ coolie.config({
 返回当前模块加载器加载的所有模块。常用于单元测试。
 
 
-[travis-img]: https://travis-ci.org/cloudcome/coolie.svg?branch=master
-[travis-url]: https://travis-ci.org/cloudcome/coolie
-[coveralls-img]: https://coveralls.io/repos/cloudcome/coolie/badge.svg
-[coveralls-url]: https://coveralls.io/r/cloudcome/coolie
