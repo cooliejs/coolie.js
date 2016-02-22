@@ -1313,6 +1313,10 @@
                     config.cache = true;
                 }
 
+                /**
+                 * @global DEBUG
+                 * @type {boolean}
+                 */
                 global.DEBUG = !!config.debug;
 
                 seajs.config({
@@ -1345,7 +1349,7 @@
                     config._v[id2Uri(key, baseURL, true)] = val;
                 });
 
-                coolieConfig = config;
+                coolie.configs = coolieConfig = config;
                 return this;
             },
 
