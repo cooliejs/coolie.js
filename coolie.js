@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.3.0';
+    var VERSION = '1.3.1';
     var COOLIE = 'coolie';
 
     if (global.coolie) {
