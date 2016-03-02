@@ -120,12 +120,15 @@
 
 
     /**
-     * 随机数
-     * @returns {String}
+     * 全局 ID
+     * @returns {Number}
      */
-    var random = function () {
-        return '' + now() + Math.random();
-    };
+    var gid = (function () {
+        var id = 0;
+        return function () {
+            return id++;
+        };
+    }());
 
 
     /**
@@ -789,7 +792,7 @@
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(Module.cmd ? id2Uri(mainId, require.url) : mainId, callback, Module.asyncBase + random(), true);
+                Module.use(Module.cmd ? id2Uri(mainId, require.url) : mainId, callback, Module.asyncBase + gid(), true);
             });
 
             return require;
@@ -1071,7 +1074,7 @@
     // Public API
 
     seajs.use = function (id, callback) {
-        Module.use(id, callback, data.cwd + random());
+        Module.use(id, callback, data.cwd + gid());
         return seajs;
     };
 
@@ -1181,7 +1184,7 @@
         };
         var buildCache = function (url) {
             if (coolieConfig.cache === false) {
-                return url + (url.indexOf('?') > 0 ? '&' : '?') + '_=' + random();
+                return url + (url.indexOf('?') > 0 ? '&' : '?') + '_=' + gid();
             }
 
             return url;
