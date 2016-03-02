@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.3.0
+ * @version 1.3.2
  * @license MIT
  */
 
@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.3.1';
+    var VERSION = '1.3.2';
     var COOLIE = 'coolie';
 
     if (global.coolie) {
@@ -116,6 +116,15 @@
      */
     var now = function () {
         return new Date().getTime();
+    };
+
+
+    /**
+     * 随机数
+     * @returns {String}
+     */
+    var random = function () {
+        return '' + now() + Math.random();
     };
 
 
@@ -780,7 +789,7 @@
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(Module.cmd ? id2Uri(mainId, require.url) : mainId, callback, Module.asyncBase + now(), true);
+                Module.use(Module.cmd ? id2Uri(mainId, require.url) : mainId, callback, Module.asyncBase + random(), true);
             });
 
             return require;
@@ -1062,7 +1071,7 @@
     // Public API
 
     seajs.use = function (id, callback) {
-        Module.use(id, callback, data.cwd + now());
+        Module.use(id, callback, data.cwd + random());
         return seajs;
     };
 
@@ -1172,7 +1181,7 @@
         };
         var buildCache = function (url) {
             if (coolieConfig.cache === false) {
-                return url + (url.indexOf('?') > 0 ? '&' : '?') + '_=' + now();
+                return url + (url.indexOf('?') > 0 ? '&' : '?') + '_=' + random();
             }
 
             return url;
