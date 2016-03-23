@@ -199,7 +199,8 @@
     styleEle.setAttribute('type', 'text/css');
     styleEle.setAttribute('id', COOLIE + '-' + VERSION + '-style');
     head.appendChild(styleEle);
-    var stylesheet = styleEle.stylesheet;
+    // ie
+    var stylesheet = styleEle.styleSheet;
 
 
     /**
