@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.3.3
+ * @version 1.3.4
  * @license MIT
  */
 
@@ -225,7 +225,7 @@
     var events = data.events = {};
 
     // Bind event
-    seajs.on = function (name, callback) {
+    var bind = function (name, callback) {
         var list = events[name] || (events[name] = []);
         list.push(callback);
         return seajs;
@@ -1078,14 +1078,6 @@
 
     data.fetchedList = fetchedList;
 
-    //seajs.require = function (id, type) {
-    //    var mod = Module.get(Module.resolve(id), [], type);
-    //    if (mod.status < STATUS.EXECUTING) {
-    //        mod.onload();
-    //        mod.exec();
-    //    }
-    //    return mod.exports;
-    //};
 
     /**
      * config.js - The configuration for the loader
@@ -1117,7 +1109,7 @@
     // data.map - An array containing rules to map module uri
     // data.debug - Debug mode. The default value is false
 
-    seajs.config = function (configData) {
+    var seajsConfig = function (configData) {
         for (var key in configData) {
             var curr = configData[key];
             var prev = data[key];
@@ -1183,7 +1175,7 @@
             return p + (REG_DIRNAME.test(p) ? '' : '/');
         };
 
-        seajs.on('resolve', function (meta) {
+        bind('resolve', function (meta) {
             if (!Module.cmd) {
                 meta.uri = meta.id;
             }
@@ -1320,17 +1312,17 @@
                  */
                 global.DEBUG = !!config.debug;
 
-                seajs.config({
+                seajsConfig({
                     debug: config.debug
                 });
 
                 var timeStart = 0;
-                seajs.on('start', function () {
+                bind('start', function () {
                     timeStart = now();
                 });
 
                 if (config.debug) {
-                    seajs.on('start', function () {
+                    bind('start', function () {
                         console.group(CONST_COOLIE_MODULES);
                     }).on('request', function (meta) {
                         console.log(meta.requestUri);
@@ -1339,7 +1331,7 @@
                         console.groupEnd(CONST_COOLIE_MODULES);
                     });
                 } else {
-                    seajs.on('ready', function () {
+                    bind('ready', function () {
                         console.log(CONST_COOLIE_MODULES + ' past ' + (now() - timeStart) + 'ms');
                     });
                 }
