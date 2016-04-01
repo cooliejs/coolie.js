@@ -8,7 +8,7 @@
 [coveralls-url]: https://coveralls.io/r/cooliejs/coolie.js
 
 
-苦力——基于 C/AMD 的纯净、易用、智能的模块加载器。
+苦力——基于 CMD 的纯净、易用、智能的模块加载器。
 
 ## 语法
 ```
