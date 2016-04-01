@@ -36,9 +36,6 @@
         return;
     }
 
-    //var seajs = global.seajs = {
-    var seajs = {};
-
     var data = {};
     var win = window;
     var doc = win.document;
@@ -228,7 +225,6 @@
     var bind = function (name, callback) {
         var list = events[name] || (events[name] = []);
         list.push(callback);
-        return seajs;
     };
 
 
@@ -250,8 +246,6 @@
                 callback(data);
             });
         }
-
-        return seajs;
     };
 
     /**
@@ -1067,7 +1061,6 @@
 
     var useModule = function (id, callback) {
         Module.use(id, callback, data.cwd + gid());
-        return seajs;
     };
 
     /*兼容 1.10 以下版本的 jQuery*/
@@ -1140,7 +1133,6 @@
         }
 
         emit('config', configData);
-        return seajs;
     };
 
 
@@ -1179,7 +1171,9 @@
             if (!Module.cmd) {
                 meta.uri = meta.id;
             }
-        }).on('request', function (meta) {
+        });
+
+        bind('request', function (meta) {
             // 异步模块
             if (meta.async && !Module.cmd) {
                 meta.requestUri = id2Uri(meta.requestUri, Module.asyncBase);
@@ -1187,7 +1181,9 @@
 
             meta._url = buldVersion(meta.requestUri);
             meta._url = buildCache(meta._url);
-        }).on('request', function (meta) {
+        });
+
+        bind('request', function (meta) {
             var id = meta.requestUri;
             var url = meta._url || id;
 
