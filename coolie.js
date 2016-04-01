@@ -1320,9 +1320,13 @@
                 if (config.debug) {
                     bind('start', function () {
                         console.group(CONST_COOLIE_MODULES);
-                    }).on('request', function (meta) {
+                    });
+
+                    bind('request', function (meta) {
                         console.log(meta.requestUri);
-                    }).on('ready', function () {
+                    });
+
+                    bind('ready', function () {
                         console.log('past ' + (now() - timeStart) + 'ms');
                         console.groupEnd(CONST_COOLIE_MODULES);
                     });
