@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.3.3';
+    var VERSION = '1.3.4';
     var COOLIE = 'coolie';
 
     if (global.coolie) {
@@ -39,7 +39,7 @@
     //var seajs = global.seajs = {
     var seajs = {};
 
-    var data = seajs.data = {};
+    var data = {};
     var win = window;
     var doc = win.document;
     var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
@@ -126,7 +126,7 @@
     var gid = (function () {
         var id = 0;
         return function () {
-            return id++;
+            return COOLIE + '-' + VERSION + '-module-' + now() + '-' + (id++);
         };
     }());
 
@@ -234,7 +234,7 @@
 
     // Emit event, firing all bound callbacks. Callbacks receive the same
     // arguments as `emit` does, apart from the event name
-    var emit = seajs.emit = function (name, data) {
+    var emit = function (name, data) {
         var list = events[name];
 
         if (list) {
@@ -377,9 +377,6 @@
         return addBase(id, refUri);
     }
 
-    // For Developers
-    seajs.resolve = id2Uri;
-
     // @coolie ignore webworker
     // Check environment
     //var isWebWorker = typeof window === 'undefined' && typeof importScripts !== 'undefined' && isFunction(importScripts)
@@ -477,10 +474,6 @@
             callback(error);
         }
     }
-
-    // For Developers
-    seajs.request = request;
-
 
     var interactiveScript;
 
@@ -585,7 +578,7 @@
     var chunkLength = 0;
     var chunkMods = {};
 
-    var STATUS = Module.STATUS = {
+    var STATUS = {
         // 1 - The `module.uri` is being fetched
         FETCHING: 1,
         // 2 - The meta data has been saved to cachedMods
@@ -864,7 +857,7 @@
         }
 
         function sendRequest() {
-            var node = seajs.request(emitData._url || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
+            var node = request(emitData._url || emitData.requestUri, emitData.onRequest, emitData.charset, emitData.crossorigin);
 
             node.id = emitData.requestUri;
         }
@@ -1005,19 +998,17 @@
     // Use function is equal to load a anonymous module
     Module.entry = [];
     Module.use = function (mainId, callback, uri, async) {
-        var mainMod = cachedMods[mainId];
-
-        // 模块重新加载，直接返回结果
-        if (mainMod && mainMod.status > STATUS.LOADED) {
-            mainMod.status = STATUS.LOADED;
-            mainMod.exec();
-
-            if (isFunction(callback)) {
-                callback.call(global, mainMod.exports);
-            }
-
-            return;
-        }
+        //var mainMod = cachedMods[mainId];
+        //
+        //// 模块重新加载，直接返回结果
+        //if (mainMod) {
+        //    //mainMod.exec();
+        //    if (isFunction(callback)) {
+        //        callback.call(global, mainMod.exports);
+        //    }
+        //
+        //    return;
+        //}
 
         var mod = Module.get(uri, [mainId]);
 
@@ -1027,8 +1018,9 @@
         mod.remain = 1;
         mod.callback = function () {
             // 如果为非 cmd，则入口模块为 0
-            if (!Module.cmd && mainId !== '0') {
+            if (!Module.cmd && mainId !== '0' && cachedMods[0]) {
                 cachedMods[mainId] = cachedMods[0];
+                delete(cachedMods[0]);
             }
 
             // 当前如果还有分块没有加载完成
@@ -1062,7 +1054,6 @@
             delete mod.history;
             delete mod.remain;
             delete mod._entry;
-            delete(cachedMods[0]);
         };
         Module.entry.push(mod);
         emit('start');
@@ -1074,7 +1065,7 @@
 
     // Public API
 
-    seajs.use = function (id, callback) {
+    var useModule = function (id, callback) {
         Module.use(id, callback, data.cwd + gid());
         return seajs;
     };
@@ -1085,19 +1076,16 @@
     global.define = Module.define;
 
 
-    // For Developers
-
-    seajs.Module = Module;
     data.fetchedList = fetchedList;
 
-    seajs.require = function (id, type) {
-        var mod = Module.get(Module.resolve(id), [], type);
-        if (mod.status < STATUS.EXECUTING) {
-            mod.onload();
-            mod.exec();
-        }
-        return mod.exports;
-    };
+    //seajs.require = function (id, type) {
+    //    var mod = Module.get(Module.resolve(id), [], type);
+    //    if (mod.status < STATUS.EXECUTING) {
+    //        mod.onload();
+    //        mod.exec();
+    //    }
+    //    return mod.exports;
+    //};
 
     /**
      * config.js - The configuration for the loader
@@ -1372,7 +1360,7 @@
              * @returns {global.coolie}
              */
             use: function (main) {
-                seajs.use(mainURL = main ? id2Uri(main, baseURL) : mainURL, function () {
+                useModule(mainURL = main ? id2Uri(main, baseURL) : mainURL, function () {
                     mainModule = Module.get(mainURL);
 
                     each(mainCallbackList, function (index, callback) {
