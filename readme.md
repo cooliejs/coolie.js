@@ -1,4 +1,4 @@
-# coolie.js@1.3.4 苦力 
+# coolie.js 苦力，模块加载器
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
@@ -97,9 +97,3 @@ coolie.config({
 
 ## `coolie.dirname`
 返回当前模块加载器所在的目录。常用于单元测试。
-
-
-## `coolie.modules`
-返回当前模块加载器加载的所有模块。常用于单元测试。
-
-
