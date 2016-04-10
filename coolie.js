@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.3.4
+ * @version 1.3.5
  * @license MIT
  */
 
@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.3.4';
+    var VERSION = '1.3.5';
     var COOLIE = 'coolie';
 
     if (global.coolie) {
@@ -82,29 +82,6 @@
             }
         }
     };
-
-    /**
-     * 定义 console，防止出错
-     */
-    var console = (function () {
-        var ret = {};
-        var hasConsole = global.console;
-        var arr = ['log', 'warn', 'group', 'groupEnd'];
-
-        each(arr, function (index, key) {
-            ret[key] = function () {
-                if (hasConsole && hasConsole[key]) {
-                    try {
-                        hasConsole[key].apply(hasConsole, arguments);
-                    } catch (err) {
-                        //ignore
-                    }
-                }
-            };
-        });
-
-        return ret;
-    })();
 
 
     /**
@@ -225,6 +202,20 @@
     var bind = function (name, callback) {
         var list = events[name] || (events[name] = []);
         list.push(callback);
+    };
+
+
+    // 仅执行一次
+    var once = function (callback) {
+        var excuted = false;
+        return function () {
+            if (excuted) {
+                return;
+            }
+
+            excuted = true;
+            callback.apply(this, arguments);
+        };
     };
 
 
@@ -1147,7 +1138,6 @@
         var mainCallbackList = [];
         var mainModule;
         var coolieConfig;
-        var CONST_COOLIE_MODULES = COOLIE + ' modules [' + VERSION + ']';
         var REG_EXT = /\.[^.]*$/;
         var REG_DIRNAME = /\/$/;
         var buldVersion = function (url) {
@@ -1317,25 +1307,6 @@
                     timeStart = now();
                 });
 
-                if (config.debug) {
-                    bind('start', function () {
-                        console.group(CONST_COOLIE_MODULES);
-                    });
-
-                    bind('request', function (meta) {
-                        console.log(meta.requestUri);
-                    });
-
-                    bind('ready', function () {
-                        console.log('past ' + (now() - timeStart) + 'ms');
-                        console.groupEnd(CONST_COOLIE_MODULES);
-                    });
-                } else {
-                    bind('ready', function () {
-                        console.log(CONST_COOLIE_MODULES + ' past ' + (now() - timeStart) + 'ms');
-                    });
-                }
-
                 config._v = {};
 
                 each(config.version, function (key, val) {
@@ -1374,6 +1345,8 @@
                 if (!isFunction(callback)) {
                     return the;
                 }
+
+                callback = once(callback);
 
                 if (mainModule) {
                     callback(mainModule.exports);
