@@ -173,12 +173,12 @@
     };
 
 
-    var styleEle = doc.createElement('style');
-    styleEle.setAttribute('type', 'text/css');
-    styleEle.setAttribute('id', COOLIE + '-' + VERSION + '-style');
-    head.appendChild(styleEle);
+    var styleEl = doc.createElement('style');
+    styleEl.setAttribute('type', 'text/css');
+    styleEl.setAttribute('id', COOLIE + '-' + VERSION + '-style');
+    head.appendChild(styleEl);
     // ie
-    var stylesheet = styleEle.styleSheet;
+    var stylesheet = styleEl.styleSheet;
 
 
     /**
@@ -189,10 +189,10 @@
         if (stylesheet) {
             stylesheet.cssText += cssText;
         } else {
-            styleEle.innerHTML += cssText;
+            styleEl.innerHTML += cssText;
         }
 
-        return styleEle;
+        return styleEl;
     };
 
 
@@ -1167,7 +1167,7 @@
             version: VERSION,
             url: loaderPath,
             configURL: configURL,
-            styleEle: styleEle,
+            styleEle: styleEl,
             importStyle: importStyle,
             dirname: dirname(loaderPath),
             /**
@@ -1177,7 +1177,7 @@
              * @returns {String}
              */
             resolve: function (from, to) {
-                return id2Uri(to, from, true);
+                return addBase(to, from);
             },
 
             /**
