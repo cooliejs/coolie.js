@@ -1,4 +1,3 @@
 coolie.config({
-    base: '../',
-    version: '123'
+    base: '../'
 }).use();

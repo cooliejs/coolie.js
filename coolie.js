@@ -40,6 +40,10 @@
     var doc = win.document;
     var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 
+    // ==============================================================================
+    // =================================== 判断相关 ==================================
+    // ==============================================================================
+
     function isType(type) {
         return function (obj) {
             return {}.toString.call(obj) === "[object " + type + "]";
@@ -51,7 +55,6 @@
     var isBoolean = isType("Boolean");
     var isArray = isType("Array");
     var isFunction = isType("Function");
-    var isUndefined = isType("Undefined");
 
 
     /**
@@ -173,32 +176,33 @@
     };
 
 
-    var styleEl = doc.createElement('style');
-    styleEl.setAttribute('type', 'text/css');
-    styleEl.setAttribute('id', COOLIE + '-' + VERSION + '-style');
-    head.appendChild(styleEl);
-    // ie
-    var stylesheet = styleEl.styleSheet;
+    var importStyle = (function () {
+        var styleEl = doc.createElement('style');
+        styleEl.setAttribute('type', 'text/css');
+        styleEl.setAttribute('id', COOLIE + '-' + VERSION + '-style');
+        head.appendChild(styleEl);
+        // ie
+        var stylesheet = styleEl.styleSheet;
+
+        /**
+         * 导入 style 样式
+         * @param cssText
+         */
+        return function (cssText) {
+            if (stylesheet) {
+                stylesheet.cssText += cssText;
+            } else {
+                styleEl.innerHTML += cssText;
+            }
+
+            return styleEl;
+        };
+    }());
 
 
-    /**
-     * 导入 style 样式
-     * @param cssText
-     */
-    var importStyle = function (cssText) {
-        if (stylesheet) {
-            stylesheet.cssText += cssText;
-        } else {
-            styleEl.innerHTML += cssText;
-        }
-
-        return styleEl;
-    };
-
-
-    /**
-     * util-events.js - The minimal events support
-     */
+    // ==============================================================================
+    // =================================== 事件相关 ==================================
+    // ==============================================================================
 
     var events = {};
 
@@ -243,157 +247,259 @@
         }
     };
 
-    /**
-     * util-path.js - The utilities for operating path such as id, uri
-     */
 
-    var DIRNAME_RE = /[^?#]*\//;
-    var DOT_RE = /\/\.\//g;
-    var DOUBLE_DOT_RE = /\/[^/]+\/\.\.\//;
-    var MULTI_SLASH_RE = /([^:/])\/+\//g;
+    // ==============================================================================
+    // =================================== 路径相关 ==================================
+    // ==============================================================================
     var REG_JS_EXT = /\.js$/i;
-    var REG_START = /^([./]|ftp|file|https?)/;
+    var REG_STATIC_PATH = /^(.*:)?\/\//;
+    var REG_ABSOLUTE_PATH = /^\//;
+    var REG_PROTOCOL = /^.*:/;
+    var LOCATION_HREF = location.href;
+    var LOCATION_PROTOCOL = location.protocol;
+    var LOCATION_BASE = LOCATION_PROTOCOL + '//' + location.host;
+    var REG_LAST_PATH = /\/[^/]+\/\.\.(\/|$)/;
+    var REG_THIS_PATH = /\/\.\//g;
+    var REG_NOT_URI_SLASH = /\\/g;
+    var REG_PATH_DIRNAME = /\/$/;
+    var REG_PATH_BASE = /^~\//;
+    var REG_PATH_QUERY_HASH = /[?#].*$/;
+    // Ignore about:xxx and blob:xxx
+    var REG_IGNORE_LOCATION = /^(about|blob):/;
+    var RGE_PATH_SEP = /\//;
 
-    // Extract the directory portion of a path
-    // dirname("a/b/c.js?t=123#xx/zz") ==> "a/b/"
-    // ref: http://jsperf.com/regex-vs-split/2
-    function dirname(path) {
-        return path.match(DIRNAME_RE)[0];
-    }
 
-    // Canonicalize a path
-    // realpath("http://test.com/a//./b/../c") ==> "http://test.com/a/c"
-    function realpath(path) {
-        // /a/b/./c/./d ==> /a/b/c/d
-        path = path.replace(DOT_RE, "/");
+    /**
+     * 获取路径协议
+     * @param path
+     * @returns {*}
+     */
+    var getPathProtocol = function (path) {
+        var matches = path.match(REG_STATIC_PATH);
 
-        /*
-         @author wh1100717
-         a//b/c ==> a/b/c
-         a///b/////c ==> a/b/c
-         DOUBLE_DOT_RE matches a/b/c//../d path correctly only if replace // with / first
-         */
-        path = path.replace(MULTI_SLASH_RE, "$1/");
+        if (!matches) {
+            return '';
+        }
 
-        // a/b/c/../../d  ==>  a/b/../d  ==>  a/d
-        while (path.match(DOUBLE_DOT_RE)) {
-            path = path.replace(DOUBLE_DOT_RE, "/");
+        var matched = matches[0];
+
+        return REG_PROTOCOL.test(matched) ? matched : LOCATION_PROTOCOL + matched;
+    };
+
+
+    /**
+     * 格式化路径
+     * @param path {string} 路径
+     * @returns {*}
+     */
+    var normalizePath = function (path) {
+        if (!path) {
+            return '';
+        }
+
+        // ~ 相对于当前域
+        if (REG_PATH_BASE.test(path)) {
+            path = LOCATION_BASE + path.slice(1);
+        }
+
+        var protocol = getPathProtocol(path);
+
+        path = path
+        // 去掉 query、hash
+            .replace(REG_PATH_QUERY_HASH, '')
+            // 去掉协议
+            .replace(REG_STATIC_PATH, '')
+            // 反斜杠摆正
+            .replace(REG_NOT_URI_SLASH, '/')
+            // 去掉 ./
+            .replace(REG_THIS_PATH, '/');
+
+        while (REG_LAST_PATH.test(path)) {
+            path = path.replace(REG_LAST_PATH, '/')
+        }
+
+        return protocol + path;
+    };
+
+
+    /**
+     * 获取当前工作目录
+     * @returns {string}
+     */
+    var getCWDPath = function () {
+        return REG_IGNORE_LOCATION.test(LOCATION_HREF) ? '' : getPathDirname(LOCATION_HREF);
+    };
+
+
+    /**
+     * 获取 script 标签的决定路径
+     * @param node
+     * @returns {string}
+     */
+    var getScriptAbsoluteSrc = function getScriptAbsoluteSrc(node) {
+        return node.hasAttribute ? // non-IE6/7
+            node.src :
+            // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
+            node.getAttribute("src", 4);
+    };
+
+
+    /**
+     * 获取 coolie script
+     * @returns {string}
+     */
+    var getCoolieScript = function () {
+        var scripts = doc.scripts;
+        return scripts[scripts.length - 1];
+    };
+
+
+    /**
+     * 获取 coolie 路径
+     * @param loaderScript {Object} 加载器节点
+     * @param cwd {string} 工作路径
+     * @returns {string}
+     */
+    var getCooliePath = function (loaderScript, cwd) {
+        loaderPath = getScriptAbsoluteSrc(loaderScript);
+        return loaderPath || cwd;
+    };
+
+    /**
+     * 是否为静态路径
+     * @param path
+     * @returns {boolean}
+     */
+    var isStaticPath = function (path) {
+        return REG_STATIC_PATH.test(path);
+    };
+
+
+    /**
+     * 是否为绝对路径
+     * @param path
+     * @returns {boolean}
+     */
+    var isAbsolutePath = function (path) {
+        return !isStaticPath(path) && REG_ABSOLUTE_PATH.test(path);
+    };
+
+
+    /**
+     * 获取路径的目录
+     * @param path
+     */
+    var getPathDirname = function (path) {
+        if (!RGE_PATH_SEP.test(path)) {
+            return path + '/';
+        }
+
+        path += REG_PATH_DIRNAME.test(path) ? '' : '/..';
+        return normalizePath(path);
+    };
+
+
+    /**
+     * 合并路径
+     * @param from {String} 起始路径
+     * @param to {String} 目标路径
+     * @returns {String}
+     */
+    var resolvePath = function (from, to) {
+        from = normalizePath(from);
+        to = normalizePath(to);
+
+        // 无 to
+        if (!to) {
+            return from;
+        }
+
+        // 如果 to 为静态，则直接返回
+        if (isStaticPath(to)) {
+            return to;
+        }
+
+        // 如果 to 为绝对，则加协议返回
+        if (isAbsolutePath(to)) {
+            return (getPathProtocol(from) || '/') + to.slice(1);
+        }
+
+        var fromDirname = getPathDirname(from);
+
+        return normalizePath(fromDirname + to);
+    };
+
+
+    /**
+     * 修正文件路径的后缀
+     * @param path {string} 文件路径
+     * @returns {string}
+     */
+    var fixFilepathExtname = function (path) {
+        path = normalizePath(path);
+
+        if (!path) {
+            return path;
+        }
+
+        return path + (REG_JS_EXT.test(path) ? '' : '.js');
+    };
+
+
+    /**
+     * 修正目录路径，添加 index.js
+     * @param path {string} 目录路径
+     * @returns {string}
+     */
+    var fixDirnamePathIndex = function (path) {
+        path = normalizePath(path);
+
+        if (!path) {
+            return path;
+        }
+
+        return path + (REG_PATH_DIRNAME.test(path) ? 'index.js' : '');
+    };
+
+
+    /**
+     * 修正文件路径
+     * @param path {string} 文件路径
+     * @param isJS {Boolean} 是否为 js
+     * @returns {string|*}
+     */
+    var fixFilePath = function (path, isJS) {
+        path = fixDirnamePathIndex(path);
+
+        if (isJS) {
+            path = fixFilepathExtname(path);
         }
 
         return path;
-    }
-
-    // Normalize an id
-    // normalize("path/to/a") ==> "path/to/a.js"
-    // NOTICE: substring is faster than negative slice and RegExp
-    function normalize(path, isSingle) {
-        var lastC = path.charCodeAt(path.length - 1);
-
-        if (!REG_START.test(path)) {
-            path = './' + path;
-        }
-
-        // If the uri ends with `#`, just return it without '#'
-        if (lastC === 35 /* "#" */) {
-            return path.slice(0, -1);
-        }
-
-        if (lastC === 47 /* "/" */) {
-            return path + 'index.js';
-        }
-
-        return (REG_JS_EXT.test(path) || isSingle || path.indexOf("?") > 0) ? path : path + ".js";
-    }
+    };
 
 
-    var ABSOLUTE_RE = /^\/\/.|:\//;
-    var ROOT_DIR_RE = /^.*?\/\/.*?\//;
+    /**
+     * 处理模块文件路径
+     * @param from
+     * @param to
+     * @param [isJS]
+     * @returns {string|*}
+     */
+    var resolveModulePath = function (from, to, isJS) {
+        return fixFilePath(resolvePath(from, to), isJS);
+    };
 
-    function addBase(id, refUri) {
-        var ret;
-        var first = id.charCodeAt(0);
-
-        // Absolute
-        if (ABSOLUTE_RE.test(id)) {
-            ret = id;
-        }
-        // Relative
-        else if (first === 46 /* "." */) {
-            ret = (refUri ? dirname(refUri) : cwd) + id;
-        }
-        // Root
-        else if (first === 47 /* "/" */) {
-            var m = cwd.match(ROOT_DIR_RE);
-            ret = m ? m[0] + id.substring(1) : id;
-        }
-        // Top-level
-        else {
-            ret = loaderDir + id;
-        }
-
-        // Add default protocol when uri begins with "//"
-        if (ret.indexOf("//") === 0) {
-            ret = location.protocol + ret;
-        }
-
-        return realpath(ret);
-    }
-
-
-    function id2Uri(id, refUri, isSingle) {
-        if (!id) {
-            return refUri;
-        }
-
-        // 相对于当前域的根目录
-        if (id.slice(0, 1) === '~') {
-            id = id.slice(1);
-            refUri = location.protocol + '//' + location.host + '/';
-        }
-
-        //id = parseAlias(id);
-        //id = parsePaths(id);
-        //id = parseAlias(id);
-        //id = parseVars(id);
-        //id = parseAlias(id);
-        id = normalize(id, isSingle);
-        //id = parseAlias(id);
-
-        //var uri = addBase(id, refUri);
-        //uri = parseAlias(uri);
-        //uri = parseMap(uri);
-
-        return addBase(id, refUri);
-    }
 
     // @coolie ignore webworker
     // Check environment
     //var isWebWorker = typeof window === 'undefined' && typeof importScripts !== 'undefined' && isFunction(importScripts)
 
-    // Ignore about:xxx and blob:xxx
-    var IGNORE_LOCATION_RE = /^(about|blob):/;
-    var loaderDir;
-    // Sea.js's full path
-    var loaderPath;
-    // Location is read-only from web worker, should be ok though
-    var cwd = (!location.href || IGNORE_LOCATION_RE.test(location.href)) ? '' : dirname(location.href);
-    var scripts = doc.scripts;
+    var cwd = getCWDPath();
+    var loaderScript = getCoolieScript();
+    var loaderPath = getCooliePath(loaderScript, cwd);
+    var loaderDir = getPathDirname(loaderPath);
 
-    // Recommend to add `seajsnode` id for the `sea.js` script element
-    //var loaderScript = doc.getElementById("seajsnode") ||
-    //    scripts[scripts.length - 1];
-    var loaderScript = scripts[scripts.length - 1];
-
-    function getScriptAbsoluteSrc(node) {
-        return node.hasAttribute ? // non-IE6/7
-            node.src :
-            // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            node.getAttribute("src", 4);
-    }
-
-    loaderPath = getScriptAbsoluteSrc(loaderScript);
-    // When `sea.js` is inline, set loaderDir to current working directory
-    loaderDir = dirname(loaderPath || cwd);
 
     /**
      * util-request.js - The utilities for requesting script and style files
@@ -402,12 +508,8 @@
 
     var currentlyAddingScript;
 
-    function request(url, callback, charset, crossorigin) {
+    function request(url, callback) {
         var node = doc.createElement("script");
-
-        if (charset) {
-            node.charset = charset;
-        }
 
         addOnload(node, callback, url);
 
@@ -769,7 +871,7 @@
                 fetchingList = {};
                 fetchedList = {};
                 callbackList = {};
-                Module.use(Module.cmd ? id2Uri(mainId, require.url) : mainId, callback, Module.asyncBase + gid(), true);
+                Module.use(Module.cmd ? resolvePath(require.url, mainId) : mainId, callback, Module.asyncBase + gid(), true);
             });
 
             return require;
@@ -874,7 +976,7 @@
         var emitData = {id: id, refUri: refUri, type: type};
         emit('resolve', emitData);
 
-        return emitData.uri || id2Uri(emitData.id, refUri, type !== 'js');
+        return emitData.uri || resolveModulePath(refUri, emitData.id, type === 'js');
     };
 
     // Define a module
@@ -1083,7 +1185,7 @@
         bind('request', function (meta) {
             // 异步模块
             if (meta.async && !Module.cmd) {
-                meta.requestUri = id2Uri(meta.requestUri, Module.asyncBase);
+                meta.requestUri = resolveModulePath(Module.asyncBase, meta.requestUri, true);
             }
 
             meta._url = buldVersion(meta.requestUri);
@@ -1161,24 +1263,21 @@
             }
         });
 
-        configURL = id2Uri(configURL, loaderPath);
+        configURL = resolveModulePath(loaderDir, configURL, true);
         global.coolie = {
             modules: cachedMods,
             version: VERSION,
             url: loaderPath,
             configURL: configURL,
-            styleEle: styleEl,
             importStyle: importStyle,
-            dirname: dirname(loaderPath),
+            dirname: loaderDir,
             /**
              * 路径合并
              * @param from {String} 起始路径
              * @param to {String} 终点路径
              * @returns {String}
              */
-            resolve: function (from, to) {
-                return addBase(to, from);
-            },
+            resolve: resolvePath,
 
             /**
              * 配置模块
@@ -1197,10 +1296,10 @@
                     config.base = fixDirname(config.base || './');
                     config.async = fixDirname(config.async || './');
                     config.chunk = fixDirname(config.chunk || './');
-                    coolie.mainBaseURL = Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
-                    coolie.asyncBaseURL = Module.asyncBase = dirname(id2Uri(config.async, baseURL));
-                    coolie.chunkBaseURL = Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
-                    coolie.mainURL = mainURL = id2Uri(mainURL, baseURL);
+                    coolie.mainBaseURL = Module.mainBase = baseURL = getPathDirname(resolvePath(configURL, config.base));
+                    coolie.asyncBaseURL = Module.asyncBase = getPathDirname(resolvePath(baseURL, config.async));
+                    coolie.chunkBaseURL = Module.chunkBase = getPathDirname(resolvePath(baseURL, config.chunk));
+                    coolie.mainURL = mainURL = resolveModulePath(baseURL, mainURL, true);
 
                     if (config.debug !== false) {
                         config.debug = true;
@@ -1225,7 +1324,7 @@
                     config._v = {};
 
                     each(config.version, function (key, val) {
-                        config._v[id2Uri(key, baseURL, true)] = val;
+                        config._v[resolveModulePath(baseURL, key, true)] = val;
                     });
 
                     coolie.configs = coolieConfig = config;
@@ -1237,16 +1336,20 @@
             /**
              * 使用主模块，开始加载
              * @param [main]
+             * @returns {global.coolie}
              */
-            use: once(function (main) {
-                useModule(mainURL = main ? id2Uri(main, baseURL) : mainURL, function () {
-                    mainModule = Module.get(mainURL);
+            use: function (main) {
+                once(function () {
+                    useModule(mainURL = main ? resolveModulePath(baseURL, main, true) : mainURL, function () {
+                        mainModule = Module.get(mainURL);
 
-                    each(mainCallbackList, function (index, callback) {
-                        callback(mainModule.exports);
+                        each(mainCallbackList, function (index, callback) {
+                            callback(mainModule.exports);
+                        });
                     });
-                });
-            }),
+                })();
+                return this;
+            },
 
             /**
              * 加载完毕回调，返回主模块
@@ -1285,7 +1388,7 @@
 
                     chunkLength++;
                     chunkMods[url] = false;
-                    var url2 = id2Uri(url, Module.chunkBase);
+                    var url2 = resolveModulePath(Module.chunkBase, url, true);
                     url2 = buldVersion(url2);
                     request(url2, function () {
                         chunkLength--;

@@ -6,5 +6,5 @@ coolie.config({
         'libs/path1/path2/b.js': 'def456'
     }
 }).use().callback(function () {
-    alert('全部模块加载完毕');
+    console.log('全部模块加载完毕');
 });
