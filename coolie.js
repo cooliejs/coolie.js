@@ -36,7 +36,6 @@
         return;
     }
 
-    var data = {};
     var win = window;
     var doc = win.document;
     var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
@@ -50,7 +49,7 @@
     var isObject = isType("Object");
     //var isString = isType("String");
     var isBoolean = isType("Boolean");
-    var isArray = Array.isArray || isType("Array");
+    var isArray = isType("Array");
     var isFunction = isType("Function");
     var isUndefined = isType("Undefined");
 
@@ -117,17 +116,21 @@
         try {
             json = JSON.parse(text);
         } catch (err1) {
+            var err = 'parse json error\n' + url;
+
             try {
                 /* jshint evil: true */
                 var fn = new Function('', 'return ' + text);
                 json = fn();
             } catch (err2) {
-                throw 'parse json error ' + url;
+                throw err;
             }
 
             if (!isObject(json) && !isArray(json)) {
-                throw 'parse json error ' + url;
+                throw err;
             }
+
+            err = null;
         }
 
         return json;
@@ -145,6 +148,7 @@
             if (xhr && xhr.readyState === 4) {
                 if (xhr.status === 200 || xhr.status === 304) {
                     callback(xhr.responseText);
+                    xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = null;
                     xhr = null;
                 } else {
                     throw 'ajax error\n' + url;
@@ -196,7 +200,7 @@
      * util-events.js - The minimal events support
      */
 
-    var events = data.events = {};
+    var events = {};
 
     // Bind event
     var bind = function (name, callback) {
@@ -214,7 +218,7 @@
             }
 
             excuted = true;
-            callback.apply(this, arguments);
+            return callback.apply(this, arguments);
         };
     };
 
@@ -315,16 +319,16 @@
         }
         // Relative
         else if (first === 46 /* "." */) {
-            ret = (refUri ? dirname(refUri) : data.cwd) + id;
+            ret = (refUri ? dirname(refUri) : cwd) + id;
         }
         // Root
         else if (first === 47 /* "/" */) {
-            var m = data.cwd.match(ROOT_DIR_RE);
+            var m = cwd.match(ROOT_DIR_RE);
             ret = m ? m[0] + id.substring(1) : id;
         }
         // Top-level
         else {
-            ret = data.base + id;
+            ret = loaderDir + id;
         }
 
         // Add default protocol when uri begins with "//"
@@ -405,10 +409,6 @@
             node.charset = charset;
         }
 
-        if (!isUndefined(crossorigin)) {
-            node.setAttribute("crossorigin", crossorigin);
-        }
-
         addOnload(node, callback, url);
 
         node.async = true;
@@ -449,9 +449,7 @@
             node.onload = node.onerror = node.onreadystatechange = null;
 
             // Remove the script to reduce memory leak
-            if (!data.debug) {
-                head.removeChild(node);
-            }
+            head.removeChild(node);
 
             // Dereference the node
             node = null;
@@ -830,9 +828,7 @@
             outType: mod.outType,
             uri: uri,
             requestUri: requestUri,
-            onRequest: onRequest,
-            charset: isFunction(data.charset) ? data.charset(requestUri) : data.charset,
-            crossorigin: isFunction(data.crossorigin) ? data.crossorigin(requestUri) : data.crossorigin
+            onRequest: onRequest
         });
 
         if (!emitData.requested) {
@@ -983,18 +979,6 @@
     // Use function is equal to load a anonymous module
     Module.entry = [];
     Module.use = function (mainId, callback, uri, async) {
-        //var mainMod = cachedMods[mainId];
-        //
-        //// 模块重新加载，直接返回结果
-        //if (mainMod) {
-        //    //mainMod.exec();
-        //    if (isFunction(callback)) {
-        //        callback.call(global, mainMod.exports);
-        //    }
-        //
-        //    return;
-        //}
-
         var mod = Module.get(uri, [mainId]);
 
         mod.async = async;
@@ -1051,80 +1035,13 @@
     // Public API
 
     var useModule = function (id, callback) {
-        Module.use(id, callback, data.cwd + gid());
+        Module.use(id, callback, cwd + gid());
     };
 
     /*兼容 1.10 以下版本的 jQuery*/
     Module.define.amd = {jQuery: true};
     Module.define.cmd = {};
     global.define = Module.define;
-
-
-    data.fetchedList = fetchedList;
-
-
-    /**
-     * config.js - The configuration for the loader
-     */
-
-        // The root path to use for id2uri parsing
-    data.base = loaderDir;
-
-    // The loader directory
-    data.dir = loaderDir;
-
-    // The loader's full path
-    data.loader = loaderPath;
-
-    // The current working directory
-    data.cwd = cwd;
-
-    // The charset for requesting files
-    data.charset = "utf-8";
-
-    // @Retention(RetentionPolicy.SOURCE)
-    // The CORS options, Do't set CORS on default.
-    //
-    //data.crossorigin = undefined
-
-    // data.alias - An object containing shorthands of module id
-    // data.paths - An object containing path shorthands in module id
-    // data.vars - The {xxx} variables in module id
-    // data.map - An array containing rules to map module uri
-    // data.debug - Debug mode. The default value is false
-
-    var seajsConfig = function (configData) {
-        for (var key in configData) {
-            var curr = configData[key];
-            var prev = data[key];
-
-            // Merge object config such as alias, vars
-            if (prev && isObject(prev)) {
-                for (var k in curr) {
-                    prev[k] = curr[k];
-                }
-            }
-            else {
-                // Concat array config such as map
-                if (isArray(prev)) {
-                    curr = prev.concat(curr);
-                }
-                // Make sure that `data.base` is an absolute path
-                else if (key === "base") {
-                    // Make sure end with "/"
-                    if (curr.slice(-1) !== "/") {
-                        curr += "/";
-                    }
-                    curr = addBase(curr);
-                }
-
-                // Set config
-                data[key] = curr;
-            }
-        }
-
-        emit('config', configData);
-    };
 
 
     // ==============================================================================
@@ -1276,53 +1193,52 @@
              * @returns {global.coolie}
              */
             config: function (config) {
-                config.base = fixDirname(config.base || './');
-                config.async = fixDirname(config.async || './');
-                config.chunk = fixDirname(config.chunk || './');
-                coolie.mainBaseURL = Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
-                coolie.asyncBaseURL = Module.asyncBase = dirname(id2Uri(config.async, baseURL));
-                coolie.chunkBaseURL = Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
-                coolie.mainURL = mainURL = id2Uri(mainURL, baseURL);
+                once(function () {
+                    config.base = fixDirname(config.base || './');
+                    config.async = fixDirname(config.async || './');
+                    config.chunk = fixDirname(config.chunk || './');
+                    coolie.mainBaseURL = Module.mainBase = baseURL = dirname(id2Uri(config.base, configURL));
+                    coolie.asyncBaseURL = Module.asyncBase = dirname(id2Uri(config.async, baseURL));
+                    coolie.chunkBaseURL = Module.chunkBase = dirname(id2Uri(config.chunk, baseURL));
+                    coolie.mainURL = mainURL = id2Uri(mainURL, baseURL);
 
-                if (config.debug !== false) {
-                    config.debug = true;
-                }
+                    if (config.debug !== false) {
+                        config.debug = true;
+                    }
 
-                if (config.cache !== false) {
-                    config.cache = true;
-                }
+                    if (config.cache !== false) {
+                        config.cache = true;
+                    }
 
-                /**
-                 * @global DEBUG
-                 * @type {boolean}
-                 */
-                global.DEBUG = !!config.debug;
+                    /**
+                     * @global DEBUG
+                     * @type {boolean}
+                     */
+                    global.DEBUG = !!config.debug;
 
-                seajsConfig({
-                    debug: config.debug
-                });
 
-                var timeStart = 0;
-                bind('start', function () {
-                    timeStart = now();
-                });
+                    var timeStart = 0;
+                    bind('start', function () {
+                        timeStart = now();
+                    });
 
-                config._v = {};
+                    config._v = {};
 
-                each(config.version, function (key, val) {
-                    config._v[id2Uri(key, baseURL, true)] = val;
-                });
+                    each(config.version, function (key, val) {
+                        config._v[id2Uri(key, baseURL, true)] = val;
+                    });
 
-                coolie.configs = coolieConfig = config;
+                    coolie.configs = coolieConfig = config;
+                })();
+
                 return this;
             },
 
             /**
              * 使用主模块，开始加载
              * @param [main]
-             * @returns {global.coolie}
              */
-            use: function (main) {
+            use: once(function (main) {
                 useModule(mainURL = main ? id2Uri(main, baseURL) : mainURL, function () {
                     mainModule = Module.get(mainURL);
 
@@ -1330,9 +1246,7 @@
                         callback(mainModule.exports);
                     });
                 });
-
-                return this;
-            },
+            }),
 
             /**
              * 加载完毕回调，返回主模块
