@@ -267,11 +267,12 @@
     // Ignore about:xxx and blob:xxx
     var reIgnoreProtocol = /^(about|blob):/;
     var rePathSep = /\//;
+    var reURLBase = /^(.*):\/\/[^\/]*/;
 
 
     /**
      * 获取路径协议
-     * @param path
+     * @param path {string}
      * @returns {*}
      */
     var getPathProtocol = function (path) {
@@ -284,6 +285,17 @@
         var matched = matches[0];
 
         return reProtocol.test(matched) ? matched : LOCATION_PROTOCOL + matched;
+    };
+
+
+    /**
+     * 获取 url base
+     * @param url {string}
+     * @returns {string}
+     */
+    var getURLBase = function (url) {
+        var matched = url.match(reURLBase);
+        return matched ? matched[0] : '';
     };
 
 
@@ -319,50 +331,6 @@
         }
 
         return protocol + path;
-    };
-
-
-    /**
-     * 获取当前工作目录
-     * @returns {string}
-     */
-    var getCWDPath = function () {
-        return reIgnoreProtocol.test(LOCATION_HREF) ? '' : getPathDirname(LOCATION_HREF);
-    };
-
-
-    /**
-     * 获取 script 标签的决定路径
-     * @param node
-     * @returns {string}
-     */
-    var getScriptAbsoluteSrc = function getScriptAbsoluteSrc(node) {
-        return node.hasAttribute ? // non-IE6/7
-            node.src :
-            // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            node.getAttribute("src", 4);
-    };
-
-
-    /**
-     * 获取 coolie script
-     * @returns {string}
-     */
-    var getCoolieScript = function () {
-        var scripts = doc.scripts;
-        return scripts[scripts.length - 1];
-    };
-
-
-    /**
-     * 获取 coolie 路径
-     * @param loaderScript {Object} 加载器节点
-     * @param cwd {string} 工作路径
-     * @returns {string}
-     */
-    var getCooliePath = function (loaderScript, cwd) {
-        loaderPath = getScriptAbsoluteSrc(loaderScript);
-        return loaderPath || cwd;
     };
 
     /**
@@ -421,7 +389,7 @@
 
         // 如果 to 为绝对，则加协议返回
         if (isAbsolutePath(to)) {
-            return (getPathProtocol(from) || '/') + to.slice(1);
+            return (getURLBase(from) || '/') + to.slice(1);
         }
 
         var fromDirname = getPathDirname(from);
@@ -494,6 +462,51 @@
     // @coolie ignore webworker
     // Check environment
     //var isWebWorker = typeof window === 'undefined' && typeof importScripts !== 'undefined' && isFunction(importScripts)
+
+
+    /**
+     * 获取当前工作目录
+     * @returns {string}
+     */
+    var getCWDPath = function () {
+        return reIgnoreProtocol.test(LOCATION_HREF) ? '' : getPathDirname(LOCATION_HREF);
+    };
+
+
+    /**
+     * 获取 script 标签的决定路径
+     * @param node
+     * @returns {string}
+     */
+    var getScriptAbsoluteSrc = function getScriptAbsoluteSrc(node) {
+        return node.hasAttribute ? // non-IE6/7
+            node.src :
+            // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
+            node.getAttribute("src", 4);
+    };
+
+
+    /**
+     * 获取 coolie script
+     * @returns {string}
+     */
+    var getCoolieScript = function () {
+        var scripts = doc.scripts;
+        return scripts[scripts.length - 1];
+    };
+
+
+    /**
+     * 获取 coolie 路径
+     * @param loaderScript {Object} 加载器节点
+     * @param cwd {string} 工作路径
+     * @returns {string}
+     */
+    var getCooliePath = function (loaderScript, cwd) {
+        loaderPath = getScriptAbsoluteSrc(loaderScript);
+        return loaderPath || cwd;
+    };
+
 
     var cwd = getCWDPath();
     var loaderScript = getCoolieScript();
@@ -1287,6 +1300,7 @@
              * @param [config.debug=false] {Boolean} 是否启用调试模式
              * @param [config.cache=true] {Boolean} 是否启用缓存
              * @param [config.version] {Object} 版本信息
+             * @param [config.global] {Object} 全局变量
              * @param [config._v] {Object} 内置版本信息
              * @returns {global.coolie}
              */
@@ -1314,6 +1328,10 @@
                      */
                     global.DEBUG = !!config.debug;
 
+                    // 定义全局变量
+                    each(config.global, function (key, val) {
+                        global[key] = val;
+                    });
 
                     var timeStart = 0;
                     bind('start', function () {
