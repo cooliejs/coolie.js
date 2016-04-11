@@ -251,22 +251,22 @@
     // ==============================================================================
     // =================================== 路径相关 ==================================
     // ==============================================================================
-    var REG_JS_EXT = /\.js$/i;
-    var REG_STATIC_PATH = /^(.*:)?\/\//;
-    var REG_ABSOLUTE_PATH = /^\//;
-    var REG_PROTOCOL = /^.*:/;
+    var reJSExtname = /\.js$/i;
+    var reStaticPath = /^(.*:)?\/\//;
+    var reAbsolutePath = /^\//;
+    var reProtocol = /^.*:/;
     var LOCATION_HREF = location.href;
     var LOCATION_PROTOCOL = location.protocol;
     var LOCATION_BASE = LOCATION_PROTOCOL + '//' + location.host;
-    var REG_LAST_PATH = /\/[^/]+\/\.\.(\/|$)/;
-    var REG_THIS_PATH = /\/\.\//g;
-    var REG_NOT_URI_SLASH = /\\/g;
-    var REG_PATH_DIRNAME = /\/$/;
-    var REG_PATH_BASE = /^~\//;
-    var REG_PATH_QUERY_HASH = /[?#].*$/;
+    var reLastPath = /\/[^/]+\/\.\.(\/|$)/;
+    var reThisPath = /\/\.\//g;
+    var reNotURISlash = /\\/g;
+    var rePathDirname = /\/$/;
+    var rePathBase = /^~\//;
+    var rePathQuerystringHashstring = /[?#].*$/;
     // Ignore about:xxx and blob:xxx
-    var REG_IGNORE_LOCATION = /^(about|blob):/;
-    var RGE_PATH_SEP = /\//;
+    var reIgnoreProtocol = /^(about|blob):/;
+    var rePathSep = /\//;
 
 
     /**
@@ -275,7 +275,7 @@
      * @returns {*}
      */
     var getPathProtocol = function (path) {
-        var matches = path.match(REG_STATIC_PATH);
+        var matches = path.match(reStaticPath);
 
         if (!matches) {
             return '';
@@ -283,7 +283,7 @@
 
         var matched = matches[0];
 
-        return REG_PROTOCOL.test(matched) ? matched : LOCATION_PROTOCOL + matched;
+        return reProtocol.test(matched) ? matched : LOCATION_PROTOCOL + matched;
     };
 
 
@@ -298,7 +298,7 @@
         }
 
         // ~ 相对于当前域
-        if (REG_PATH_BASE.test(path)) {
+        if (rePathBase.test(path)) {
             path = LOCATION_BASE + path.slice(1);
         }
 
@@ -306,16 +306,16 @@
 
         path = path
         // 去掉 query、hash
-            .replace(REG_PATH_QUERY_HASH, '')
+            .replace(rePathQuerystringHashstring, '')
             // 去掉协议
-            .replace(REG_STATIC_PATH, '')
+            .replace(reStaticPath, '')
             // 反斜杠摆正
-            .replace(REG_NOT_URI_SLASH, '/')
+            .replace(reNotURISlash, '/')
             // 去掉 ./
-            .replace(REG_THIS_PATH, '/');
+            .replace(reThisPath, '/');
 
-        while (REG_LAST_PATH.test(path)) {
-            path = path.replace(REG_LAST_PATH, '/')
+        while (reLastPath.test(path)) {
+            path = path.replace(reLastPath, '/')
         }
 
         return protocol + path;
@@ -327,7 +327,7 @@
      * @returns {string}
      */
     var getCWDPath = function () {
-        return REG_IGNORE_LOCATION.test(LOCATION_HREF) ? '' : getPathDirname(LOCATION_HREF);
+        return reIgnoreProtocol.test(LOCATION_HREF) ? '' : getPathDirname(LOCATION_HREF);
     };
 
 
@@ -371,7 +371,7 @@
      * @returns {boolean}
      */
     var isStaticPath = function (path) {
-        return REG_STATIC_PATH.test(path);
+        return reStaticPath.test(path);
     };
 
 
@@ -381,7 +381,7 @@
      * @returns {boolean}
      */
     var isAbsolutePath = function (path) {
-        return !isStaticPath(path) && REG_ABSOLUTE_PATH.test(path);
+        return !isStaticPath(path) && reAbsolutePath.test(path);
     };
 
 
@@ -390,11 +390,11 @@
      * @param path
      */
     var getPathDirname = function (path) {
-        if (!RGE_PATH_SEP.test(path)) {
+        if (!rePathSep.test(path)) {
             return path + '/';
         }
 
-        path += REG_PATH_DIRNAME.test(path) ? '' : '/..';
+        path += rePathDirname.test(path) ? '' : '/..';
         return normalizePath(path);
     };
 
@@ -442,7 +442,7 @@
             return path;
         }
 
-        return path + (REG_JS_EXT.test(path) ? '' : '.js');
+        return path + (reJSExtname.test(path) ? '' : '.js');
     };
 
 
@@ -458,7 +458,7 @@
             return path;
         }
 
-        return path + (REG_PATH_DIRNAME.test(path) ? 'index.js' : '');
+        return path + (rePathDirname.test(path) ? 'index.js' : '');
     };
 
 
@@ -594,21 +594,21 @@
      * @type {RegExp}
      * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js
      */
-    var REG_REQUIRE = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
+    var reRequire = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
 
 
     /**
      * 反斜杠
      * @type {RegExp}
      */
-    var REG_SLASH = /\\\\/g;
+    var reSlash = /\\\\/g;
 
 
     /**
      * require 类型
      * @type {RegExp}
      */
-    var REG_REQUIRE_TYPE = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
+    var reRequireType = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
 
 
     /**
@@ -635,9 +635,9 @@
         var types = [];
         var outTypes = [];
 
-        code.replace(REG_SLASH, '').replace(REG_REQUIRE, function ($0, $1, $2) {
+        code.replace(reSlash, '').replace(reRequire, function ($0, $1, $2) {
             if ($2) {
-                var matches = $2.match(REG_REQUIRE_TYPE);
+                var matches = $2.match(reRequireType);
                 var pipeline = (matches[2] ? matches[2].toLowerCase() : 'js').split('|');
 
                 deps.push(matches[1]);
@@ -1157,12 +1157,11 @@
         var mainCallbackList = [];
         var mainModule;
         var coolieConfig;
-        var REG_EXT = /\.[^.]*$/;
-        var REG_DIRNAME = /\/$/;
+        var reExtname = /\.[^.]*$/;
         var buldVersion = function (url) {
             var version = coolieConfig._v[url];
 
-            return version ? url.replace(REG_EXT, '.' + version + '$&') : url;
+            return version ? url.replace(reExtname, '.' + version + '$&') : url;
         };
         var buildCache = function (url) {
             if (coolieConfig.cache === false) {
@@ -1173,7 +1172,7 @@
         };
         var timeid;
         var fixDirname = function (p) {
-            return p + (REG_DIRNAME.test(p) ? '' : '/');
+            return p + (rePathDirname.test(p) ? '' : '/');
         };
 
         bind('resolve', function (meta) {
