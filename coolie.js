@@ -389,7 +389,7 @@
 
         // 如果 to 为绝对，则加协议返回
         if (isAbsolutePath(to)) {
-            return getURLBase(from) + to.slice(1);
+            return getURLBase(from) + to;
         }
 
         var fromDirname = getPathDirname(from);
