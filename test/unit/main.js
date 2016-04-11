@@ -9,7 +9,7 @@ describe('main', function () {
     'use strict';
 
     coolie.config({
-        base: coolie.dirname + '/test/modules/',
+        base: coolie.resolvePath(coolie.dirname, './test/modules/'),
         version: {
             './module5.js': 'abc123'
         }

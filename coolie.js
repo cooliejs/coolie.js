@@ -1333,13 +1333,7 @@
                         global[key] = val;
                     });
 
-                    var timeStart = 0;
-                    bind('start', function () {
-                        timeStart = now();
-                    });
-
                     config._v = {};
-
                     each(config.version, function (key, val) {
                         config._v[resolveModulePath(baseURL, key, true)] = val;
                     });
