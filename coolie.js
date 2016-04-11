@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.3.5
+ * @version 1.4.0
  * @license MIT
  */
 
@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.3.5';
+    var VERSION = '1.4.0';
     var COOLIE = 'coolie';
 
     if (global.coolie) {
@@ -1276,7 +1276,7 @@
              * @param to {String} 终点路径
              * @returns {String}
              */
-            resolve: resolvePath,
+            resolvePath: resolvePath,
 
             /**
              * 配置模块
