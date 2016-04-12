@@ -7,6 +7,7 @@ define(function (require, exports, module) {
         module2: require('./module2.js'),
         module3: require('./module3.txt', 'text'),
         module4: require('./sub-modules/module4.json', 'json'),
+        module41: require('./sub-modules/module4.json', 'json'),
         async: function (callback) {
             require.async('./async-modules/module5.js', callback);
         },

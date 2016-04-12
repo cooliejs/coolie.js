@@ -221,7 +221,6 @@
     var once = function (callback) {
         var excuted = false;
         return function () {
-            /* istanbul ignore next */
             if (excuted) {
                 return;
             }
@@ -299,7 +298,6 @@
      * @returns {string}
      */
     var getURLBase = function (url) {
-        /* istanbul ignore next */
         var matched = url.match(reURLBase);
         return matched ? matched[0] : '';
     };
