@@ -11,15 +11,26 @@ describe('main', function () {
     coolie.config({
         base: coolie.resolvePath(coolie.dirname, './test/modules/'),
         version: {
-            './module5.js': 'abc123'
+            './module0.js': 'abc123'
         }
     }).use('./main.js');
 
-    it('main', function (done) {
-        coolie.callback(function (ret) {
-            expect(ret).toEqual(123 + 456);
+    var getStyle = function (el, cssKey) {
+        return getComputedStyle(el).getPropertyValue(cssKey);
+    };
 
-            done();
+    it('main', function (done) {
+        coolie.callback(function (exports) {
+            expect(exports.module0).toEqual('module0');
+            expect(exports.module1).toEqual('module1');
+            expect(exports.module2).toEqual('module2');
+            expect(exports.module3).toEqual('module3');
+            expect(exports.module4).toEqual({});
+            exports.async(function (exports) {
+                expect(exports).toEqual('module5');
+                done();
+            });
+            expect(getStyle(document.body, 'width')).toEqual('100px');
         });
     });
 });

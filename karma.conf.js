@@ -20,7 +20,7 @@ module.exports = function (config) {
         files: [
             './coolie.js',
             {
-                pattern: './test/modules/**/*',
+                pattern: './test/modules/**',
                 included: false
             },
             './test/unit/*.js'
@@ -34,7 +34,7 @@ module.exports = function (config) {
         // preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
         preprocessors: {
-            //'./coolie.js': ['coverage']
+            './coolie.js': ['coverage']
         },
 
 

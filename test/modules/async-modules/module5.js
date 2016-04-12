@@ -1,10 +1,10 @@
-/*!
+/**
  * 文件描述
  * @author ydr.me
- * @create 2015-04-24 12:53
+ * @create 2016-04-11 21:47
  */
 
 
 define(function (require, exports, module) {
-    module.exports = {};
+    return 'module5';
 });

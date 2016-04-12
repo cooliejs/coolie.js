@@ -32,6 +32,7 @@
 
 
     // Avoid conflicting when `sea.js` is loaded multiple times
+    /* istanbul ignore next */
     if (global.seajs) {
         return;
     }
@@ -72,15 +73,11 @@
             for (i = isReverse ? list.length - 1 : 0, j = isReverse ? 0 : list.length;
                  isReverse ? i > j : i < j;
                  isReverse ? i-- : i++) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
+                callback(i, list[i]);
             }
         } else if (typeof(list) === 'object') {
             for (i in list) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
+                callback(i, list[i]);
             }
         }
     };
@@ -118,21 +115,26 @@
 
         try {
             json = JSON.parse(text);
-        } catch (err1) {
+        }  catch (err1) {
+            /* istanbul ignore next */
             var err = 'parse json error\n' + url;
 
+            /* istanbul ignore next */
             try {
                 /* jshint evil: true */
                 var fn = new Function('', 'return ' + text);
                 json = fn();
             } catch (err2) {
+                /* istanbul ignore next */
                 throw err;
             }
 
+            /* istanbul ignore next */
             if (!isObject(json) && !isArray(json)) {
                 throw err;
             }
 
+            /* istanbul ignore next */
             err = null;
         }
 
@@ -154,6 +156,7 @@
                     xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = null;
                     xhr = null;
                 } else {
+                    /* istanbul ignore next */
                     throw 'ajax error\n' + url;
                 }
             }
@@ -189,6 +192,7 @@
          * @param cssText
          */
         return function (cssText) {
+            /* istanbul ignore next */
             if (stylesheet) {
                 stylesheet.cssText += cssText;
             } else {
@@ -217,6 +221,7 @@
     var once = function (callback) {
         var excuted = false;
         return function () {
+            /* istanbul ignore next */
             if (excuted) {
                 return;
             }
@@ -294,6 +299,7 @@
      * @returns {string}
      */
     var getURLBase = function (url) {
+        /* istanbul ignore next */
         var matched = url.match(reURLBase);
         return matched ? matched[0] : '';
     };

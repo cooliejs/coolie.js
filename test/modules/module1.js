@@ -2,5 +2,5 @@
 define(function (require, exports, module) {
     'use strict';
 
-     module.exports = 123;
+     module.exports = 'module1';
 });
