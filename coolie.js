@@ -22,6 +22,7 @@
     var VERSION = '1.4.1';
     var COOLIE = 'coolie';
 
+    /* istanbul ignore next */
     if (global.coolie) {
         return;
     }
@@ -29,7 +30,6 @@
     var noop = function () {
         // ignore
     };
-
 
     // Avoid conflicting when `sea.js` is loaded multiple times
     /* istanbul ignore next */
