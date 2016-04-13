@@ -31,6 +31,11 @@ describe('main', function () {
                 done();
             });
             expect(getStyle(document.body, 'width')).toEqual('100px');
+
+            expect(coolie.resolvePath('../../../aa/', '')).toEqual('../../../aa/');
+            expect(coolie.resolvePath('/aa/', '../bb/cc/')).toEqual('/bb/cc/');
+            expect(coolie.resolvePath('/aa/a.js', '../bb/cc/')).toEqual('/bb/cc/');
+            expect(coolie.resolvePath('/aa/a.js', './bb/cc/')).toEqual('/aa/bb/cc/');
         });
     });
 });

@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.4.0
+ * @version 1.4.1
  * @license MIT
  */
 
@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.4.0';
+    var VERSION = '1.4.1';
     var COOLIE = 'coolie';
 
     if (global.coolie) {
@@ -115,7 +115,7 @@
 
         try {
             json = JSON.parse(text);
-        }  catch (err1) {
+        } catch (err1) {
             /* istanbul ignore next */
             var err = 'parse json error\n' + url;
 
@@ -262,10 +262,10 @@
     var LOCATION_HREF = location.href;
     var LOCATION_PROTOCOL = location.protocol;
     var LOCATION_BASE = LOCATION_PROTOCOL + '//' + location.host;
-    var reLastPath = /\/[^/]+\/\.\.(\/|$)/;
     var reThisPath = /\/\.\//g;
     var reNotURISlash = /\\/g;
-    var rePathDirname = /\/$/;
+    var reStartWidthSlash = /^\//;
+    var reEndWidthSlash = /\/$/;
     var rePathBase = /^~\//;
     var rePathQuerystringHashstring = /[?#].*$/;
     // Ignore about:xxx and blob:xxx
@@ -330,8 +330,34 @@
             // 去掉 ./
             .replace(reThisPath, '/');
 
-        while (reLastPath.test(path)) {
-            path = path.replace(reLastPath, '/')
+        var pathList = path.split(rePathSep);
+        var lastItem = '';
+        var pathList2 = [];
+        var lastPathFlag = '..';
+        var slashFlag = '/';
+        var startWidthSlash = reStartWidthSlash.test(path);
+        var endWidthSlash = reEndWidthSlash.test(path);
+
+        each(pathList, function (index, item) {
+            if (item === lastPathFlag && lastItem && lastItem !== lastPathFlag) {
+                pathList2.pop();
+            } else {
+                pathList2.push(item);
+            }
+
+            if (index) {
+                lastItem = item;
+            }
+        });
+
+        path = pathList2.join(slashFlag);
+
+        if (startWidthSlash && !reStartWidthSlash.test(path)) {
+            path = slashFlag + path;
+        }
+
+        if (endWidthSlash && !reEndWidthSlash.test(path)) {
+            path += slashFlag;
         }
 
         return protocol + path;
@@ -366,7 +392,7 @@
             return path + '/';
         }
 
-        path += rePathDirname.test(path) ? '' : '/..';
+        path += reEndWidthSlash.test(path) ? '' : '/../';
         return normalizePath(path);
     };
 
@@ -430,7 +456,7 @@
             return path;
         }
 
-        return path + (rePathDirname.test(path) ? 'index.js' : '');
+        return path + (reEndWidthSlash.test(path) ? 'index.js' : '');
     };
 
 
@@ -526,6 +552,10 @@
     var currentlyAddingScript;
 
     function request(url, callback) {
+        if (!url) {
+            return;
+        }
+
         var node = doc.createElement("script");
 
         addOnload(node, callback, url);
@@ -1189,7 +1219,7 @@
         };
         var timeid;
         var fixDirname = function (p) {
-            return p + (rePathDirname.test(p) ? '' : '/');
+            return p + (reEndWidthSlash.test(p) ? '' : '/');
         };
 
         bind('resolve', function (meta) {
@@ -1279,7 +1309,10 @@
             }
         });
 
-        configURL = resolveModulePath(loaderDir, configURL, true);
+        if (configURL) {
+            configURL = resolveModulePath(loaderDir, configURL, true);
+        }
+
         global.coolie = {
             modules: cachedMods,
             version: VERSION,
