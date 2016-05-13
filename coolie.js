@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.4.4
+ * @version 1.4.5
  * @license MIT
  */
 
@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.4.4';
+    var VERSION = '1.4.5';
     var COOLIE = 'coolie';
 
     /* istanbul ignore next */
@@ -1387,15 +1387,20 @@
              * @returns {global.coolie}
              */
             use: function (main) {
-                once(function () {
-                    useModule(mainURL = main ? resolveModulePath(baseURL, main, true) : mainURL, function () {
-                        mainModule = Module.get(mainURL);
+                main = isArray(main) ? main : [main];
 
-                        each(mainCallbackList, function (index, callback) {
-                            callback(mainModule.exports);
+                each(main, function (index, _main) {
+                    once(function () {
+                        useModule(mainURL = _main ? resolveModulePath(baseURL, _main, true) : mainURL, function () {
+                            mainModule = Module.get(mainURL);
+
+                            each(mainCallbackList, function (index, callback) {
+                                callback(mainModule.exports);
+                            });
                         });
-                    });
-                })();
+                    })();
+                });
+
                 return this;
             },
 
