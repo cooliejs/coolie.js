@@ -1,5 +1,5 @@
 {
-  "name": "coolie",
+  "name": "coolie.js",
   "version": "1.4.1",
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
