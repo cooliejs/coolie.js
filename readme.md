@@ -80,7 +80,7 @@ require('some.json', 'json|text');
 ```
 coolie.config({
 	base: './'
-}).use([main]);
+}).use(main);
 ```
 
 ## `coolie.version`

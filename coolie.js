@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.4.1';
+    var VERSION = '1.4.2';
     var COOLIE = 'coolie';
 
     /* istanbul ignore next */
