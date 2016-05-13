@@ -1,12 +1,12 @@
 {
   "name": "coolie.js",
-  "version": "1.4.2",
+  "version": "1.4.4",
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
     "test": "node ./node_modules/karma/bin/karma start --single-run --browsers PhantomJS --reporters progress",
     "live": "browser-sync start --config bs-config.js",
-    "publish": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js && cp coolie.js ./release && cp coolie.min.js ./release && cd release && zip coolie.zip coolie.js coolie.min.js && alioss upload && rm -rf coolie.zip coolie.js coolie.min.js"
+    "release": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js && cp coolie.js ./release && cp coolie.min.js ./release && cd release && zip coolie.zip coolie.js coolie.min.js && alioss upload && rm -rf coolie.zip coolie.js coolie.min.js"
   },
   "preferGlobal": false,
   "bin": {},
