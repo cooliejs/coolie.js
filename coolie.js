@@ -592,7 +592,7 @@
         text: 'text',
         html: 'text',
         json: 'json',
-        css: 'text'
+        css: 'css'
     };
 
 
@@ -960,7 +960,9 @@
             }
         };
 
-        switch (module.inType) {
+        var moduleInType = module.inType;
+        var moduleOutType = module.outType;
+        switch (moduleInType) {
             case 'js':
                 return ajaxText(url, function (code) {
                     var requires = parseRequires(code);
@@ -985,17 +987,31 @@
                     return new Function('define', moduleCode)(define);
                 });
 
+            case 'css':
             case 'text':
             case 'json':
-                switch (module.outType) {
+                switch (moduleOutType) {
                     case 'url':
                     case 'base64':
                         return define(id, [], function () {
                             return url;
                         });
 
+                    case 'js':
+                        return ajaxText(url, function (code) {
+                            define(id, [], function () {
+                                return new Function('return ' + code + ';')();
+                            });
+                        });
+
+                    case 'style':
+                        return ajaxText(url, function (code) {
+                            define(id, [], function () {
+                                return importStyle(code);
+                            });
+                        });
+
                     // text
-                    // js
                     default:
                         return ajaxText(url, function (code) {
                             define(id, [], function () {
