@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author seajs.org ydr.me
- * @version 1.4.6
+ * @version 1.4.7
  * @license MIT
  */
 
@@ -19,7 +19,7 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.4.6';
+    var VERSION = '1.4.7';
     var COOLIE = 'coolie';
 
     /* istanbul ignore next */
