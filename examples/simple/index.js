@@ -1,3 +1,4 @@
-
-alert('Hello coolie.js 2.0');
+var hello = require('./hello.js');
+var coolie = require('coolie-test');
+alert(hello + ' ' + coolie + '  2.0');
 

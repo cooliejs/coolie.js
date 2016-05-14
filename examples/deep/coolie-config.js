@@ -1,4 +1,4 @@
 coolie.config({
-    base: 'examples/text/',
+    base: 'examples/deep/',
     nodeModules: '../../node_modules/'
 }).use();

@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
- * @author coolie.ydr.me
- * @version 1.4.0
+ * @author seajs.org ydr.me
+ * @version 1.4.6
  * @license MIT
  */
 
@@ -19,9 +19,10 @@
 (function (global, undefined) {
     'use strict';
 
-    var VERSION = '1.4.0';
+    var VERSION = '1.4.6';
     var COOLIE = 'coolie';
 
+    /* istanbul ignore next */
     if (global.coolie) {
         return;
     }
@@ -30,8 +31,8 @@
         // ignore
     };
 
-
     // Avoid conflicting when `sea.js` is loaded multiple times
+    /* istanbul ignore next */
     if (global.seajs) {
         return;
     }
@@ -41,7 +42,7 @@
     var head = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
 
     // ==============================================================================
-    // =================================== 工具函数 ==================================
+    // =================================== 判断相关 ==================================
     // ==============================================================================
 
     function isType(type) {
@@ -72,15 +73,11 @@
             for (i = isReverse ? list.length - 1 : 0, j = isReverse ? 0 : list.length;
                  isReverse ? i > j : i < j;
                  isReverse ? i-- : i++) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
+                callback(i, list[i]);
             }
         } else if (typeof(list) === 'object') {
             for (i in list) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
+                callback(i, list[i]);
             }
         }
     };
@@ -119,20 +116,25 @@
         try {
             json = JSON.parse(text);
         } catch (err1) {
+            /* istanbul ignore next */
             var err = 'parse json error\n' + url;
 
+            /* istanbul ignore next */
             try {
                 /* jshint evil: true */
                 var fn = new Function('', 'return ' + text);
                 json = fn();
             } catch (err2) {
+                /* istanbul ignore next */
                 throw err;
             }
 
+            /* istanbul ignore next */
             if (!isObject(json) && !isArray(json)) {
                 throw err;
             }
 
+            /* istanbul ignore next */
             err = null;
         }
 
@@ -154,6 +156,7 @@
                     xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = null;
                     xhr = null;
                 } else {
+                    /* istanbul ignore next */
                     throw 'ajax error\n' + url;
                 }
             }
@@ -189,6 +192,7 @@
          * @param cssText
          */
         return function (cssText) {
+            /* istanbul ignore next */
             if (stylesheet) {
                 stylesheet.cssText += cssText;
             } else {
@@ -258,20 +262,21 @@
     var LOCATION_HREF = location.href;
     var LOCATION_PROTOCOL = location.protocol;
     var LOCATION_BASE = LOCATION_PROTOCOL + '//' + location.host;
-    var reLastPath = /\/[^/]+\/\.\.(\/|$)/;
     var reThisPath = /\/\.\//g;
     var reNotURISlash = /\\/g;
-    var rePathDirname = /\/$/;
+    var reStartWidthSlash = /^\//;
+    var reEndWidthSlash = /\/$/;
     var rePathBase = /^~\//;
     var rePathQuerystringHashstring = /[?#].*$/;
     // Ignore about:xxx and blob:xxx
     var reIgnoreProtocol = /^(about|blob):/;
     var rePathSep = /\//;
+    var reURLBase = /^(.*):\/\/[^\/]*/;
 
 
     /**
      * 获取路径协议
-     * @param path
+     * @param path {string}
      * @returns {*}
      */
     var getPathProtocol = function (path) {
@@ -284,6 +289,17 @@
         var matched = matches[0];
 
         return reProtocol.test(matched) ? matched : LOCATION_PROTOCOL + matched;
+    };
+
+
+    /**
+     * 获取 url base
+     * @param url {string}
+     * @returns {string}
+     */
+    var getURLBase = function (url) {
+        var matched = url.match(reURLBase);
+        return matched ? matched[0] : '';
     };
 
 
@@ -314,12 +330,168 @@
             // 去掉 ./
             .replace(reThisPath, '/');
 
-        while (reLastPath.test(path)) {
-            path = path.replace(reLastPath, '/')
+        var pathList = path.split(rePathSep);
+        var lastItem = '';
+        var pathList2 = [];
+        var lastPathFlag = '..';
+        var slashFlag = '/';
+        var startWidthSlash = reStartWidthSlash.test(path);
+        var endWidthSlash = reEndWidthSlash.test(path);
+
+        each(pathList, function (index, item) {
+            if (item === lastPathFlag && lastItem && lastItem !== lastPathFlag) {
+                pathList2.pop();
+            } else {
+                pathList2.push(item);
+            }
+
+            if (index) {
+                lastItem = pathList2[pathList2.length - 1];
+            }
+        });
+
+        path = pathList2.join(slashFlag);
+
+        if (startWidthSlash && !reStartWidthSlash.test(path)) {
+            path = slashFlag + path;
+        }
+
+        if (endWidthSlash && !reEndWidthSlash.test(path)) {
+            path += slashFlag;
         }
 
         return protocol + path;
     };
+
+    /**
+     * 是否为静态路径
+     * @param path
+     * @returns {boolean}
+     */
+    var isStaticPath = function (path) {
+        return reStaticPath.test(path);
+    };
+
+
+    /**
+     * 是否为绝对路径
+     * @param path
+     * @returns {boolean}
+     */
+    var isAbsolutePath = function (path) {
+        return !isStaticPath(path) && reAbsolutePath.test(path);
+    };
+
+
+    /**
+     * 获取路径的目录
+     * @param path
+     */
+    var getPathDirname = function (path) {
+        if (!rePathSep.test(path)) {
+            return path + '/';
+        }
+
+        path += reEndWidthSlash.test(path) ? '' : '/../';
+        return normalizePath(path);
+    };
+
+
+    /**
+     * 合并路径
+     * @param from {String} 起始路径
+     * @param to {String} 目标路径
+     * @returns {String}
+     */
+    var resolvePath = function (from, to) {
+        from = normalizePath(from);
+        to = normalizePath(to);
+
+        // 无 to
+        if (!to) {
+            return from;
+        }
+
+        // 如果 to 为静态，则直接返回
+        if (isStaticPath(to)) {
+            return to;
+        }
+
+        // 如果 to 为绝对，则加协议返回
+        if (isAbsolutePath(to)) {
+            return getURLBase(from) + to;
+        }
+
+        var fromDirname = getPathDirname(from);
+
+        return normalizePath(fromDirname + to);
+    };
+
+
+    /**
+     * 修正文件路径的后缀
+     * @param path {string} 文件路径
+     * @returns {string}
+     */
+    var fixFilepathExtname = function (path) {
+        path = normalizePath(path);
+
+        if (!path) {
+            return path;
+        }
+
+        return path + (reJSExtname.test(path) ? '' : '.js');
+    };
+
+
+    /**
+     * 修正目录路径，添加 index.js
+     * @param path {string} 目录路径
+     * @returns {string}
+     */
+    var fixDirnamePathIndex = function (path) {
+        path = normalizePath(path);
+
+        if (!path) {
+            return path;
+        }
+
+        return path + (reEndWidthSlash.test(path) ? 'index.js' : '');
+    };
+
+
+    /**
+     * 修正文件路径
+     * @param path {string} 文件路径
+     * @param isJS {Boolean} 是否为 js
+     * @returns {string|*}
+     */
+    var fixFilePath = function (path, isJS) {
+        path = fixDirnamePathIndex(path);
+
+        if (isJS) {
+            path = fixFilepathExtname(path);
+        }
+
+        return path;
+    };
+
+
+    /**
+     * 处理模块文件路径
+     * @param from
+     * @param to
+     * @param [isJS]
+     * @returns {string|*}
+     */
+    var resolveModulePath = function (from, to, isJS) {
+        return fixFilePath(resolvePath(from, to), isJS);
+    };
+
+
+    // @coolie ignore webworker
+    // Check environment
+    //var isWebWorker = typeof window === 'undefined' && typeof importScripts !== 'undefined' && isFunction(importScripts)
 
 
     /**
@@ -365,135 +537,6 @@
         return loaderPath || cwd;
     };
 
-    /**
-     * 是否为静态路径
-     * @param path
-     * @returns {boolean}
-     */
-    var isStaticPath = function (path) {
-        return reStaticPath.test(path);
-    };
-
-
-    /**
-     * 是否为绝对路径
-     * @param path
-     * @returns {boolean}
-     */
-    var isAbsolutePath = function (path) {
-        return !isStaticPath(path) && reAbsolutePath.test(path);
-    };
-
-
-    /**
-     * 获取路径的目录
-     * @param path
-     */
-    var getPathDirname = function (path) {
-        if (!rePathSep.test(path)) {
-            return path + '/';
-        }
-
-        path += rePathDirname.test(path) ? '' : '/..';
-        return normalizePath(path);
-    };
-
-
-    /**
-     * 合并路径
-     * @param from {String} 起始路径
-     * @param to {String} 目标路径
-     * @returns {String}
-     */
-    var resolvePath = function (from, to) {
-        from = normalizePath(from);
-        to = normalizePath(to);
-
-        // 无 to
-        if (!to) {
-            return from;
-        }
-
-        // 如果 to 为静态，则直接返回
-        if (isStaticPath(to)) {
-            return to;
-        }
-
-        // 如果 to 为绝对，则加协议返回
-        if (isAbsolutePath(to)) {
-            return (getPathProtocol(from) || '/') + to.slice(1);
-        }
-
-        var fromDirname = getPathDirname(from);
-
-        return normalizePath(fromDirname + to);
-    };
-
-
-    /**
-     * 修正文件路径的后缀
-     * @param path {string} 文件路径
-     * @returns {string}
-     */
-    var fixFilepathExtname = function (path) {
-        path = normalizePath(path);
-
-        if (!path) {
-            return path;
-        }
-
-        return path + (reJSExtname.test(path) ? '' : '.js');
-    };
-
-
-    /**
-     * 修正目录路径，添加 index.js
-     * @param path {string} 目录路径
-     * @returns {string}
-     */
-    var fixDirnamePathIndex = function (path) {
-        path = normalizePath(path);
-
-        if (!path) {
-            return path;
-        }
-
-        return path + (rePathDirname.test(path) ? 'index.js' : '');
-    };
-
-
-    /**
-     * 修正文件路径
-     * @param path {string} 文件路径
-     * @param isJS {Boolean} 是否为 js
-     * @returns {string|*}
-     */
-    var fixFilePath = function (path, isJS) {
-        path = fixDirnamePathIndex(path);
-
-        if (isJS) {
-            path = fixFilepathExtname(path);
-        }
-
-        return path;
-    };
-
-
-    /**
-     * 处理模块文件路径
-     * @param from
-     * @param to
-     * @param [isJS]
-     * @returns {string|*}
-     */
-    var resolveModulePath = function (from, to, isJS) {
-        return fixFilePath(resolvePath(from, to), isJS);
-    };
-
-
-    // @coolie ignore webworker
-    // Check environment
-    //var isWebWorker = typeof window === 'undefined' && typeof importScripts !== 'undefined' && isFunction(importScripts)
 
     var cwd = getCWDPath();
     var loaderScript = getCoolieScript();
@@ -509,6 +552,10 @@
     var currentlyAddingScript;
 
     function request(url, callback) {
+        if (!url) {
+            return;
+        }
+
         var node = doc.createElement("script");
 
         addOnload(node, callback, url);
@@ -1172,7 +1219,7 @@
         };
         var timeid;
         var fixDirname = function (p) {
-            return p + (rePathDirname.test(p) ? '' : '/');
+            return p + (reEndWidthSlash.test(p) ? '' : '/');
         };
 
         bind('resolve', function (meta) {
@@ -1262,7 +1309,10 @@
             }
         });
 
-        configURL = resolveModulePath(loaderDir, configURL, true);
+        if (configURL) {
+            configURL = resolveModulePath(loaderDir, configURL, true);
+        }
+
         global.coolie = {
             modules: cachedMods,
             version: VERSION,
@@ -1287,6 +1337,7 @@
              * @param [config.debug=false] {Boolean} 是否启用调试模式
              * @param [config.cache=true] {Boolean} 是否启用缓存
              * @param [config.version] {Object} 版本信息
+             * @param [config.global] {Object} 全局变量
              * @param [config._v] {Object} 内置版本信息
              * @returns {global.coolie}
              */
@@ -1314,14 +1365,12 @@
                      */
                     global.DEBUG = !!config.debug;
 
-
-                    var timeStart = 0;
-                    bind('start', function () {
-                        timeStart = now();
+                    // 定义全局变量
+                    each(config.global, function (key, val) {
+                        global[key] = val;
                     });
 
                     config._v = {};
-
                     each(config.version, function (key, val) {
                         config._v[resolveModulePath(baseURL, key, true)] = val;
                     });
@@ -1338,15 +1387,20 @@
              * @returns {global.coolie}
              */
             use: function (main) {
-                once(function () {
-                    useModule(mainURL = main ? resolveModulePath(baseURL, main, true) : mainURL, function () {
-                        mainModule = Module.get(mainURL);
+                main = isArray(main) ? main : [main];
 
-                        each(mainCallbackList, function (index, callback) {
-                            callback(mainModule.exports);
+                each(main, function (index, _main) {
+                    once(function () {
+                        useModule(mainURL = _main ? resolveModulePath(baseURL, _main, true) : mainURL, function () {
+                            mainModule = Module.get(mainURL);
+
+                            each(mainCallbackList, function (index, callback) {
+                                callback(mainModule.exports);
+                            });
                         });
-                    });
-                })();
+                    })();
+                });
+
                 return this;
             },
 

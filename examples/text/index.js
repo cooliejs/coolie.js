@@ -1,0 +1,1 @@
+alert(require('./text.txt', 'text'));
