@@ -37,7 +37,7 @@
   "bugs": {
     "url": "https://github.com/cooliejs/coolie.js/issues"
   },
-  "licenses": "MIT",
+  "license": "MIT",
   "devDependencies": {
     "jasmine-core": "^2.2.0",
     "karma": "^0.12.31",
@@ -47,5 +47,6 @@
     "karma-phantomjs-launcher": "^0.1.4",
     "uglify-js": "^2.4.15"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "peerDependencies": {}
 }
