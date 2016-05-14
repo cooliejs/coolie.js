@@ -36,6 +36,8 @@ describe('main', function () {
             expect(coolie.resolvePath('/aa/', '../bb/cc/')).toEqual('/bb/cc/');
             expect(coolie.resolvePath('/aa/a.js', '../bb/cc/')).toEqual('/bb/cc/');
             expect(coolie.resolvePath('/aa/a.js', './bb/cc/')).toEqual('/aa/bb/cc/');
+            expect(coolie.resolvePath('http://locahost:9876/base/node_modules/coolie.js/', '../../'))
+                .toEqual('http://locahost:9876/base/');
         });
     });
 });
