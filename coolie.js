@@ -1381,6 +1381,7 @@
                 return this;
             },
 
+
             /**
              * 使用主模块，开始加载
              * @param [main]
@@ -1389,20 +1390,30 @@
             use: function (main) {
                 main = isArray(main) ? main : [main];
 
-                each(main, function (index, _main) {
-                    once(function () {
-                        useModule(mainURL = _main ? resolveModulePath(baseURL, _main, true) : mainURL, function () {
-                            mainModule = Module.get(mainURL);
+                var allLength = main.length;
+                var doneLength = 0;
+                var args = [];
+                var done = function () {
+                    doneLength++;
 
-                            each(mainCallbackList, function (index, callback) {
-                                callback(mainModule.exports);
-                            });
+                    if (doneLength === allLength) {
+                        each(mainCallbackList, function (index, callback) {
+                            callback.apply(global, args);
                         });
-                    })();
+                    }
+                };
+
+                each(main, function (index, _main) {
+                    useModule(mainURL = _main ? resolveModulePath(baseURL, _main, true) : mainURL, function () {
+                        mainModule = Module.get(mainURL);
+                        args.push(mainModule.exports);
+                        done();
+                    });
                 });
 
                 return this;
             },
+
 
             /**
              * 加载完毕回调，返回主模块
