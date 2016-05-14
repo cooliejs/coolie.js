@@ -806,6 +806,7 @@
 
                 var pipeLineArr = (pipeLine || JS).split('|');
                 var inType = pipeLineArr[0];
+                inType = moduleInTypeMap[inType];
                 var outType = getOutType(inType, pipeLineArr[1]);
                 var id = the.resolve(name, inType === 'js') + MODULE_PIPE_SPLIT + outType;
                 return modulesCacheMap[id].expose();
@@ -1095,7 +1096,7 @@
 
 
     // ==============================================================================
-    // =================================== 启动分析 ==================================
+    // =================================== 启动 ==================================
     // ==============================================================================
     var coolieMainPath = '';
     var coolieModuleBaseDirname = coolieDirname;
