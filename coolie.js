@@ -15,11 +15,6 @@
     var JS = 'js';
     var INDEX_JS = 'index.' + JS;
     var MODULE_SPLIT = '->';
-
-    var noop = function () {
-        // ignore
-    };
-
     var win = window;
     var doc = win.document;
     var headEl = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
@@ -29,6 +24,9 @@
     // =================================== 工具函数 ==================================
     // ==============================================================================
 
+    var noop = function () {
+        // ignore
+    };
 
     function isType(type) {
         return function (obj) {
@@ -62,16 +60,14 @@
                     break;
                 }
             }
+        } else if (typeof(list) === 'object') {
+            for (i in list) {
+                if (callback(i, list[i]) === false) {
+                    break;
+                }
+            }
         }
-        // else if (typeof(list) === 'object') {
-        //     for (i in list) {
-        //         if (callback(i, list[i]) === false) {
-        //             break;
-        //         }
-        //     }
-        // }
     };
-
 
 
     /**
@@ -126,6 +122,27 @@
 
 
     /**
+     * 解析 JSON
+     * @param jsonStr
+     * @returns {*}
+     */
+    var evalJSON = function (jsonStr) {
+        try {
+            /* jshint evil: true */
+            var json = new Function('', 'return ' + jsonStr)();
+
+            if (!isObject(json) && !isArray(json)) {
+                return null;
+            }
+
+            return json;
+        } catch (err2) {
+            return null;
+        }
+    };
+
+
+    /**
      * 解析字符串为 JSON 对象
      * @param url {String} url 地址
      * @param callback {Function} 回调
@@ -138,26 +155,10 @@
                 throw new URIError('JSON 资源加载失败\n' + url);
             }
 
-            var json = {};
+            var json = evalJSON(text);
 
-            try {
-                json = JSON.parse(text);
-            } catch (err1) {
-                err = '解析 JSON 错误\n' + url;
-
-                try {
-                    /* jshint evil: true */
-                    var fn = new Function('', 'return ' + text);
-                    json = fn();
-                } catch (err2) {
-                    throw err;
-                }
-
-                if (!isObject(json) && !isArray(json)) {
-                    throw err;
-                }
-
-                err = null;
+            if (!json) {
+                throw new URIError('JSON 资源解析失败\n' + url);
             }
 
             callback(json);
@@ -1117,7 +1118,7 @@
                             }
 
                             define(id, [], function () {
-                                return new Function('return ' + code + ';')();
+                                return evalJSON(code);
                             });
                         });
                         break;
