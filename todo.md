@@ -1,3 +1,8 @@
 - commonJS 规范 √
 - 去除 seajs 的依赖 √
 - 完善单元测试
+- 支持加载非脚本文件：文本、样式、html、json √
+- 支持构建前后的 callback，并且保证顺序 √
+- 支持构建前后的 require √
+- 支持构建前后的 require.async 
+- 支持构建前后的 coolie.chunk √

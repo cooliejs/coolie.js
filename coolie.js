@@ -159,7 +159,7 @@
             try {
                 json = JSON.parse(text);
             } catch (err1) {
-                var err = '解析 JSON 错误\n' + url;
+                err = '解析 JSON 错误\n' + url;
 
                 try {
                     /* jshint evil: true */
@@ -746,6 +746,7 @@
     var MODULE_STATE_LOADED = 1;
     var MODULE_STATE_EXECUTED = 2;
     var modulesCacheMap = {};
+    var moduleGid = 0;
 
     var Module = function (parent, id, inType, outType, pkg) {
         var the = this;
@@ -753,6 +754,7 @@
         the.parent = parent;
         the.main = parent ? parent.main : the;
         the.id = id;
+        the.gid = moduleGid++;
         the.inType = inType;
         the.outType = outType;
         the.state = MODULE_STATE_LOADING;
@@ -883,8 +885,28 @@
             };
             the.require.resolve = the.resolve;
             the.require.async = function (names, callback) {
+                names = isArray(names) ? names : [names];
                 callback = isFunction(callback) ? callback : noop;
-                useModule(the, names, JS, JS, the.pkg);
+
+                var asyncLength = names.length;
+                var asyncArgs = [];
+                var done = function (exports) {
+                    asyncArgs.push(exports);
+
+                    if (asyncLength === asyncArgs.length) {
+                        callback.apply(win, asyncArgs);
+                    }
+                };
+                nextTick(function () {
+                    each(names, function (_, name) {
+                        if (coolieAMDMode) {
+                            name = name + '.' + coolieConfigs.asyncMap[name] + '.' + JS;
+                        }
+
+                        var url = the.resolve(name, true);
+                        useModule(null, url, JS, JS, the.pkg, done);
+                    });
+                });
             };
             the.exports = {};
         },
@@ -987,12 +1009,16 @@
             throw new SyntaxError('AMD 模式才允许调用 define，coolie.js@2.x 开发环境只支持 commonJS 规范');
         }
 
-        var module = modulesCacheMap[id] = modulesCacheMap[id] || new Module(null, id);
+        var cacheModule = modulesCacheMap[id];
+
+        if (!cacheModule) {
+            id = queue.last.id;
+            cacheModule = modulesCacheMap[id];
+        }
+
+        var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
 
         if (!module.parent) {
-            modulesCacheMap[module.id] = null;
-            module.id = queue.last.id;
-            modulesCacheMap[module.id] = module;
             lastDefineMainModule = module;
         }
 
@@ -1019,12 +1045,7 @@
     var loadModule = function (parent, url, inType, outType, pkg, callback) {
         var id = url + MODULE_SPLIT + outType;
         var cacheModule = modulesCacheMap[id];
-
-        if (cacheModule) {
-            return cacheModule;
-        }
-
-        var module = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
+        var module = modulesCacheMap[id] = cacheModule || new Module(parent, id, inType, outType, pkg);
 
         if (!parent && callback) {
             module.callbacks.push(callback);
@@ -1165,6 +1186,19 @@
      * @param callback
      */
     var useModule = function (parent, url, inType, outType, pkg, callback) {
+        var id = url + (coolieAMDMode ? '' : MODULE_SPLIT + outType);
+        var cacheModule = modulesCacheMap[id];
+
+        if (cacheModule) {
+            if (cacheModule.state === MODULE_STATE_EXECUTED) {
+                return callback(cacheModule.exports);
+            }
+
+            return cacheModule.callbacks.push(callback);
+        }
+
+        modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
+
         if (coolieAMDMode) {
             queue.task(url, function (next) {
                 loadScript(url, function () {
