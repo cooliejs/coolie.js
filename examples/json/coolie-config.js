@@ -1,4 +1,4 @@
 coolie.config({
-    base: 'examples/json/',
-    nodeModules: '../../node_modules/'
+    baseDir: 'examples/json/',
+    nodeModulesDir: '../../node_modules/'
 }).use();
