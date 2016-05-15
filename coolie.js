@@ -684,8 +684,6 @@
     var MODULE_STATE_LOADED = 1;
     var MODULE_STATE_EXECUTED = 2;
     var modulesCacheMap = {};
-    var usedModuleCallbackList = [];
-    var usedMainModule = null;
 
     var Module = function (parent, id, inType, outType, pkg) {
         var the = this;
@@ -699,7 +697,6 @@
         the.pkg = pkg;
         the.dependencies = [];
         the.resolvedMap = {};
-        the.callback = parent ? null : usedModuleCallbackList.shift();
     };
 
     Module.prototype = {
@@ -869,6 +866,27 @@
             }
 
             mainModule.expose();
+            mainModuleCallback(mainModule);
+        }
+    };
+
+
+    var usedModuleCallbackList = [];
+    var usedModuleCallbackArgs = [];
+    var mainModuleLength = 0;
+    var mainModuleCallbacked = false;
+    var mainModuleCallback = function (mainModule) {
+        if (mainModuleCallbacked) {
+            return;
+        }
+
+        usedModuleCallbackArgs.push(mainModule.exports);
+
+        if (usedModuleCallbackArgs.length === mainModuleLength) {
+            mainModuleCallbacked = true;
+            each(usedModuleCallbackList, function (_, callback) {
+                callback.apply(win, usedModuleCallbackArgs);
+            });
         }
     };
 
@@ -1044,11 +1062,8 @@
      * @param inType
      * @param outType
      * @param pkg
-     * @param callback
      */
-    var useModule = function (parent, url, inType, outType, pkg, callback) {
-        usedModuleCallbackList.push(callback);
-
+    var useModule = function (parent, url, inType, outType, pkg) {
         if (coolieAMDMode) {
             loadScript(url, noop);
         } else {
@@ -1115,17 +1130,20 @@
          */
         use: function (mainModules, callback) {
             callback = isFunction(callback) ? callback : noop;
+            usedModuleCallbackList.push(callback);
 
             if (!mainModules && coolieAttributeMainName) {
                 coolieMainPath = resolvePath(coolieModuleBaseDirname, coolieAttributeMainName);
-                useModule(null, coolieMainPath, JS, JS, null, callback);
+                useModule(null, coolieMainPath, JS, JS, null);
+                mainModuleLength = 1;
                 return coolie;
             }
 
             mainModules = isArray(mainModules) ? mainModules : [mainModules];
+            mainModuleLength = mainModules.length;
             each(mainModules, function (index, mainModule) {
                 nextTick(function () {
-                    useModule(null, mainModule, JS, JS, null, callback);
+                    useModule(null, mainModule, JS, JS, null);
                 });
             });
 
@@ -1139,6 +1157,15 @@
          * @returns {{coolie}}
          */
         callback: function (callback) {
+            callback = isFunction(callback) ? callback : noop;
+
+            if (mainModuleCallbacked) {
+                callback.apply(win, usedModuleCallbackArgs);
+                return coolie;
+            }
+
+            usedModuleCallbackList.push(callback);
+
             return coolie;
         },
 
