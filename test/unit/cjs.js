@@ -1,0 +1,74 @@
+/**
+ * CJS 测试
+ * @author ydr.me
+ * @create 2014-11-17 15:04
+ */
+
+
+describe('CJS', function () {
+    'use strict';
+
+    coolie.config({
+        baseDir: coolie.resolvePath(coolie.dirname, './test/cjs-modules/'),
+        asyncDir: './async/',
+        nodeModulesDir: './node_modules/'
+    }).use('./main.js');
+
+    var getStyle = function (el, cssKey) {
+        return getComputedStyle(el).getPropertyValue(cssKey);
+    };
+    
+    it('.resolvePath', function () {
+        expect(coolie.resolvePath('../../../aa/', '')).toEqual('../../../aa/');
+        expect(coolie.resolvePath('/aa/', '../bb/cc/')).toEqual('/bb/cc/');
+        expect(coolie.resolvePath('/aa/a.js', '../bb/cc/')).toEqual('/bb/cc/');
+        expect(coolie.resolvePath('/aa/a.js', './bb/cc/')).toEqual('/aa/bb/cc/');
+        expect(coolie.resolvePath('http://locahost:9876/base/node_modules/coolie.js/', '../../'))
+            .toEqual('http://locahost:9876/base/');
+    });
+
+    it('main', function (done) {
+        coolie.callback(function (exports) {
+            expect(exports.module0).toEqual('module0');
+            expect(exports.module1).toEqual('module1');
+            expect(exports.module2).toEqual('module2');
+            
+            expect(exports.text).toEqual('text');
+            expect(exports.text_js).toEqual('text');
+            expect(exports.text_text).toEqual('text');
+            expect(exports.text_url).toMatch(/^http/);
+            expect(exports.text_base64).toMatch(/^http/);
+            
+            expect(exports.json).toEqual({});
+            expect(exports.json_js).toEqual({});
+            expect(exports.json_text).toEqual('{}');
+            expect(exports.json_url).toMatch(/^http/);
+            expect(exports.json_base64).toMatch(/^http/);
+
+            expect(exports.css).toMatch(/body\s*\{/);
+            expect(exports.css_js).toMatch(/body\s*\{/);
+            expect(exports.css_text).toMatch(/body\s*\{/);
+            expect(exports.css_url).toMatch(/^http/);
+            expect(exports.css_base64).toMatch(/^http/);
+            expect(exports.css_style.nodeType).toEqual(1);
+
+            expect(exports.html).toEqual('<br/>');
+            expect(exports.html_js).toEqual('<br/>');
+            expect(exports.html_text).toEqual('<br/>');
+            expect(exports.html_url).toMatch(/^http/);
+            expect(exports.html_base64).toMatch(/^http/);
+
+            expect(exports.file).toMatch(/^http/);
+            expect(exports.file_js).toMatch(/^http/);
+            expect(exports.file_text).toMatch(/^http/);
+            expect(exports.file_url).toMatch(/^http/);
+            expect(exports.file_base64).toMatch(/^http/);
+
+            exports.async(function (exports) {
+                expect(exports).toEqual('module5');
+                done();
+            });
+            expect(getStyle(document.body, 'width')).toEqual('100px');
+        });
+    });
+});

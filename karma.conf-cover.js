@@ -20,7 +20,11 @@ module.exports = function (config) {
         files: [
             './coolie.js',
             {
-                pattern: './test/modules/**',
+                pattern: './test/cjs-modules/**',
+                included: false
+            },
+            {
+                pattern: './test/amd-modules/**',
                 included: false
             },
             './test/unit/*.js'

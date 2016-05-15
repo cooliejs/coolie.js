@@ -556,7 +556,7 @@
     var coolieDirname = getPathDirname(cooliePath);
     var coolieAttributeConfigName = getAttributeDataSet(coolieScriptEl, 'config');
     var coolieAttributeMainName = getAttributeDataSet(coolieScriptEl, 'main');
-    var coolieConfigPath = resolvePath(coolieDirname, coolieAttributeConfigName);
+    var coolieConfigPath = coolieAttributeConfigName ? resolvePath(coolieDirname, coolieAttributeConfigName) : null;
 
 
     // ==============================================================================
@@ -1238,6 +1238,12 @@
         modules: modulesCacheMap,
         callbacks: coolieCallbacks,
 
+        /**
+         * 路径合并
+         * @param {String} from
+         * @param {String} to
+         * @returns {String}
+         */
         resolvePath: resolvePath,
 
 
@@ -1260,6 +1266,7 @@
             coolieConfigs.asyncDir = coolieModuleAsyncDirname =
                 resolvePath(coolieModuleBaseDirname, cf.asyncDir || '../async/');
             coolieConfigs.asyncMap = cf.asyncMap || {};
+            coolieConfigs.dirname = coolieDirname;
 
             // 定义全局变量
             each(cf.global, function (key, val) {
@@ -1374,5 +1381,7 @@
     var coolieModuleAsyncDirname = coolieDirname;
     var coolieNodeModulesDirname = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
 
-    loadScript(coolieConfigPath, noop);
+    if (coolieConfigPath) {
+        loadScript(coolieConfigPath, noop);
+    }
 }());
