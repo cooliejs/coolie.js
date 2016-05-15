@@ -14,7 +14,7 @@
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
     var INDEX_JS = 'index.' + JS;
-    var MODULE_PIPE_SPLIT = '->';
+    var MODULE_SPLIT = '->';
 
     var noop = function () {
         // ignore
@@ -878,7 +878,7 @@
                 var inType = pipeLineArr[0];
                 inType = moduleInTypeMap[inType];
                 var outType = getOutType(inType, pipeLineArr[1]);
-                var id = the.resolve(name, inType === 'js') + MODULE_PIPE_SPLIT + outType;
+                var id = the.resolve(name, inType === 'js') + MODULE_SPLIT + outType;
                 return modulesCacheMap[id].expose();
             };
             the.require.resolve = the.resolve;
@@ -997,7 +997,7 @@
         }
 
         each(dependencies, function (index, depId) {
-            modulesCacheMap[depId] = new Module(module, depId);
+            modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
         });
 
         module.build(dependencies, factory);
@@ -1017,7 +1017,7 @@
      * @param callback
      */
     var loadModule = function (parent, url, inType, outType, pkg, callback) {
-        var id = url + MODULE_PIPE_SPLIT + outType;
+        var id = url + MODULE_SPLIT + outType;
         var cacheModule = modulesCacheMap[id];
 
         if (cacheModule) {
