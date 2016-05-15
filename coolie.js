@@ -62,9 +62,7 @@
             }
         } else if (typeof(list) === 'object') {
             for (i in list) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
+                callback(i, list[i]);
             }
         }
     };
@@ -129,14 +127,9 @@
     var evalJSON = function (jsonStr) {
         try {
             /* jshint evil: true */
-            var json = new Function('', 'return ' + jsonStr)();
-
-            if (!isObject(json) && !isArray(json)) {
-                return null;
-            }
-
-            return json;
+            return new Function('', 'return ' + jsonStr)();
         } catch (err2) {
+            /* istanbul ignore next */
             return null;
         }
     };
@@ -157,6 +150,7 @@
 
             var json = evalJSON(text);
 
+            /* istanbul ignore next */
             if (!json) {
                 throw new URIError('JSON 资源解析失败\n' + url);
             }
@@ -189,6 +183,7 @@
          * @param cssText
          */
         return function (cssText) {
+            /* istanbul ignore next */
             if (stylesheet) {
                 stylesheet.cssText += cssText;
             } else {
