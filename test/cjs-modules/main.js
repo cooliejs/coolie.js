@@ -6,6 +6,8 @@ define(function (require, exports, module) {
         module1: require('./module1.js'),
         module2: require('./module2.js'),
         
+        nodeModuleA: require('a'),
+        
         text: require('./text.txt', 'text'),
         text_js: require('./text.txt', 'text|js'),
         text_text: require('./text.txt', 'text|text'),

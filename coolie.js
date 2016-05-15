@@ -38,7 +38,7 @@
 
     var isObject = isType("Object");
     //var isString = isType("String");
-    var isBoolean = isType("Boolean");
+    // var isBoolean = isType("Boolean");
     var isArray = isType("Array");
     var isFunction = isType("Function");
 
@@ -62,35 +62,16 @@
                     break;
                 }
             }
-        } else if (typeof(list) === 'object') {
-            for (i in list) {
-                if (callback(i, list[i]) === false) {
-                    break;
-                }
-            }
         }
+        // else if (typeof(list) === 'object') {
+        //     for (i in list) {
+        //         if (callback(i, list[i]) === false) {
+        //             break;
+        //         }
+        //     }
+        // }
     };
 
-
-    /**
-     * 当前时间戳
-     * @returns {number}
-     */
-    var now = function () {
-        return new Date().getTime();
-    };
-
-
-    /**
-     * 全局 ID
-     * @returns {Number}
-     */
-    var gid = (function () {
-        var id = 0;
-        return function () {
-            return COOLIE + '-' + VERSION + '-module-' + now() + '-' + (id++);
-        };
-    }());
 
 
     /**
@@ -101,6 +82,7 @@
     var once = function (callback) {
         var ececuted = false;
         return function () {
+            /* istanbul ignore next */
             if (ececuted) {
                 return;
             }
@@ -122,6 +104,7 @@
             var err = null;
             var responseText = xhr.responseText;
 
+            /* istanbul ignore next */
             if (xhr.status !== 200 && xhr.status !== 304) {
                 err = true;
             }
@@ -150,6 +133,7 @@
      */
     var ajaxJSON = function (url, callback) {
         ajaxText(url, function (err, text) {
+            /* istanbul ignore next */
             if (err) {
                 throw new URIError('JSON 资源加载失败\n' + url);
             }
@@ -785,13 +769,14 @@
             var resolveNodeModuleURL = function (dependency, callback) {
                 var fromDirname;
 
-                if (the.pkg) {
-                    if (!the.pkg.dependencies && !the.pkg.devDependencies && !the.pkg.peerDependencies) {
-                        throw new SyntaxError('未指定模块的 dependencies 或 devDependencies 或 peerDependencies\n' + the.id);
-                    }
+                if (the.pkgURL) {
+                    /* istanbul ignore next */
+                    the.pkg.dependencies = the.pkg.dependencies || {};
+                    the.pkg.devDependencies = the.pkg.devDependencies || {};
+                    the.pkg.peerDependencies = the.pkg.peerDependencies || {};
 
                     if (the.pkg.dependencies[dependency] || the.pkg.devDependencies[dependency]) {
-                        fromDirname = resolvePath(the.id, NODE_MODULES + '/');
+                        fromDirname = resolvePath(the.pkgURL, NODE_MODULES + '/');
                     } else {
                         fromDirname = coolieNodeModulesDirname;
                     }
@@ -802,7 +787,7 @@
                 var pkgURL = resolveModulePath(fromDirname, dependency + '/package.json', false);
 
                 ajaxJSON(pkgURL, function (pkg) {
-                    callback(resolveModulePath(pkgURL, pkg.main || INDEX_JS, true), pkg);
+                    callback(resolveModulePath(pkgURL, pkg.main || INDEX_JS, true), pkg, pkgURL);
                 });
             };
 
@@ -825,8 +810,9 @@
                 // name
                 // 需要根据目录下 package.json 来判断
                 else {
-                    resolveNodeModuleURL(dependency, function (url, pkg) {
+                    resolveNodeModuleURL(dependency, function (url, pkg, pkgURL) {
                         dependencyModule = loadModule(the, url, inType, outType, pkg);
+                        dependencyModule.pkgURL = pkgURL;
                         the.resolvedMap[dependency] = url;
                         the.dependencies[index] = dependencyModule.id;
                     });
@@ -1005,6 +991,7 @@
      * @returns {Module}
      */
     win.define = function (id, dependencies, factory) {
+        /* istanbul ignore next */
         if (!coolieAMDMode) {
             throw new SyntaxError('AMD 模式才允许调用 define，coolie.js@2.x 开发环境只支持 commonJS 规范');
         }
@@ -1059,6 +1046,7 @@
 
             switch (argsLength) {
                 case 0:
+                    /* istanbul ignore next */
                     throw new SyntaxError('模块书写语法不正确\n' + id);
                     break;
 
@@ -1087,6 +1075,7 @@
         switch (moduleInType) {
             case 'js':
                 ajaxText(url, function (err, code) {
+                    /* istanbul ignore next */
                     if (err) {
                         throw new URIError('JS 资源加载失败\n' + url);
                     }
@@ -1094,10 +1083,6 @@
                     var requires = parseRequires(code);
 
                     each(requires, function (index, meta) {
-                        if (!meta.length) {
-                            return;
-                        }
-
                         var name = meta[0];
                         var inType = meta[1];
                         var outType = meta[2];
@@ -1289,14 +1274,10 @@
             var useLength = 0;
             var args = [];
             var done = function (exports) {
-                if (coolieCallbackArgs) {
-                    return;
-                }
-
                 args.push(exports);
 
                 if (args.length == useLength) {
-                    coolieCallbackArgs = args;
+                    coolieCallbackArgs = coolieCallbackArgs || args;
                     callback.apply(win, args);
 
                     each(coolieCallbacks, function (_, callback) {
@@ -1305,6 +1286,7 @@
                 }
             };
 
+            /* istanbul ignore next */
             if (!mainModules && coolieAttributeMainName) {
                 coolieMainPath = resolvePath(coolieModuleBaseDirname, coolieAttributeMainName);
                 useModule(null, coolieMainPath, JS, JS, null, done);
@@ -1381,6 +1363,7 @@
     var coolieModuleAsyncDirname = coolieDirname;
     var coolieNodeModulesDirname = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
 
+    /* istanbul ignore next */
     if (coolieConfigPath) {
         loadScript(coolieConfigPath, noop);
     }
