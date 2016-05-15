@@ -117,18 +117,26 @@
      * @param callback {Function} 加载回调
      */
     var ajaxText = function (url, callback) {
-        var xhr = XMLHttpRequest ? new XMLHttpRequest() : new win.ActiveXObject("Microsoft.XMLHTTP");
-        var onready = once(function () {
-            if (xhr.status === 200 || xhr.status === 304) {
-                callback(xhr.responseText);
-                xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = null;
-                xhr = null;
-            } else {
-                throw new URIError('加载资源失败\n' + url);
+        var xhr = new XMLHttpRequest();
+        var onLoad = once(function () {
+            var err = null;
+            var responseText = xhr.responseText;
+
+            if (xhr.status !== 200 && xhr.status !== 304) {
+                err = true;
             }
+
+            xhr.onload = xhr.onreadystatechange = xhr.onerror = xhr.onabort = xhr.ontimeout = null;
+            xhr = null;
+            callback(err, responseText);
         });
 
-        xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = onready;
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                onLoad();
+            }
+        };
+        xhr.onload = xhr.onerror = xhr.onabort = xhr.ontimeout = onLoad;
         xhr.open('GET', url);
         xhr.send(null);
     };
@@ -141,7 +149,11 @@
      * @returns {{}}
      */
     var ajaxJSON = function (url, callback) {
-        ajaxText(url, function (text) {
+        ajaxText(url, function (err, text) {
+            if (err) {
+                throw new URIError('JSON 资源加载失败\n' + url);
+            }
+
             var json = {};
 
             try {
@@ -203,8 +215,6 @@
     }());
 
 
-    var reError = /error/i;
-
     /**
      * 加载脚本
      * @param url
@@ -214,17 +224,11 @@
     var loadScript = function (url, callback) {
         var scriptEl = doc.createElement("script");
 
-        var onload = function onload(ev) {
-            // Ensure only run once and handle memory leak in IE
+        var onload = function onload(err) {
             scriptEl.onload = scriptEl.onerror = scriptEl.onreadystatechange = null;
-
-            // Remove the script to reduce memory leak
             headEl.removeChild(scriptEl);
-
-            // Dereference the node
             scriptEl = null;
-
-            callback(reError.test(ev.type) ? true : null);
+            callback(err);
         };
 
         if ('onload' in scriptEl) {
@@ -232,8 +236,7 @@
             scriptEl.onerror = function () {
                 onload(true);
             };
-        }
-        else {
+        } else {
             scriptEl.onreadystatechange = function () {
                 if (/loaded|complete/.test(scriptEl.readyState)) {
                     onload();
@@ -557,6 +560,65 @@
 
 
     // ==============================================================================
+    // ==================================== 队列类 ===================================
+    // ==============================================================================
+    var Queue = function () {
+        var the = this;
+
+        the.d = false;
+        the.list = [];
+    };
+
+    Queue.prototype = {
+        constructor: Queue,
+
+        /**
+         * 开始队列
+         * @param id
+         * @param task
+         * @example
+         * queue.task(id, function(next) {
+         *     // do async
+         *     next();
+         * });
+         */
+        task: function (id, task) {
+            var the = this;
+
+            task.id = id;
+            the.list.push(task);
+            the.start();
+        },
+
+
+        /**
+         * 开始执行队列
+         */
+        start: function () {
+            var the = this;
+
+            if (the.d) {
+                return the;
+            }
+
+            var task = the.list.shift();
+
+            if (task) {
+                the.d = true;
+                the.last = task;
+                task(function () {
+                    the.d = false;
+                    the.start();
+                });
+            } else {
+                the.d = false;
+            }
+        }
+    };
+    var queue = new Queue();
+
+
+    // ==============================================================================
     // ==================================== 模块类 ===================================
     // ==============================================================================
 
@@ -697,6 +759,7 @@
         the.pkg = pkg;
         the.dependencies = [];
         the.resolvedMap = {};
+        the.callbacks = [];
     };
 
     Module.prototype = {
@@ -715,14 +778,14 @@
             /**
              * 解决 node module
              * @param dependency
-             * @returns {string|*}
+             * @param callback
              */
-            var resolveNodeModulePackage = function (dependency) {
+            var resolveNodeModuleURL = function (dependency, callback) {
                 var fromDirname;
 
                 if (the.pkg) {
                     if (!the.pkg.dependencies && !the.pkg.devDependencies && !the.pkg.peerDependencies) {
-                        throw new TypeError('未指定 dependencies 或 devDependencies 或 peerDependencies\n' + the.id);
+                        throw new SyntaxError('未指定模块的 dependencies 或 devDependencies 或 peerDependencies\n' + the.id);
                     }
 
                     if (the.pkg.dependencies[dependency] || the.pkg.devDependencies[dependency]) {
@@ -734,30 +797,36 @@
                     fromDirname = coolieNodeModulesDirname;
                 }
 
-                return resolveModulePath(fromDirname, dependency + '/package.json', false);
+                var pkgURL = resolveModulePath(fromDirname, dependency + '/package.json', false);
+
+                ajaxJSON(pkgURL, function (pkg) {
+                    callback(resolveModulePath(pkgURL, pkg.main || INDEX_JS, true), pkg);
+                });
             };
 
             the.build(dependencyNameList, factory);
+
             each(dependencyMetaList, function (index, dependencyMeta) {
                 var dependency = dependencyMeta.name;
                 var inType = dependencyMeta.inType;
                 var outType = dependencyMeta.outType;
                 var isRelativeOrAbsoluteDependency = isRelativePath(dependency) || isAbsolutePath(dependency);
                 var url = dependency;
+                var dependencyModule;
 
                 // ./path/to ../path/to
                 if (isRelativeOrAbsoluteDependency) {
                     url = the.resolve(dependency, inType === JS);
-                    loadModule(the, url, inType, outType);
+                    dependencyModule = loadModule(the, url, inType, outType);
+                    the.dependencies[index] = dependencyModule.id;
                 }
                 // name
                 // 需要根据目录下 package.json 来判断
                 else {
-                    var pkgURL = resolveNodeModulePackage(dependency);
-                    ajaxJSON(pkgURL, function (pkg) {
-                        var url2 = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
-                        the.resolvedMap[dependency] = url2;
-                        loadModule(the, url2, inType, outType, pkg);
+                    resolveNodeModuleURL(dependency, function (url, pkg) {
+                        dependencyModule = loadModule(the, url, inType, outType, pkg);
+                        the.resolvedMap[dependency] = url;
+                        the.dependencies[index] = dependencyModule.id;
                     });
                 }
             });
@@ -811,6 +880,11 @@
                 var outType = getOutType(inType, pipeLineArr[1]);
                 var id = the.resolve(name, inType === 'js') + MODULE_PIPE_SPLIT + outType;
                 return modulesCacheMap[id].expose();
+            };
+            the.require.resolve = the.resolve;
+            the.require.async = function (names, callback) {
+                callback = isFunction(callback) ? callback : noop;
+                useModule(the, names, JS, JS, the.pkg);
             };
             the.exports = {};
         },
@@ -866,26 +940,10 @@
             }
 
             mainModule.expose();
-            mainModuleCallback(mainModule);
-        }
-    };
-
-
-    var usedModuleCallbackList = [];
-    var usedModuleCallbackArgs = [];
-    var mainModuleLength = 0;
-    var mainModuleCallbacked = false;
-    var mainModuleCallback = function (mainModule) {
-        if (mainModuleCallbacked) {
-            return;
-        }
-
-        usedModuleCallbackArgs.push(mainModule.exports);
-
-        if (usedModuleCallbackArgs.length === mainModuleLength) {
-            mainModuleCallbacked = true;
-            each(usedModuleCallbackList, function (_, callback) {
-                callback.apply(win, usedModuleCallbackArgs);
+            nextTick(function () {
+                each(mainModule.callbacks, function (_, callback) {
+                    callback(mainModule.exports);
+                });
             });
         }
     };
@@ -915,12 +973,14 @@
     };
 
 
+    var lastDefineMainModule = null;
+
     /**
      * 定义 AMD 模块
      * @param id
      * @param dependencies
      * @param factory
-     * @returns {*}
+     * @returns {Module}
      */
     win.define = function (id, dependencies, factory) {
         if (!coolieAMDMode) {
@@ -929,12 +989,21 @@
 
         var module = modulesCacheMap[id] = modulesCacheMap[id] || new Module(null, id);
 
+        if (!module.parent) {
+            modulesCacheMap[module.id] = null;
+            module.id = queue.last.id;
+            modulesCacheMap[module.id] = module;
+            lastDefineMainModule = module;
+        }
+
         each(dependencies, function (index, depId) {
             modulesCacheMap[depId] = new Module(module, depId);
         });
 
         module.build(dependencies, factory);
         module.exec();
+
+        return module;
     };
 
 
@@ -945,15 +1014,22 @@
      * @param inType
      * @param outType
      * @param pkg
+     * @param callback
      */
-    var loadModule = function (parent, url, inType, outType, pkg) {
+    var loadModule = function (parent, url, inType, outType, pkg, callback) {
         var id = url + MODULE_PIPE_SPLIT + outType;
+        var cacheModule = modulesCacheMap[id];
 
-        if (modulesCacheMap[id]) {
-            return;
+        if (cacheModule) {
+            return cacheModule;
         }
 
         var module = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
+
+        if (!parent && callback) {
+            module.callbacks.push(callback);
+        }
+
         var dependencyMetaList = [];
         var dependencyNameList = [];
         var define = function (id, dependencies, factory) {
@@ -989,7 +1065,11 @@
 
         switch (moduleInType) {
             case 'js':
-                return ajaxText(url, function (code) {
+                ajaxText(url, function (err, code) {
+                    if (err) {
+                        throw new URIError('JS 资源加载失败\n' + url);
+                    }
+
                     var requires = parseRequires(code);
 
                     each(requires, function (index, meta) {
@@ -1005,12 +1085,13 @@
                             inType: inType,
                             outType: outType
                         });
-                        dependencyNameList.push(resolvePath(id, name + MODULE_PIPE_SPLIT + outType));
+                        dependencyNameList.push(name);
                     });
 
                     var moduleCode = moduleWrap(url, id, dependencyNameList, code);
                     return new Function('define', moduleCode)(define);
                 });
+                break;
 
             case 'css':
             case 'text':
@@ -1018,40 +1099,59 @@
                 switch (moduleOutType) {
                     case 'url':
                     case 'base64':
-                        return define(id, [], function () {
+                        define(id, [], function () {
                             return url;
                         });
+                        break;
 
                     case 'js':
-                        return ajaxText(url, function (code) {
+                        ajaxText(url, function (err, code) {
+                            if (err) {
+                                throw new URIError(moduleInType + ' 资源加载失败\n' + url);
+                            }
+
                             define(id, [], function () {
                                 return new Function('return ' + code + ';')();
                             });
                         });
+                        break;
 
                     case 'style':
-                        return ajaxText(url, function (code) {
+                        ajaxText(url, function (err, code) {
+                            if (err) {
+                                throw new URIError(moduleInType + ' 资源加载失败\n' + url);
+                            }
+
                             define(id, [], function () {
                                 return importStyle(code);
                             });
                         });
+                        break;
 
                     // text
                     default:
-                        return ajaxText(url, function (code) {
+                        ajaxText(url, function (err, code) {
+                            if (err) {
+                                throw new URIError(moduleInType + ' 资源加载失败\n' + url);
+                            }
+
                             define(id, [], function () {
                                 return code;
                             });
                         });
+                        break;
                 }
+                break;
 
             case 'file':
                 // url
                 // base64
-                return define(id, [], function () {
+                define(id, [], function () {
                     return url;
                 });
         }
+
+        return module;
     };
 
 
@@ -1062,12 +1162,22 @@
      * @param inType
      * @param outType
      * @param pkg
+     * @param callback
      */
-    var useModule = function (parent, url, inType, outType, pkg) {
+    var useModule = function (parent, url, inType, outType, pkg, callback) {
         if (coolieAMDMode) {
-            loadScript(url, noop);
+            queue.task(url, function (next) {
+                loadScript(url, function () {
+                    if (lastDefineMainModule) {
+                        lastDefineMainModule.callbacks.push(callback);
+                        lastDefineMainModule = null;
+                    }
+
+                    next();
+                });
+            });
         } else {
-            loadModule(parent, url, inType, outType, pkg);
+            loadModule(parent, url, inType, outType, pkg, callback);
         }
     };
 
@@ -1077,6 +1187,9 @@
     // ==============================================================================
     var coolieAMDMode = false;
     var coolieConfigs = {};
+    var coolieCallbacks = [];
+    var coolieCallbackArgs = null;
+    var coolieChunkMap = {};
 
     /**
      * @namespace coolie
@@ -1089,6 +1202,7 @@
         dirname: coolieDirname,
         configs: coolieConfigs,
         modules: modulesCacheMap,
+        callbacks: coolieCallbacks,
 
         resolvePath: resolvePath,
 
@@ -1130,20 +1244,43 @@
          */
         use: function (mainModules, callback) {
             callback = isFunction(callback) ? callback : noop;
-            usedModuleCallbackList.push(callback);
+
+            var useLength = 0;
+            var args = [];
+            var done = function (exports) {
+                if (coolieCallbackArgs) {
+                    return;
+                }
+
+                args.push(exports);
+
+                if (args.length == useLength) {
+                    coolieCallbackArgs = args;
+                    callback.apply(win, args);
+
+                    each(coolieCallbacks, function (_, callback) {
+                        callback.apply(win, args);
+                    });
+                }
+            };
 
             if (!mainModules && coolieAttributeMainName) {
                 coolieMainPath = resolvePath(coolieModuleBaseDirname, coolieAttributeMainName);
-                useModule(null, coolieMainPath, JS, JS, null);
-                mainModuleLength = 1;
+                useModule(null, coolieMainPath, JS, JS, null, done);
+                useLength = 1;
+                return coolie;
+            }
+
+            if (!mainModules) {
                 return coolie;
             }
 
             mainModules = isArray(mainModules) ? mainModules : [mainModules];
-            mainModuleLength = mainModules.length;
+            useLength = mainModules.length;
             each(mainModules, function (index, mainModule) {
+                var url = resolveModulePath(coolieModuleBaseDirname, mainModule, true);
                 nextTick(function () {
-                    useModule(null, mainModule, JS, JS, null);
+                    useModule(null, url, JS, JS, null, done);
                 });
             });
 
@@ -1157,14 +1294,15 @@
          * @returns {{coolie}}
          */
         callback: function (callback) {
-            callback = isFunction(callback) ? callback : noop;
-
-            if (mainModuleCallbacked) {
-                callback.apply(win, usedModuleCallbackArgs);
+            if (!isFunction(callback)) {
                 return coolie;
             }
 
-            usedModuleCallbackList.push(callback);
+            if (coolieCallbackArgs) {
+                callback.apply(win, coolieCallbackArgs);
+            } else {
+                coolieCallbacks.push(callback);
+            }
 
             return coolie;
         },
@@ -1178,6 +1316,11 @@
         chunk: function (chunkIds) {
             chunkIds = isArray(chunkIds) ? chunkIds : [chunkIds];
             each(chunkIds, function (_, chunkId) {
+                if (coolieChunkMap[chunkId]) {
+                    return;
+                }
+
+                coolieChunkMap[chunkId] = true;
                 var chunkName = chunkId + '.' + coolieConfigs.chunkMap[chunkId] + '.' + JS;
                 var chunkURL = resolvePath(coolieModuleChunkDirname, chunkName);
                 loadScript(chunkURL, noop);
