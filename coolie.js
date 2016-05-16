@@ -203,8 +203,7 @@
      */
     var loadScript = function (url, callback) {
         var scriptEl = doc.createElement("script");
-
-        var onload = function onload(err) {
+        var onLoad = function onload(err) {
             scriptEl.onload = scriptEl.onerror = scriptEl.onreadystatechange = null;
             headEl.removeChild(scriptEl);
             scriptEl = null;
@@ -212,14 +211,14 @@
         };
 
         if ('onload' in scriptEl) {
-            scriptEl.onload = onload;
+            scriptEl.onload = onLoad;
             scriptEl.onerror = function () {
-                onload(true);
+                onLoad(true);
             };
         } else {
             scriptEl.onreadystatechange = function () {
                 if (/loaded|complete/.test(scriptEl.readyState)) {
-                    onload();
+                    onLoad();
                 }
             };
         }

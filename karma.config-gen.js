@@ -1,6 +1,4 @@
 var httpServer = function (req, res, next) {
-    console.log(req.url);
-
     if (req.url.indexOf('/delay.js') > -1) {
         return setTimeout(function () {
             res.end('module.exports="delay 500ms";');
