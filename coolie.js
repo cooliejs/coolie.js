@@ -1247,6 +1247,8 @@
                 resolvePath(coolieModuleBaseDirname, cf.asyncDir || '../async/');
             coolieConfigs.asyncMap = cf.asyncMap || {};
             coolieConfigs.dirname = coolieDirname;
+            cf.global = cf.global || {};
+            cf.global.DEBUG = coolieConfigs.debug = coolieConfigs.debug !== false;
 
             // 定义全局变量
             each(cf.global, function (key, val) {
