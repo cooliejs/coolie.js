@@ -884,7 +884,7 @@
                             name = name + '.' + coolieConfigs.asyncMap[name] + '.' + JS;
                         }
 
-                        var url = the.resolve(name, true);
+                        var url = resolveModulePath(coolieConfigs.asyncDir, name);
                         useModule(null, url, JS, JS, the.pkg, done);
                     });
                 });
