@@ -2,7 +2,7 @@
 [![Build Status][travis-img]][travis-url] 
 [![Coverage Status][coveralls-img]][coveralls-url]
 
-[travis-img]: https://travis-ci.org/cooliejs/coolie.js.svg?branch=master
+[travis-img]: https://travis-ci.org/cooliejs/coolie.js.svg?branch=2.x
 [travis-url]: https://travis-ci.org/cooliejs/coolie.js
 [coveralls-img]: https://coveralls.io/repos/cooliejs/coolie.js/badge.svg
 [coveralls-url]: https://coveralls.io/r/cooliejs/coolie.js
