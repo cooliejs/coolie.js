@@ -10,7 +10,7 @@ describe('CJS', function () {
 
     coolie.config({
         baseDir: coolie.resolvePath(coolie.dirname, './test/cjs-modules/'),
-        nodeModulesDir: './node_modules/',
+        nodeModulesDir: './__node_modules/',
         global: {
             abc: true
         }
