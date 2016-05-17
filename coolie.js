@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.0-alpha1
+ * @version 2.0.0-alpha
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.0-alpha1';
+    var VERSION = '2.0.0-alpha';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -34,7 +34,7 @@
         };
     }
 
-    var isObject = isType("Object");
+    // var isObject = isType("Object");
     //var isString = isType("String");
     // var isBoolean = isType("Boolean");
     var isArray = isType("Array");
@@ -1043,14 +1043,12 @@
                 case 0:
                     /* istanbul ignore next */
                     throw new SyntaxError('模块书写语法不正确\n' + id);
-                    break;
 
                 // define(id, deps, factory);
                 case 3:
                     if (module.state !== MODULE_STATE_EXECUTED) {
                         module.save(dependencyMetaList, dependencies, factory);
                     }
-
                     break;
 
                 default:
