@@ -67,13 +67,13 @@ require('some.json', 'json|base64');
 require('some.json', 'json|text');
 ```
 
-- coolie 官方指南：<http://coolie.ydr.me/>
+- coolie 官方指南：<https://coolie.ydr.me/>
 - 构建工具：<https://www.npmjs.com/package/coolie>
 - 社区：<http://FrontEndDev.org/>
 
 
 # Version
-[coolie 版本日志](http://coolie.ydr.me/version/)
+[coolie 版本日志](https://coolie.ydr.me/version/)
 
 
 
