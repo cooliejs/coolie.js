@@ -84,7 +84,7 @@ describe('CJS', function () {
             expect(exports.module1).toEqual('module1');
             expect(exports.module2).toEqual('module2');
 
-            expect(exports.nodeModuleA).toEqual('a/a-a/a-b');
+            expect(exports.nodeModuleA).toEqual('a/a-b');
 
             expect(exports.text).toEqual('text');
             expect(exports.text_js).toEqual('text');
