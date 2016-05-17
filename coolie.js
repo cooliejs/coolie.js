@@ -1239,10 +1239,10 @@
             coolieConfigs.nodeModulesDir = coolieNodeModulesDirname =
                 resolvePath(coolieModuleBaseDirname, cf.nodeModulesDir || '/' + NODE_MODULES + '/');
             coolieConfigs.chunkDir = coolieModuleChunkDirname =
-                resolvePath(coolieModuleBaseDirname, cf.chunkDir || '../chunk/');
+                resolvePath(coolieModuleBaseDirname, cf.chunkDir || './');
             coolieConfigs.chunkMap = cf.chunkMap || {};
             coolieConfigs.asyncDir = coolieModuleAsyncDirname =
-                resolvePath(coolieModuleBaseDirname, cf.asyncDir || '../async/');
+                resolvePath(coolieModuleBaseDirname, cf.asyncDir || './');
             coolieConfigs.asyncMap = cf.asyncMap || {};
             coolieConfigs.dirname = coolieDirname;
             cf.global = cf.global || {};
