@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.0-alpha2
+ * @version 2.0.0-alpha3
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.0-alpha2';
+    var VERSION = '2.0.0';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -762,24 +762,26 @@
              * @param callback
              */
             var resolveNodeModuleURL = function (dependency, callback) {
-                var fromDirname;
+                // var fromDirname;
+                //
+                // if (the.pkgURL) {
+                //     /* istanbul ignore next */
+                //     the.pkg.dependencies = the.pkg.dependencies || {};
+                //     the.pkg.devDependencies = the.pkg.devDependencies || {};
+                //     the.pkg.peerDependencies = the.pkg.peerDependencies || {};
+                //
+                //     if (the.pkg.dependencies[dependency] || the.pkg.devDependencies[dependency]) {
+                //         fromDirname = resolvePath(the.pkgURL, NODE_MODULES + '/');
+                //     } else {
+                //         fromDirname = coolieNodeModulesDirname;
+                //     }
+                // } else {
+                //     fromDirname = coolieNodeModulesDirname;
+                // }
 
-                if (the.pkgURL) {
-                    /* istanbul ignore next */
-                    the.pkg.dependencies = the.pkg.dependencies || {};
-                    the.pkg.devDependencies = the.pkg.devDependencies || {};
-                    the.pkg.peerDependencies = the.pkg.peerDependencies || {};
-
-                    if (the.pkg.dependencies[dependency] || the.pkg.devDependencies[dependency]) {
-                        fromDirname = resolvePath(the.pkgURL, NODE_MODULES + '/');
-                    } else {
-                        fromDirname = coolieNodeModulesDirname;
-                    }
-                } else {
-                    fromDirname = coolieNodeModulesDirname;
-                }
-
-                var pkgURL = resolveModulePath(fromDirname, dependency + '/package.json', false);
+                // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
+                // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
+                var pkgURL = resolveModulePath(coolieNodeModulesDirname, dependency + '/package.json', false);
 
                 ajaxJSON(pkgURL, function (pkg) {
                     callback(resolveModulePath(pkgURL, pkg.main || INDEX_JS, true), pkg, pkgURL);
