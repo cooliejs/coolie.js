@@ -970,9 +970,9 @@
         }
 
         return [
-            'define("' + id + '", [' + dependenciesStr + '], function(require, exports, module) {',
+            'define("' + id + '", [' + dependenciesStr + '], function(require, exports, module) {\n\n',
             /****/code,
-            '});',
+            '\n\n});',
             '//# sourceURL=' + url
         ].join('\n');
     };
