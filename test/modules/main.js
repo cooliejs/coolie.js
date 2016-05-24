@@ -36,7 +36,6 @@ define(function (require, exports, module) {
             require.async('./async/module5.js', callback);
         },
         
-        css_default: require('./sub/css.css'),
         css: require('./sub/css.css', 'css'),
         css_js: require('./sub/css.css', 'css|js'),
         css_text: require('./sub/css.css', 'css|text'),
