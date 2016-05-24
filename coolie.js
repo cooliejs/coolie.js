@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.6
+ * @version 2.0.7
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.6';
+    var VERSION = '2.0.7';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -275,7 +275,7 @@
     // ==============================================================================
     // ==================================== 路径函数 ===================================
     // ==============================================================================
-    var reJSExtname = /\.js$/i;
+    var reExtname = /\.[^.]+$/;
     var reStaticPath = /^(.*:)?\/\//;
     var reAbsolutePath = /^\//;
     var reRelativePath = /^\.{1,2}\//;
@@ -442,6 +442,16 @@
 
 
     /**
+     * 获取文件的扩展名
+     * @param path
+     * @returns {*|string}
+     */
+    var getPathExtname = function (path) {
+        return (path.toLowerCase().match(reExtname) || [''])[0];
+    };
+
+
+    /**
      * 合并路径
      * @param from {String} 起始路径
      * @param to {String} 目标路径
@@ -484,23 +494,8 @@
             return path;
         }
 
-        return path + (reJSExtname.test(path) ? '' : '.js');
-    };
-
-
-    /**
-     * 修正目录路径，添加 index.js
-     * @param path {string} 目录路径
-     * @returns {string}
-     */
-    var fixDirnamePathIndex = function (path) {
-        path = normalizePath(path);
-
-        if (!path) {
-            return path;
-        }
-
-        return path + (reEndWidthSlash.test(path) ? INDEX_JS : '');
+        var extname = getPathExtname(path);
+        return path + (extname === '.' + JS ? '' : '.' + JS);
     };
 
 
@@ -511,8 +506,6 @@
      * @returns {string|*}
      */
     var fixFilePath = function (path, isJS) {
-        path = fixDirnamePathIndex(path);
-
         if (isJS) {
             path = fixFilepathExtname(path);
         }
@@ -689,6 +682,19 @@
 
 
     /**
+     * 默认的入口模块类型匹配规则
+     * @type {*[]}
+     */
+    var moduleInTypeMatches = [
+        [JS, /^js$/],
+        ['html', /^html$/],
+        ['css', /^css$/],
+        ['json', /^json$/],
+        ['text', /^txt$/]
+    ];
+
+
+    /**
      * 获取出口类型
      * @param inType
      * @param outType
@@ -707,6 +713,46 @@
 
 
     /**
+     * 解析 require 信息
+     * @param name
+     * @param pipeline
+     * @returns {*[]}
+     */
+    var parseRequire = function (name, pipeline) {
+        var dftInType = JS;
+        var extension = getPathExtname(name).slice(1);
+
+        if (extension && !pipeline) {
+            each(moduleInTypeMatches, function (index, rule) {
+                var inType = rule[0];
+                var regexp = rule[1];
+
+                if (regexp.test(extension)) {
+                    dftInType = inType;
+                    return false;
+                }
+            });
+
+            dftInType = dftInType || 'file';
+        }
+
+        pipeline = (pipeline ? pipeline.toLowerCase() : dftInType).split('|');
+        var inType = pipeline[0];
+        var outType = pipeline[1];
+
+        inType = moduleInTypeMap[inType];
+
+        if (!inType) {
+            throw new TypeError('不支持的模块类型：' + inType);
+        }
+
+        outType = getOutType(inType, outType);
+
+        return [name, inType, outType];
+    };
+
+
+    /**
      * 解析代码里的依赖信息
      * @param code {String} 代码
      */
@@ -716,18 +762,8 @@
         code.replace(reSlash, '').replace(reRequire, function ($0, $1, $2) {
             if ($2) {
                 var matches = $2.match(reRequireType);
-                var pipeline = (matches[2] ? matches[2].toLowerCase() : 'js').split('|');
-                var inType = pipeline[0];
-                var outType = pipeline[1];
 
-                inType = moduleInTypeMap[inType];
-
-                if (!inType) {
-                    throw new TypeError('不支持的模块类型：' + inType);
-                }
-
-                outType = getOutType(inType, outType);
-                ret.push([matches[1], inType, outType]);
+                ret.push(parseRequire(matches[1], matches[2]));
             }
         });
 
@@ -865,10 +901,9 @@
                     return modulesCacheMap[name].expose();
                 }
 
-                var pipeLineArr = (pipeLine || JS).split('|');
-                var inType = pipeLineArr[0];
-                inType = moduleInTypeMap[inType];
-                var outType = getOutType(inType, pipeLineArr[1]);
+                var reqMetas = parseRequire(name, pipeLine);
+                var inType = reqMetas[1];
+                var outType = reqMetas[2];
                 var id = the.resolve(name, inType === 'js') + MODULE_SPLIT + outType;
                 return modulesCacheMap[id].expose();
             };
@@ -1255,7 +1290,6 @@
          * @param [cf.nodeModulesDir] {String} node_modules 根目录
          * @param [cf.nodeModuleMainPath] {String} Node 模块的入口路径
          * @param [cf.global={}] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
-         * @param [cf.extensionMath=true] {Boolean} 是否进行模块扩展名匹配
          * @param [cf.chunkModulesDir] {String} 由构建工具指定
          * @param [cf.chunkModulesMap] {Object} 由构建工具指定
          * @param [cf.asyncModulesDir] {String} 由构建工具指定
@@ -1285,7 +1319,7 @@
             coolieConfigs.configDirname = coolieConfigDirname;
             cf.global = cf.global || {};
             cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
-            coolieExtensionMath = coolieConfigs.extensionMath = cf.extensionMath !== false;
+            // coolieExtensionMath = coolieConfigs.extensionMath = cf.extensionMath !== false;
             coolieNodeModuleMainPath = coolieConfigs.nodeModuleMainPath = cf.nodeModuleMainPath;
 
             // 定义全局变量
