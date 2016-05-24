@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.1
+ * @version 2.0.2
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.1';
+    var VERSION = '2.0.2';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -779,13 +779,23 @@
                 //     fromDirname = coolieNodeModulesDirname;
                 // }
 
-                // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
-                // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
-                var pkgURL = resolveModulePath(coolieNodeModulesDirname, dependency + '/package.json', false);
+                var mainURL;
 
-                ajaxJSON(pkgURL, function (pkg) {
-                    callback(resolveModulePath(pkgURL, pkg.main || INDEX_JS, true), pkg, pkgURL);
-                });
+                // 指定了 node 模块的入口路径
+                if (coolieNodeModuleMainPath) {
+                    var nodeModuleDir = resolvePath(coolieNodeModulesDirname, dependency + '/');
+                    mainURL = resolveModulePath(nodeModuleDir, coolieNodeModuleMainPath, true);
+                    callback(mainURL);
+                } else {
+                    // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
+                    // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
+                    var pkgURL = resolveModulePath(coolieNodeModulesDirname, dependency + '/package.json', false);
+
+                    ajaxJSON(pkgURL, function (pkg) {
+                        mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
+                        callback(mainURL, pkg, pkgURL);
+                    });
+                }
             };
 
             the.build(dependencyNameList, factory);
@@ -1231,10 +1241,11 @@
          * 配置
          * @param cf {Object}
          * @param [cf.mode="cjs"] {String} commonJS 加密
-         * @param [cf.mainModulesDir] {String} 入口目录基础目录
+         * @param [cf.mainModulesDir] {String} 入口模块基础目录
          * @param [cf.nodeModulesDir] {String} node_modules 根目录
          * @param [cf.nodeModuleMainPath] {String} node 模块的入口路径，指定当前配置时将不会读取 package.json 里的 main 参数
          * @param [cf.global={}] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
+         * @param [cf.match] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
          * @param [cf.chunkDir] {String} 由构建工具指定
          * @param [cf.chunkMap] {Object} 由构建工具指定
          * @param [cf.asyncDir] {String} 由构建工具指定
@@ -1254,6 +1265,7 @@
                 resolvePath(coolieDirname, cf.mainModulesDir || './');
             coolieConfigs.nodeModulesDir = coolieNodeModulesDirname =
                 resolvePath(coolieMainModulesDirname, cf.nodeModulesDir || '/' + NODE_MODULES + '/');
+            coolieNodeModuleMainPath = coolieConfigs.nodeModuleMainPath = cf.nodeModuleMainPath;
             coolieConfigs.chunkDir = coolieModuleChunkDirname =
                 resolvePath(coolieMainModulesDirname, cf.chunkDir || './');
             coolieConfigs.chunkMap = cf.chunkMap || {};
@@ -1376,6 +1388,7 @@
     var coolieModuleChunkDirname = coolieDirname;
     var coolieModuleAsyncDirname = coolieDirname;
     var coolieNodeModulesDirname = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
+    var coolieNodeModuleMainPath;
 
     /* istanbul ignore next */
     if (coolieConfigPath) {
