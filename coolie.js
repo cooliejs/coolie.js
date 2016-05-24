@@ -1178,7 +1178,7 @@
     var useModule = function (parent, url, inType, outType, pkg, callback) {
         var id = url + (coolieAMDMode ? '' : MODULE_SPLIT + outType);
         var cacheModule = modulesCacheMap[id];
-
+        
         if (cacheModule) {
             if (cacheModule.state === MODULE_STATE_EXECUTED) {
                 return callback(cacheModule.exports);
@@ -1214,6 +1214,7 @@
     var coolieCallbacks = [];
     var coolieCallbackArgs = null;
     var coolieChunkMap = {};
+    var coolieExtensionMath = true;
 
     /**
      * @namespace coolie
@@ -1245,7 +1246,7 @@
          * @param [cf.nodeModulesDir] {String} node_modules 根目录
          * @param [cf.nodeModuleMainPath] {String} node 模块的入口路径，指定当前配置时将不会读取 package.json 里的 main 参数
          * @param [cf.global={}] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
-         * @param [cf.match] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
+         * @param [cf.extensionMath=true] {Boolean} 是否进行模块扩展名匹配
          * @param [cf.chunkDir] {String} 由构建工具指定
          * @param [cf.chunkMap] {Object} 由构建工具指定
          * @param [cf.asyncDir] {String} 由构建工具指定
@@ -1273,17 +1274,15 @@
                 resolvePath(coolieMainModulesDirname, cf.asyncDir || './');
             coolieConfigs.asyncMap = cf.asyncMap || {};
             coolieConfigs.dirname = coolieDirname;
-            /**
-             * @type {Object}
-             */
             cf.global = cf.global || {};
             cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
+            coolieExtensionMath = coolieConfigs.extensionMath = cf.extensionMath !== false;
 
             // 定义全局变量
             each(cf.global, function (key, val) {
                 win[key] = val;
             });
-
+            
             return coolie;
         },
 
@@ -1328,6 +1327,7 @@
             useLength = mainModules.length;
             each(mainModules, function (index, mainModule) {
                 var url = resolveModulePath(coolieMainModulesDirname, mainModule, true);
+                
                 nextTick(function () {
                     useModule(null, url, JS, JS, null, done);
                 });

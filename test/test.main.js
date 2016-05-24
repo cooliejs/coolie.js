@@ -5,11 +5,11 @@
  */
 
 
-describe('CJS', function () {
+describe('coolie.js', function () {
     'use strict';
 
     coolie.config({
-        baseDir: coolie.resolvePath(coolie.dirname, './test/cjs-modules/'),
+        mainModulesDir: coolie.resolvePath(coolie.dirname, './test/modules/'),
         nodeModulesDir: './__node_modules/',
         global: {
             abc: true
@@ -99,6 +99,7 @@ describe('CJS', function () {
             expect(exports.json_base64).toMatch(/^http/);
 
             expect(exports.css).toMatch(/body\s*\{/);
+            expect(exports.css_default).toMatch(/body\s*\{/);
             expect(exports.css_js).toMatch(/body\s*\{/);
             expect(exports.css_text).toMatch(/body\s*\{/);
             expect(exports.css_url).toMatch(/^http/);

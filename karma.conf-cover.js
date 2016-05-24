@@ -1,1 +1,0 @@
-module.exports = require('./karma.config-gen')(true);
