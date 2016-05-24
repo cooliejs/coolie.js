@@ -1,6 +1,6 @@
 {
   "name": "coolie.js",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "A coolie for JavaScript module management and module transportation.",
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
@@ -45,10 +45,9 @@
     "karma-coverage": "^0.5.5",
     "karma-coveralls": "^1.1.2",
     "karma-jasmine": "^0.3.8",
+    "karma-chrome-launcher": "^1.0.1",
     "uglify-js": "^2.4.15"
   },
-  "dependencies": {
-    "karma-chrome-launcher": "^1.0.1"
-  },
+  "dependencies": {},
   "peerDependencies": {}
 }
