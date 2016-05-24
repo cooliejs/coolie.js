@@ -1,8 +1,8 @@
 coolie.config({
     mode: 'AMD',
-    mainModulesDir: 'examples/async2/',
-    asyncDir: './',
-    asyncMap: {
+    mainModulesDir: './',
+    asyncModulesDir: './',
+    asyncModulesMap: {
         0: 'abcdef'
     }
 }).use();

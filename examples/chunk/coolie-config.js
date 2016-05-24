@@ -1,6 +1,6 @@
 coolie.config({
     mode: 'AMD',
-    mainModulesDir: 'examples/chunk/',
+    mainModulesDir: './',
     nodeModulesDir: '/node_modules/',
     chunkDir: 'chunk/',
     chunkMap: {

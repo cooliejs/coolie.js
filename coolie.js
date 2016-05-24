@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.5
+ * @version 2.0.6
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.5';
+    var VERSION = '2.0.6';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -432,6 +432,16 @@
 
 
     /**
+     * 确保路径是一个目录
+     * @param path {String}
+     * @returns {string}
+     */
+    var ensurePathDirname = function (path) {
+        return path + (reEndWidthSlash.test(path) ? '' : '/');
+    };
+
+
+    /**
      * 合并路径
      * @param from {String} 起始路径
      * @param to {String} 目标路径
@@ -539,6 +549,7 @@
     var coolieAttributeConfigName = getAttributeDataSet(coolieScriptEl, 'config');
     var coolieAttributeMainName = getAttributeDataSet(coolieScriptEl, 'main');
     var coolieConfigPath = coolieAttributeConfigName ? resolvePath(coolieDirname, coolieAttributeConfigName) : null;
+    var coolieConfigDirname = coolieConfigPath ? getPathDirname(coolieConfigPath) : coolieDirname;
 
 
     // ==============================================================================
@@ -712,7 +723,7 @@
                 inType = moduleInTypeMap[inType];
 
                 if (!inType) {
-                    throw new TypeError('不支持加载该' + inType + '类型\n' + url);
+                    throw new TypeError('不支持的模块类型：' + inType);
                 }
 
                 outType = getOutType(inType, outType);
@@ -766,33 +777,20 @@
              */
             var resolveNodeModuleURL = function (dependency, callback) {
                 var mainURL;
-                var builtInResolver = function () {
+                var nodeModuleDir = resolvePath(coolieNodeModulesDir, dependency + '/');
+
+                if (coolieNodeModuleMainPath) {
+                    mainURL = resolveModulePath(nodeModuleDir, coolieNodeModuleMainPath, true);
+                    callback(mainURL);
+                } else {
                     // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
                     // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
-                    var pkgURL = resolveModulePath(coolieNodeModulesDirname, dependency + '/package.json', false);
+                    var pkgURL = resolveModulePath(coolieNodeModulesDir, dependency + '/package.json', false);
 
                     ajaxJSON(the.parent, pkgURL, function (pkg) {
                         mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
                         callback(mainURL, pkg, pkgURL);
                     });
-                };
-
-                // 自定义解决方案
-                if (coolieModuleResolver) {
-                    var nodeModuleDir = resolvePath(coolieNodeModulesDirname, dependency + '/');
-                    mainURL = coolieModuleResolver(dependency, {
-                        dirname: nodeModuleDir,
-                        nodeModule: true,
-                        name: dependency
-                    });
-
-                    if (mainURL) {
-                        callback(mainURL);
-                    } else {
-                        builtInResolver();
-                    }
-                } else {
-                    builtInResolver();
                 }
             };
 
@@ -891,10 +889,10 @@
                 nextTick(function () {
                     each(names, function (_, name) {
                         if (coolieAMDMode) {
-                            name = name + '.' + coolieConfigs.asyncMap[name] + '.' + JS;
+                            name = name + '.' + coolieAsyncModulesMap[name] + '.' + JS;
                         }
 
-                        var url = resolveModulePath(coolieConfigs.asyncDir, name);
+                        var url = resolveModulePath(coolieAsyncModulesDir, name);
                         useModule(null, url, JS, JS, the.pkg, done);
                     });
                 });
@@ -1107,6 +1105,8 @@
                     });
 
                     var moduleCode = moduleWrap(url, id, dependencyNameList, code);
+
+                    /* jshint evil: true */
                     return new Function('define', moduleCode)(define);
                 });
                 break;
@@ -1223,8 +1223,7 @@
     var coolieCallbackArgs = null;
     var coolieChunkMap = {};
     var coolieExtensionMath = true;
-    var coolieModuleResolver = null;
-    var coolieModuleParser = null;
+    var coolieNodeModuleMainPath = null;
 
     /**
      * @namespace coolie
@@ -1249,49 +1248,18 @@
 
 
         /**
-         * 自定义解决模块路径
-         * @param resolver {Function} 解决函数，参数：模块名，模块信息
-         * @returns {{coolie}}
-         */
-        resolveModule: function (resolver) {
-            if (coolieModuleResolver) {
-                throw new TypeError('已经指定了模块路径的解决方案');
-            }
-
-            coolieModuleResolver = resolver;
-
-            return coolie;
-        },
-
-
-        /**
-         * 自定义解析模块内容
-         * @param parser
-         * @returns {{coolie}}
-         */
-        parseModule: function (parser) {
-            if (coolieModuleParser) {
-                throw new TypeError('已经指定了模块内容的解析方案');
-            }
-
-            coolieModuleParser = parser;
-
-            return coolie;
-        },
-
-
-        /**
          * 配置
          * @param cf {Object}
          * @param [cf.mode="cjs"] {String} commonJS 加密
          * @param [cf.mainModulesDir] {String} 入口模块基础目录
          * @param [cf.nodeModulesDir] {String} node_modules 根目录
+         * @param [cf.nodeModuleMainPath] {String} Node 模块的入口路径
          * @param [cf.global={}] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
          * @param [cf.extensionMath=true] {Boolean} 是否进行模块扩展名匹配
-         * @param [cf.chunkDir] {String} 由构建工具指定
-         * @param [cf.chunkMap] {Object} 由构建工具指定
-         * @param [cf.asyncDir] {String} 由构建工具指定
-         * @param [cf.asyncMap] {Object} 由构建工具指定
+         * @param [cf.chunkModulesDir] {String} 由构建工具指定
+         * @param [cf.chunkModulesMap] {Object} 由构建工具指定
+         * @param [cf.asyncModulesDir] {String} 由构建工具指定
+         * @param [cf.asyncModulesMap] {Object} 由构建工具指定
          * @param [cf.debug=true] {Boolean} 由构建工具指定
          * @returns {{coolie}}
          */
@@ -1303,20 +1271,22 @@
             cf = cf || {};
             coolieConfigs.mode = cf.mode || 'CJS';
             coolieAMDMode = coolieConfigs.mode === 'AMD';
-            coolieConfigs.mainModulesDir = coolieMainModulesDirname =
-                resolvePath(coolieDirname, cf.mainModulesDir || './');
-            coolieConfigs.nodeModulesDir = coolieNodeModulesDirname =
-                resolvePath(coolieMainModulesDirname, cf.nodeModulesDir || '/' + NODE_MODULES + '/');
-            coolieConfigs.chunkDir = coolieModuleChunkDirname =
-                resolvePath(coolieMainModulesDirname, cf.chunkDir || './');
-            coolieConfigs.chunkMap = cf.chunkMap || {};
-            coolieConfigs.asyncDir = coolieModuleAsyncDirname =
-                resolvePath(coolieMainModulesDirname, cf.asyncDir || './');
-            coolieConfigs.asyncMap = cf.asyncMap || {};
+            coolieConfigs.mainModulesDir = coolieMainModulesDir =
+                ensurePathDirname(resolvePath(coolieConfigDirname, cf.mainModulesDir || '.'));
+            coolieConfigs.nodeModulesDir = coolieNodeModulesDir =
+                ensurePathDirname(resolvePath(coolieMainModulesDir, cf.nodeModulesDir || '/' + NODE_MODULES + '/'));
+            coolieConfigs.chunkModulesDir = coolieChunkModulesDir =
+                ensurePathDirname(resolvePath(coolieMainModulesDir, cf.chunkModulesDir || '.'));
+            coolieConfigs.chunkModulesMap = coolieChunkModulesMap = cf.chunkModulesMap || {};
+            coolieConfigs.asyncModulesDir = coolieAsyncModulesDir =
+                ensurePathDirname(resolvePath(coolieMainModulesDir, cf.asyncModulesDir || '.'));
+            coolieConfigs.asyncModulesMap = coolieAsyncModulesMap = cf.asyncModulesMap || {};
             coolieConfigs.dirname = coolieDirname;
+            coolieConfigs.configDirname = coolieConfigDirname;
             cf.global = cf.global || {};
             cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
             coolieExtensionMath = coolieConfigs.extensionMath = cf.extensionMath !== false;
+            coolieNodeModuleMainPath = coolieConfigs.nodeModuleMainPath = cf.nodeModuleMainPath;
 
             // 定义全局变量
             each(cf.global, function (key, val) {
@@ -1353,7 +1323,7 @@
 
             /* istanbul ignore next */
             if (!mainModules && coolieAttributeMainName) {
-                coolieMainPath = resolvePath(coolieMainModulesDirname, coolieAttributeMainName);
+                coolieMainPath = resolvePath(coolieMainModulesDir, coolieAttributeMainName);
                 useModule(null, coolieMainPath, JS, JS, null, done);
                 useLength = 1;
                 return coolie;
@@ -1366,7 +1336,7 @@
             mainModules = isArray(mainModules) ? mainModules : [mainModules];
             useLength = mainModules.length;
             each(mainModules, function (index, mainModule) {
-                var url = resolveModulePath(coolieMainModulesDirname, mainModule, true);
+                var url = resolveModulePath(coolieMainModulesDir, mainModule, true);
 
                 nextTick(function () {
                     useModule(null, url, JS, JS, null, done);
@@ -1410,8 +1380,8 @@
                 }
 
                 coolieChunkMap[chunkId] = true;
-                var chunkName = chunkId + '.' + coolieConfigs.chunkMap[chunkId] + '.' + JS;
-                var chunkURL = resolvePath(coolieModuleChunkDirname, chunkName);
+                var chunkName = chunkId + '.' + coolieChunkModulesMap[chunkId] + '.' + JS;
+                var chunkURL = resolvePath(coolieChunkModulesDir, chunkName);
                 loadScript(chunkURL, noop);
             });
 
@@ -1424,10 +1394,12 @@
     // =================================== 启动 =====================================
     // ==============================================================================
     var coolieMainPath = '';
-    var coolieMainModulesDirname = coolieDirname;
-    var coolieModuleChunkDirname = coolieDirname;
-    var coolieModuleAsyncDirname = coolieDirname;
-    var coolieNodeModulesDirname = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
+    var coolieMainModulesDir = coolieDirname;
+    var coolieChunkModulesDir = coolieDirname;
+    var coolieChunkModulesMap = {};
+    var coolieAsyncModulesDir = coolieDirname;
+    var coolieAsyncModulesMap = {};
+    var coolieNodeModulesDir = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
 
     /* istanbul ignore next */
     if (coolieConfigPath) {

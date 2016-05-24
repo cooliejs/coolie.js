@@ -1,8 +1,8 @@
 coolie.config({
     mode: 'AMD',
-    mainModulesDir: 'examples/callback2/',
-    chunkDir: './',
-    chunkMap: {
+    mainModulesDir: './',
+    chunkModulesDir: './',
+    chunkModulesMap: {
         0: 'abcdef'
     }
 }).use(['./main1.js', './main2.js'], function (main1, main2) {

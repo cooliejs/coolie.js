@@ -1,4 +1,4 @@
 coolie.config({
-    mainModulesDir: './examples/node-normal/',
-    nodeModulesDir: '/examples/node-normal/node_modules/'
+    mainModulesDir: './',
+    nodeModulesDir: './node_modules/'
 }).use();
