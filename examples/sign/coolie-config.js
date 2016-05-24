@@ -1,5 +1,5 @@
 coolie.config({
-    baseDir: 'examples/sign/',
+    mainModulesDir: 'examples/sign/',
     nodeModulesDir: '../../node_modules/',
     mode: 'AMD'
 }).use();

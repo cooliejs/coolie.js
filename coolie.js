@@ -1230,25 +1230,42 @@
         /**
          * 配置
          * @param cf {Object}
+         * @param [cf.mode="cjs"] {String} commonJS 加密
+         * @param [cf.mainModulesDir] {String} 入口目录基础目录
+         * @param [cf.nodeModulesDir] {String} node_modules 根目录
+         * @param [cf.nodeModuleMainPath] {String} node 模块的入口路径，指定当前配置时将不会读取 package.json 里的 main 参数
+         * @param [cf.global={}] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
+         * @param [cf.chunkDir] {String} 由构建工具指定
+         * @param [cf.chunkMap] {Object} 由构建工具指定
+         * @param [cf.asyncDir] {String} 由构建工具指定
+         * @param [cf.asyncMap] {Object} 由构建工具指定
+         * @param [cf.debug=true] {Boolean} 由构建工具指定
          * @returns {{coolie}}
          */
         config: function (cf) {
+            if (coolieConfigs.mode) {
+                return coolie;
+            }
+
             cf = cf || {};
             coolieConfigs.mode = cf.mode || 'CJS';
             coolieAMDMode = coolieConfigs.mode === 'AMD';
-            coolieConfigs.baseDir = coolieModuleBaseDirname =
-                resolvePath(coolieDirname, cf.baseDir || './');
+            coolieConfigs.mainModulesDir = coolieMainModulesDirname =
+                resolvePath(coolieDirname, cf.mainModulesDir || './');
             coolieConfigs.nodeModulesDir = coolieNodeModulesDirname =
-                resolvePath(coolieModuleBaseDirname, cf.nodeModulesDir || '/' + NODE_MODULES + '/');
+                resolvePath(coolieMainModulesDirname, cf.nodeModulesDir || '/' + NODE_MODULES + '/');
             coolieConfigs.chunkDir = coolieModuleChunkDirname =
-                resolvePath(coolieModuleBaseDirname, cf.chunkDir || './');
+                resolvePath(coolieMainModulesDirname, cf.chunkDir || './');
             coolieConfigs.chunkMap = cf.chunkMap || {};
             coolieConfigs.asyncDir = coolieModuleAsyncDirname =
-                resolvePath(coolieModuleBaseDirname, cf.asyncDir || './');
+                resolvePath(coolieMainModulesDirname, cf.asyncDir || './');
             coolieConfigs.asyncMap = cf.asyncMap || {};
             coolieConfigs.dirname = coolieDirname;
+            /**
+             * @type {Object}
+             */
             cf.global = cf.global || {};
-            cf.global.DEBUG = coolieConfigs.debug = coolieConfigs.debug !== false;
+            cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
 
             // 定义全局变量
             each(cf.global, function (key, val) {
@@ -1285,7 +1302,7 @@
 
             /* istanbul ignore next */
             if (!mainModules && coolieAttributeMainName) {
-                coolieMainPath = resolvePath(coolieModuleBaseDirname, coolieAttributeMainName);
+                coolieMainPath = resolvePath(coolieMainModulesDirname, coolieAttributeMainName);
                 useModule(null, coolieMainPath, JS, JS, null, done);
                 useLength = 1;
                 return coolie;
@@ -1298,7 +1315,7 @@
             mainModules = isArray(mainModules) ? mainModules : [mainModules];
             useLength = mainModules.length;
             each(mainModules, function (index, mainModule) {
-                var url = resolveModulePath(coolieModuleBaseDirname, mainModule, true);
+                var url = resolveModulePath(coolieMainModulesDirname, mainModule, true);
                 nextTick(function () {
                     useModule(null, url, JS, JS, null, done);
                 });
@@ -1355,7 +1372,7 @@
     // =================================== 启动 =====================================
     // ==============================================================================
     var coolieMainPath = '';
-    var coolieModuleBaseDirname = coolieDirname;
+    var coolieMainModulesDirname = coolieDirname;
     var coolieModuleChunkDirname = coolieDirname;
     var coolieModuleAsyncDirname = coolieDirname;
     var coolieNodeModulesDirname = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');

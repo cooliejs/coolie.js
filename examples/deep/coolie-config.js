@@ -1,4 +1,4 @@
 coolie.config({
-    baseDir: 'examples/deep/',
+    mainModulesDir: 'examples/deep/',
     nodeModulesDir: '/node_modules/'
 }).use();

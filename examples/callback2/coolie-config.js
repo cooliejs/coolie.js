@@ -1,6 +1,6 @@
 coolie.config({
     mode: 'AMD',
-    baseDir: 'examples/callback2/',
+    mainModulesDir: 'examples/callback2/',
     chunkDir: './',
     chunkMap: {
         0: 'abcdef'

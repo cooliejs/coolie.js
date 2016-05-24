@@ -1,3 +1,3 @@
 coolie.config({
-    baseDir: 'examples/async/'
+    mainModulesDir: 'examples/async/'
 }).use();

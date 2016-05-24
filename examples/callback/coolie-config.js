@@ -1,5 +1,5 @@
 coolie.config({
-    baseDir: 'examples/callback/'
+    mainModulesDir: 'examples/callback/'
 }).use(['./main1.js', './main2.js'], function (main1, main2) {
     console.log('coolie.use.callback', main1, main2);
 }).callback(function (main1, main2) {
