@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.3
+ * @version 2.0.4
  * @license MIT
  */
 
@@ -9,12 +9,14 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.3';
+    var VERSION = '2.0.4';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
     var INDEX_JS = 'index.' + JS;
     var MODULE_SPLIT = '->';
+    var DEPENDENT_STR = ' 依赖的 ';
+    var LOAD_ERROR_STR = ' 资源加载失败';
     var win = window;
     var doc = win.document;
     var headEl = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
@@ -137,22 +139,23 @@
 
     /**
      * 解析字符串为 JSON 对象
+     * @param parent {Object} 父级模块
      * @param url {String} url 地址
      * @param callback {Function} 回调
      * @returns {{}}
      */
-    var ajaxJSON = function (url, callback) {
+    var ajaxJSON = function (parent, url, callback) {
         ajaxText(url, function (err, text) {
             /* istanbul ignore next */
             if (err) {
-                throw new URIError('JSON 资源加载失败\n' + url);
+                throw new URIError((parent ? parent.url + DEPENDENT_STR : '') + 'JSON ' + LOAD_ERROR_STR + '\n' + url);
             }
 
             var json = evalJSON(text);
 
             /* istanbul ignore next */
             if (!json) {
-                throw new URIError('JSON 资源解析失败\n' + url);
+                throw new URIError((parent ? parent.url + DEPENDENT_STR : '') + 'JSON 资源解析失败\n' + url);
             }
 
             callback(json);
@@ -762,39 +765,34 @@
              * @param callback
              */
             var resolveNodeModuleURL = function (dependency, callback) {
-                // var fromDirname;
-                //
-                // if (the.pkgURL) {
-                //     /* istanbul ignore next */
-                //     the.pkg.dependencies = the.pkg.dependencies || {};
-                //     the.pkg.devDependencies = the.pkg.devDependencies || {};
-                //     the.pkg.peerDependencies = the.pkg.peerDependencies || {};
-                //
-                //     if (the.pkg.dependencies[dependency] || the.pkg.devDependencies[dependency]) {
-                //         fromDirname = resolvePath(the.pkgURL, NODE_MODULES + '/');
-                //     } else {
-                //         fromDirname = coolieNodeModulesDirname;
-                //     }
-                // } else {
-                //     fromDirname = coolieNodeModulesDirname;
-                // }
-
                 var mainURL;
-
-                // 指定了 node 模块的入口路径
-                if (coolieNodeModuleMainPath) {
-                    var nodeModuleDir = resolvePath(coolieNodeModulesDirname, dependency + '/');
-                    mainURL = resolveModulePath(nodeModuleDir, coolieNodeModuleMainPath, true);
-                    callback(mainURL);
-                } else {
+                var builtInResolver = function () {
                     // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
                     // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
                     var pkgURL = resolveModulePath(coolieNodeModulesDirname, dependency + '/package.json', false);
 
-                    ajaxJSON(pkgURL, function (pkg) {
+                    ajaxJSON(the.parent, pkgURL, function (pkg) {
                         mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
                         callback(mainURL, pkg, pkgURL);
                     });
+                };
+
+                // 自定义解决方案
+                if (coolieModuleResolver) {
+                    var nodeModuleDir = resolvePath(coolieNodeModulesDirname, dependency + '/');
+                    mainURL = coolieModuleResolver(dependency, {
+                        dirname: nodeModuleDir,
+                        nodeModule: true,
+                        name: dependency
+                    });
+
+                    if (mainURL) {
+                        callback(mainURL);
+                    } else {
+                        builtInResolver();
+                    }
+                } else {
+                    builtInResolver();
                 }
             };
 
@@ -1012,12 +1010,15 @@
 
         var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
 
-        if (!module.parent) {
+        if (module.parent) {
+            module.url = module.parent.url;
+        } else {
             lastDefineMainModule = module;
         }
 
         each(dependencies, function (index, depId) {
             modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
+            modulesCacheMap[depId].url = module.url;
         });
 
         module.build(dependencies, factory);
@@ -1039,7 +1040,13 @@
     var loadModule = function (parent, url, inType, outType, pkg, callback) {
         var id = url + MODULE_SPLIT + outType;
         var cacheModule = modulesCacheMap[id];
-        var module = modulesCacheMap[id] = cacheModule || new Module(parent, id, inType, outType, pkg);
+
+        if (cacheModule) {
+            return cacheModule;
+        }
+
+        var module = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
+        module.url = url;
 
         if (!parent && callback) {
             module.callbacks.push(callback);
@@ -1082,7 +1089,7 @@
                 ajaxText(url, function (err, code) {
                     /* istanbul ignore next */
                     if (err) {
-                        throw new URIError('JS 资源加载失败\n' + url);
+                        throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + 'JS' + LOAD_ERROR_STR + '\n' + url);
                     }
 
                     var requires = parseRequires(code);
@@ -1118,7 +1125,7 @@
                     case 'js':
                         ajaxText(url, function (err, code) {
                             if (err) {
-                                throw new URIError(moduleInType + ' 资源加载失败\n' + url);
+                                throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
                             }
 
                             define(id, [], function () {
@@ -1130,7 +1137,7 @@
                     case 'style':
                         ajaxText(url, function (err, code) {
                             if (err) {
-                                throw new URIError(moduleInType + ' 资源加载失败\n' + url);
+                                throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
                             }
 
                             define(id, [], function () {
@@ -1143,7 +1150,7 @@
                     default:
                         ajaxText(url, function (err, code) {
                             if (err) {
-                                throw new URIError(moduleInType + ' 资源加载失败\n' + url);
+                                throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
                             }
 
                             define(id, [], function () {
@@ -1178,7 +1185,7 @@
     var useModule = function (parent, url, inType, outType, pkg, callback) {
         var id = url + (coolieAMDMode ? '' : MODULE_SPLIT + outType);
         var cacheModule = modulesCacheMap[id];
-        
+
         if (cacheModule) {
             if (cacheModule.state === MODULE_STATE_EXECUTED) {
                 return callback(cacheModule.exports);
@@ -1187,9 +1194,10 @@
             return cacheModule.callbacks.push(callback);
         }
 
-        modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
 
         if (coolieAMDMode) {
+            modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
+            modulesCacheMap[id].url = url;
             queue.task(url, function (next) {
                 loadScript(url, function () {
                     if (lastDefineMainModule) {
@@ -1215,6 +1223,8 @@
     var coolieCallbackArgs = null;
     var coolieChunkMap = {};
     var coolieExtensionMath = true;
+    var coolieModuleResolver = null;
+    var coolieModuleParser = null;
 
     /**
      * @namespace coolie
@@ -1239,12 +1249,43 @@
 
 
         /**
+         * 自定义解决模块路径
+         * @param resolver {Function} 解决函数，参数：模块名，模块信息
+         * @returns {{coolie}}
+         */
+        resolveModule: function (resolver) {
+            if (coolieModuleResolver) {
+                throw new TypeError('已经指定了模块路径的解决方案');
+            }
+
+            coolieModuleResolver = resolver;
+
+            return coolie;
+        },
+
+
+        /**
+         * 自定义解析模块内容
+         * @param parser
+         * @returns {{coolie}}
+         */
+        parseModule: function (parser) {
+            if (coolieModuleParser) {
+                throw new TypeError('已经指定了模块内容的解析方案');
+            }
+
+            coolieModuleParser = parser;
+
+            return coolie;
+        },
+
+
+        /**
          * 配置
          * @param cf {Object}
          * @param [cf.mode="cjs"] {String} commonJS 加密
          * @param [cf.mainModulesDir] {String} 入口模块基础目录
          * @param [cf.nodeModulesDir] {String} node_modules 根目录
-         * @param [cf.nodeModuleMainPath] {String} node 模块的入口路径，指定当前配置时将不会读取 package.json 里的 main 参数
          * @param [cf.global={}] {Object} 全局变量，其中布尔值将会作为压缩的预定义全局变量
          * @param [cf.extensionMath=true] {Boolean} 是否进行模块扩展名匹配
          * @param [cf.chunkDir] {String} 由构建工具指定
@@ -1266,7 +1307,6 @@
                 resolvePath(coolieDirname, cf.mainModulesDir || './');
             coolieConfigs.nodeModulesDir = coolieNodeModulesDirname =
                 resolvePath(coolieMainModulesDirname, cf.nodeModulesDir || '/' + NODE_MODULES + '/');
-            coolieNodeModuleMainPath = coolieConfigs.nodeModuleMainPath = cf.nodeModuleMainPath;
             coolieConfigs.chunkDir = coolieModuleChunkDirname =
                 resolvePath(coolieMainModulesDirname, cf.chunkDir || './');
             coolieConfigs.chunkMap = cf.chunkMap || {};
@@ -1282,7 +1322,7 @@
             each(cf.global, function (key, val) {
                 win[key] = val;
             });
-            
+
             return coolie;
         },
 
@@ -1327,7 +1367,7 @@
             useLength = mainModules.length;
             each(mainModules, function (index, mainModule) {
                 var url = resolveModulePath(coolieMainModulesDirname, mainModule, true);
-                
+
                 nextTick(function () {
                     useModule(null, url, JS, JS, null, done);
                 });
@@ -1388,7 +1428,6 @@
     var coolieModuleChunkDirname = coolieDirname;
     var coolieModuleAsyncDirname = coolieDirname;
     var coolieNodeModulesDirname = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
-    var coolieNodeModuleMainPath;
 
     /* istanbul ignore next */
     if (coolieConfigPath) {
