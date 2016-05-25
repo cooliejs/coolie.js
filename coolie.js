@@ -722,7 +722,7 @@
         var dftInType = JS;
         var extension = getPathExtname(name).slice(1);
 
-        if (extension && !pipeline) {
+        if (isRelativePath(name) && extension && !pipeline) {
             each(moduleInTypeMatches, function (index, rule) {
                 var inType = rule[0];
                 var regexp = rule[1];
@@ -1257,7 +1257,6 @@
     var coolieCallbacks = [];
     var coolieCallbackArgs = null;
     var coolieChunkMap = {};
-    var coolieExtensionMath = true;
     var coolieNodeModuleMainPath = null;
 
     /**
