@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.7
+ * @version 2.0.9
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.7';
+    var VERSION = '2.0.9';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1116,6 +1116,8 @@
         };
         var moduleInType = module.inType;
         var moduleOutType = module.outType;
+
+        define.amd = define.cmd = 'coolie';
 
         switch (moduleInType) {
             case 'js':
