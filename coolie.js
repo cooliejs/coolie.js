@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.9
+ * @version 2.0.10
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.9';
+    var VERSION = '2.0.10';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -776,6 +776,7 @@
     var MODULE_STATE_EXECUTED = 2;
     var modulesCacheMap = {};
     var moduleGid = 0;
+    var nodeModulesNameMap = {};
 
     var Module = function (parent, id, inType, outType, pkg) {
         var the = this;
@@ -819,14 +820,19 @@
                     mainURL = resolveModulePath(nodeModuleDir, coolieNodeModuleMainPath, true);
                     callback(mainURL);
                 } else {
-                    // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
-                    // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
-                    var pkgURL = resolveModulePath(coolieNodeModulesDir, dependency + '/package.json', false);
+                    // 解析地址已缓存
+                    if (nodeModulesNameMap[dependency]) {
+                        callback.apply(win, nodeModulesNameMap[dependency]);
+                    } else {
+                        // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
+                        // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
+                        var pkgURL = resolveModulePath(coolieNodeModulesDir, dependency + '/package.json', false);
 
-                    ajaxJSON(the.parent, pkgURL, function (pkg) {
-                        mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
-                        callback(mainURL, pkg, pkgURL);
-                    });
+                        ajaxJSON(the.parent, pkgURL, function (pkg) {
+                            mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
+                            callback(mainURL, pkg, pkgURL);
+                        });
+                    }
                 }
             };
 
@@ -853,6 +859,7 @@
                         dependencyModule = loadModule(the, url, inType, outType, pkg);
                         dependencyModule.pkgURL = pkgURL;
                         the.resolvedMap[dependency] = url;
+                        nodeModulesNameMap[the.dependencies[index]] = arguments;
                         the.dependencies[index] = dependencyModule.id;
                     });
                 }
@@ -959,16 +966,24 @@
          */
         exec: function () {
             var allLoaded = true;
+            var foundMap = {};
+
             // 从祖先模块开始向下遍历查询依赖模块是否都加载完毕
             var checkModule = function (module) {
                 each(module.dependencies, function (index, dependency) {
                     var cacheModule = modulesCacheMap[dependency];
 
                     if (!cacheModule || cacheModule.state < MODULE_STATE_LOADED) {
+                        module;
                         allLoaded = false;
                         return false;
                     }
 
+                    if (foundMap[cacheModule.id]) {
+                        return;
+                    }
+
+                    foundMap[cacheModule.id] = true;
                     checkModule(cacheModule);
                 });
             };
