@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.10
+ * @version 2.0.11
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.10';
+    var VERSION = '2.0.11';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -974,7 +974,6 @@
                     var cacheModule = modulesCacheMap[dependency];
 
                     if (!cacheModule || cacheModule.state < MODULE_STATE_LOADED) {
-                        module;
                         allLoaded = false;
                         return false;
                     }
