@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.11
+ * @version 2.0.12
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.11';
+    var VERSION = '2.0.12';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1036,42 +1036,52 @@
     var lastDefineMainModule = null;
 
     /**
-     * 定义 AMD 模块
-     * @param id
-     * @param dependencies
-     * @param factory
-     * @returns {Module}
+     * 注入全局 define，只在 coolie.use 之后调用，防止其他模块干扰
      */
-    win.define = function (id, dependencies, factory) {
-        /* istanbul ignore next */
-        if (!coolieAMDMode) {
-            throw new SyntaxError('AMD 模式才允许调用 define，coolie.js@2.x 开发环境只支持 commonJS 规范');
+    var injectWindowDefine = function () {
+        if (win.define && win.define.coolie) {
+            return;
         }
 
-        var cacheModule = modulesCacheMap[id];
+        /**
+         * 定义 AMD 模块
+         * @param id
+         * @param dependencies
+         * @param factory
+         * @returns {Module}
+         */
+        var define = win.define = function (id, dependencies, factory) {
+            /* istanbul ignore next */
+            if (!coolieAMDMode) {
+                throw new SyntaxError('AMD 模式才允许调用 define，coolie.js@2.x 开发环境只支持 commonJS 规范');
+            }
 
-        if (!cacheModule) {
-            id = queue.last.id;
-            cacheModule = modulesCacheMap[id];
-        }
+            var cacheModule = modulesCacheMap[id];
 
-        var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
+            if (!cacheModule) {
+                id = queue.last.id;
+                cacheModule = modulesCacheMap[id];
+            }
 
-        if (module.parent) {
-            module.url = module.parent.url;
-        } else {
-            lastDefineMainModule = module;
-        }
+            var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
 
-        each(dependencies, function (index, depId) {
-            modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
-            modulesCacheMap[depId].url = module.url;
-        });
+            if (module.parent) {
+                module.url = module.parent.url;
+            } else {
+                lastDefineMainModule = module;
+            }
 
-        module.build(dependencies, factory);
-        module.exec();
+            each(dependencies, function (index, depId) {
+                modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
+                modulesCacheMap[depId].url = module.url;
+            });
 
-        return module;
+            module.build(dependencies, factory);
+            module.exec();
+
+            return module;
+        };
+        define.coolie = define.amd = define.cmd = define.umd = 'coolie';
     };
 
 
@@ -1354,6 +1364,7 @@
          */
         use: function (mainModules, callback) {
             callback = isFunction(callback) ? callback : noop;
+            injectWindowDefine();
 
             var useLength = 0;
             var args = [];
