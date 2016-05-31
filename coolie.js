@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.12
+ * @version 2.0.13
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.12';
+    var VERSION = '2.0.13';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1039,7 +1039,7 @@
      * 注入全局 define，只在 coolie.use 之后调用，防止其他模块干扰
      */
     var injectWindowDefine = function () {
-        if (win.define && win.define.coolie) {
+        if (win.define && win.define.coolie || !coolieAMDMode) {
             return;
         }
 
@@ -1051,11 +1051,6 @@
          * @returns {Module}
          */
         var define = win.define = function (id, dependencies, factory) {
-            /* istanbul ignore next */
-            if (!coolieAMDMode) {
-                throw new SyntaxError('AMD 模式才允许调用 define，coolie.js@2.x 开发环境只支持 commonJS 规范');
-            }
-
             var cacheModule = modulesCacheMap[id];
 
             if (!cacheModule) {
