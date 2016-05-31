@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.14
+ * @version 2.0.15
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.14';
+    var VERSION = '2.0.15';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1053,7 +1053,7 @@
         var define = win.define = function (id, dependencies, factory) {
             var cacheModule = modulesCacheMap[id];
 
-            if (!cacheModule) {
+            if (id === '0') {
                 id = queue.last.id;
                 cacheModule = modulesCacheMap[id];
             }
