@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.13
+ * @version 2.0.14
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.13';
+    var VERSION = '2.0.14';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1076,7 +1076,7 @@
 
             return module;
         };
-        define.coolie = define.amd = define.cmd = define.umd = 'coolie';
+        define.coolie = define.amd = define.cmd = define.umd = coolie;
     };
 
 
@@ -1136,7 +1136,7 @@
         var moduleInType = module.inType;
         var moduleOutType = module.outType;
 
-        define.amd = define.cmd = 'coolie';
+        define.coolie = define.amd = define.cmd = define.umd = coolie;
 
         switch (moduleInType) {
             case 'js':
