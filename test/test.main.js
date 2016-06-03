@@ -40,12 +40,12 @@ describe('coolie.js', function () {
         });
     });
 
-    it('.use twice', function (done) {
-        coolie.use('main2.js', function (exports) {
-            expect(exports).toEqual('main2');
-            done();
-        });
-    });
+    // it('.use twice', function (done) {
+    //     coolie.use('main2.js', function (exports) {
+    //         expect(exports).toEqual('main2');
+    //         done();
+    //     });
+    // });
 
     it('.use delay', function (done) {
         var index = 0;

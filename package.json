@@ -1,7 +1,7 @@
 {
   "name": "coolie.js",
-  "version": "2.0.15",
-  "description": "A coolie for JavaScript module management and module transportation.",
+  "version": "2.0.16",
+  "description": "苦力 —— 前端模块加载，支持 CommonJS、CMD、AMD 规范。",
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
     "test": "node ./node_modules/.bin/karma start karma.conf.js --single-run",

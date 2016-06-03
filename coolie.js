@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.15
+ * @version 2.0.16
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.15';
+    var VERSION = '2.0.16';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -608,26 +608,16 @@
     // ==================================== 模块类 ===================================
     // ==============================================================================
 
-    /**
-     * require 正则
-     * @type {RegExp}
-     * @link https://github.com/seajs/seajs/blob/master/dist/sea-debug.js
-     */
-    var reRequire = /"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|\/\*[\S\s]*?\*\/|\/(?:\\\/|[^\/\r\n])+\/(?=[^\/])|\/\/.*|\.\s*require|(?:^|[^$])\brequire\s*\(\s*(["'])(.+?)\1\s*\)/g;
+    var reLineComments = /^\s*\/\/.*$/gm;
+    var reBlockComments = /\/\*[\s\S]*?\*\//gm;
 
 
     /**
-     * 反斜杠
+     * 提取 require
      * @type {RegExp}
      */
-    var reSlash = /\\\\/g;
+    var reRequire = /(?:[^.\[]|)\brequire\((['"])([^'"]*)\1(\s*,\s*(['"])([^'"]*)\4)?/g;
 
-
-    /**
-     * require 类型
-     * @type {RegExp}
-     */
-    var reRequireType = /([^"']+)(?:['"]\s*?,\s*?['"]([^'"]*))?/;
 
     /**
      * 模块入口类型
@@ -759,13 +749,12 @@
     var parseRequires = function (code) {
         var ret = [];
 
-        code.replace(reSlash, '').replace(reRequire, function ($0, $1, $2) {
-            if ($2) {
-                var matches = $2.match(reRequireType);
-
-                ret.push(parseRequire(matches[1], matches[2]));
-            }
-        });
+        code
+            .replace(reBlockComments, '')
+            .replace(reLineComments, '')
+            .replace(reRequire, function (source, quote0, name, combine, quote1, pipleLine) {
+                ret.push(parseRequire(name, pipleLine));
+            });
 
         return ret;
     };
@@ -1025,11 +1014,11 @@
         }
 
         return [
-            'define("' + id + '", [' + dependenciesStr + '], function(require, exports, module) {\n\n',
-            /****/code,
+            'define("' + id + '", [' + dependenciesStr + '], function(require, exports, module) {',
+            code,
             '\n\n});',
             '//# sourceURL=' + url
-        ].join('\n');
+        ].join('');
     };
 
 
@@ -1163,7 +1152,7 @@
                     var moduleCode = moduleWrap(url, id, dependencyNameList, code);
 
                     /* jshint evil: true */
-                    return new Function('define', moduleCode)(define);
+                    eval(moduleCode);
                 });
                 break;
 
@@ -1338,6 +1327,7 @@
             coolieConfigs.dirname = coolieDirname;
             coolieConfigs.configDirname = coolieConfigDirname;
             cf.global = cf.global || {};
+            //noinspection JSAnnotator
             cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
             // coolieExtensionMath = coolieConfigs.extensionMath = cf.extensionMath !== false;
             coolieNodeModuleMainPath = coolieConfigs.nodeModuleMainPath = cf.nodeModuleMainPath;
@@ -1366,7 +1356,7 @@
             var done = function (exports) {
                 args.push(exports);
 
-                if (args.length == useLength) {
+                if (args.length === useLength) {
                     coolieCallbackArgs = coolieCallbackArgs || args;
                     callback.apply(win, args);
 
