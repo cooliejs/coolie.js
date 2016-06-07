@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.16
+ * @version 2.0.17
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.16';
+    var VERSION = '2.0.17';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1022,8 +1022,6 @@
     };
 
 
-    var lastDefineMainModule = null;
-
     /**
      * 注入全局 define，只在 coolie.use 之后调用，防止其他模块干扰
      */
@@ -1051,8 +1049,6 @@
 
             if (module.parent) {
                 module.url = module.parent.url;
-            } else {
-                lastDefineMainModule = module;
             }
 
             each(dependencies, function (index, depId) {
@@ -1239,19 +1235,12 @@
             return cacheModule.callbacks.push(callback);
         }
 
-
         if (coolieAMDMode) {
-            modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
-            modulesCacheMap[id].url = url;
+            cacheModule = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
+            cacheModule.url = url;
+            cacheModule.callbacks.push(callback);
             queue.task(url, function (next) {
-                loadScript(url, function () {
-                    if (lastDefineMainModule) {
-                        lastDefineMainModule.callbacks.push(callback);
-                        lastDefineMainModule = null;
-                    }
-
-                    next();
-                });
+                loadScript(url, next);
             });
         } else {
             loadModule(parent, url, inType, outType, pkg, callback);
