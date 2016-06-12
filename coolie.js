@@ -1089,9 +1089,16 @@
         var module = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
         module.url = url;
 
-        if (!parent && callback) {
-            module.callbacks.push(callback);
+        if (parent) {
+            module.main = module.main || parent.main;
+        } else {
+            module.main = module;
+
+            if (isFunction(callback)) {
+                module.callbacks.push(callback);
+            }
         }
+
 
         var dependencyMetaList = [];
         var dependencyNameList = [];
