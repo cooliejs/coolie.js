@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.0.17
+ * @version 2.0.18
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.0.17';
+    var VERSION = '2.0.18';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -771,7 +771,6 @@
         var the = this;
 
         the.parent = parent;
-        the.main = parent ? parent.main : the;
         the.id = id;
         the.gid = moduleGid++;
         the.inType = inType;
@@ -954,6 +953,13 @@
          * 模块尝试执行
          */
         exec: function () {
+            var module = this;
+            var mainModule = module.main;
+
+            if (!mainModule) {
+                return;
+            }
+
             var allLoaded = true;
             var foundMap = {};
 
@@ -975,12 +981,6 @@
                     checkModule(cacheModule);
                 });
             };
-
-            var mainModule = this;
-
-            while (mainModule.parent) {
-                mainModule = mainModule.parent;
-            }
 
             checkModule(mainModule);
 
@@ -1043,17 +1043,21 @@
             if (id === '0') {
                 id = queue.last.id;
                 cacheModule = modulesCacheMap[id];
+                cacheModule.main = cacheModule;
             }
 
             var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
+            var parentModule = module.parent;
 
-            if (module.parent) {
-                module.url = module.parent.url;
+            if (parentModule) {
+                module.url = parentModule.url;
+                module.main = module.main || parentModule.main;
             }
 
             each(dependencies, function (index, depId) {
-                modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
-                modulesCacheMap[depId].url = module.url;
+                var depModule = modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
+                depModule.url = module.url;
+                depModule.main = module.main;
             });
 
             module.build(dependencies, factory);
