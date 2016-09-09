@@ -1050,6 +1050,11 @@
             }
 
             var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
+
+            if (module.state === MODULE_STATE_EXECUTED) {
+                return module;
+            }
+
             var parentModule = module.parent;
 
             if (parentModule) {
