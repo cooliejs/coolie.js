@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version {{VERSION}}
+ * @version 2.0.21
  * @license MIT
  */
 
@@ -9,13 +9,16 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '{{VERSION}}';
+    var VERSION = '2.0.21';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
     var INDEX_JS = 'index.' + JS;
+    //
     var MODULE_SPLIT = '->';
+    //
     var DEPENDENT_STR = ' 依赖的 ';
+    //
     var LOAD_ERROR_STR = ' 资源加载失败';
     var win = window;
     var doc = win.document;
@@ -37,7 +40,7 @@
     };
 
     // var isObject = isType("Object");
-    // var isString = isType("String");
+    //var isString = isType("String");
     // var isBoolean = isType("Boolean");
     var isArray = isType("Array");
     var isFunction = isType("Function");
@@ -280,10 +283,9 @@
     var reAbsolutePath = /^\//;
     var reRelativePath = /^\.{1,2}\//;
     var reProtocol = /^.*:/;
-    var LOCATION = win.location;
-    var LOCATION_HREF = LOCATION.href;
-    var LOCATION_PROTOCOL = LOCATION.protocol;
-    var LOCATION_BASE = LOCATION_PROTOCOL + '//' + LOCATION.host;
+    var LOCATION_HREF = location.href;
+    var LOCATION_PROTOCOL = location.protocol;
+    var LOCATION_BASE = LOCATION_PROTOCOL + '//' + location.host;
     var reThisPath = /\/\.\//g;
     var reEndThisPath = /\/\.$/g;
     var reNotURISlash = /\\/g;
