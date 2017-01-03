@@ -17,7 +17,6 @@ var random = require('blear.utils.random');
 var originalFile = path.join(__dirname, '../coolie.js');
 var miniFile = path.join(__dirname, '../coolie.min.js');
 var body = fs.readFileSync(originalFile, 'utf8');
-
 var compressorOptions = {
     // 连续单语句，逗号分开
     // 如： alert(1);alert(2); => alert(1),alert(2)
@@ -84,13 +83,6 @@ var compressorOptions = {
     // 全局常量
     global_defs: {}
 };
-
-
-var reGlobalVarible = /^\s{4}\bvar\s+([a-zA-Z][a-zA-Z\d_$]+)\s+=/mg;
-var reInlineVarible = /^\s{4}\bvar\s+([a-zA-Z][a-zA-Z\d_$]+)\s+=/;
-var gid = 0;
-// /**
-// */
 var reComments = /^\/\*\*$[\s\S]*?^\s\*\/$/mg;
 var commentsId = '/*' + random.guid() + '*/';
 var commentsBody = '';
@@ -100,30 +92,39 @@ body = body.replace(reComments, function (source) {
     return commentsId;
 });
 
-var matches = [].slice.call(body.match(reGlobalVarible));
+// // 转换变量
+// var convertVarible = function () {
+//     var reGlobalVarible = /^\s{4}\bvar\s+([a-zA-Z][a-zA-Z\d_$]+)\s+=/mg;
+//     var reInlineVarible = /^\s{4}\bvar\s+([a-zA-Z][a-zA-Z\d_$]+)\s+=/;
+//     var gid = 0;
+// // /**
+// // */
+//
+//     var matches = [].slice.call(body.match(reGlobalVarible));
+//
+//     matches.forEach(function (match, index) {
+//         var varible = match.match(reInlineVarible)[1];
+//         var reVarible = new RegExp('([\\s\\(!\\[])\\b(' + string.escapeRegExp(varible) + ')([\\[\\(\\)\\.\\s;,+])', 'g');
+//         var replaceTo = '$1_' + number.to62(gid++) + '$3';
+//
+//         body = body.replace(reVarible, replaceTo);
+//     });
+// };
 
-matches.forEach(function (match, index) {
-    var varible = match.match(reInlineVarible)[1];
-    var reVarible = new RegExp('([\\s\\(!\\[])\\b(' + string.escapeRegExp(varible) + ')([\\[\\(\\)\\.\\s;,+])', 'g');
-    var replaceTo = '$1_' + number.to62(gid++) + '$3';
+var minify = function () {
+    var minBody = uglifyJS.minify(body, {
+        fromString: true,
+        // 是否警告提示
+        warnings: false,
+        // 变量管理
+        mangle: true,
+        // 是否压缩
+        compress: compressorOptions
+    }).code;
 
-    body = body.replace(reVarible, replaceTo);
-});
+    return commentsBody + '\n' + minBody;
+};
 
-var minBody = uglifyJS.minify(body, {
-    fromString: true,
-    // 是否警告提示
-    warnings: false,
-    // 变量管理
-    mangle: true,
-    // 是否压缩
-    compress: compressorOptions
-}).code;
+fs.writeFileSync(miniFile, minify(), 'utf8');
+console.log('minify coolie.js to coolie.min.js success');
 
-minBody = commentsBody + '\n' + minBody;
-
-var reVersion = /\{\{VERSION}}/g;
-var VERSION = require('../package.json').version;
-
-minBody = minBody.replace(reVersion, VERSION);
-fs.writeFileSync(miniFile, minBody, 'utf8');

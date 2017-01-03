@@ -1,9 +1,9 @@
 {
   "name": "coolie.js",
-  "version": "2.0.22",
+  "version": "2.1.0",
   "description": "苦力 —— 前端模块加载，支持 CommonJS、CMD、AMD 规范。",
   "scripts": {
-    "min": "node ./clis/min.js",
+    "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
     "test": "node ./node_modules/.bin/karma start karma.conf.js --single-run",
     "live": "browser-sync start --config bs-config.js",
     "release": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js && cp coolie.js ./release && cp coolie.min.js ./release && cd release && zip coolie.zip coolie.js coolie.min.js && alioss upload && rm -rf coolie.zip coolie.js coolie.min.js",

@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version {{VERSION}}
+ * @version 2.1.0
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '{{VERSION}}';
+    var VERSION = '2.1.0';
     var COOLIE = 'coolie';
     var NODE_MODULES = 'node_modules';
     var JS = 'js';
@@ -1017,65 +1017,13 @@
             dependenciesStr = '"' + dependenciesStr + '"';
         }
 
-        return [
-            'define("' + id + '", [' + dependenciesStr + '], function(require, exports, module) {',
-            code,
-            '\n\n});',
-            '//# sourceURL=' + url
-        ].join('');
-    };
+        // var originRE = /^.*:\/\/.*?\//;
+        // var coolieProtocolURL = 'coolie:///' + url.replace(originRE, '');
 
-
-    /**
-     * 注入全局 define，只在 coolie.use 之后调用，防止其他模块干扰
-     */
-    var injectWindowDefine = function () {
-        if (win.define && win.define.coolie || !coolieAMDMode) {
-            return;
-        }
-
-        /**
-         * 定义 AMD 模块
-         * @param id
-         * @param dependencies
-         * @param factory
-         * @returns {Module}
-         */
-        var define = win.define = function (id, dependencies, factory) {
-            var cacheModule = modulesCacheMap[id];
-
-            if (id === '0') {
-                id = queue.last.id;
-                cacheModule = modulesCacheMap[id];
-                cacheModule.main = cacheModule;
-            }
-
-            var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
-
-            if (module.state === MODULE_STATE_EXECUTED) {
-                module.exec();
-                return module;
-            }
-
-            var parentModule = module.parent;
-
-            if (parentModule) {
-                module.url = parentModule.url;
-                module.main = module.main || parentModule.main;
-            }
-
-            each(dependencies, function (index, depId) {
-                var depModule = modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
-                depModule.url = module.url;
-                depModule.main = module.main;
-            });
-
-            module.build(dependencies, factory);
-            module.exec();
-
-            return module;
-        };
-        define.coolie = define.amd = define.cmd = define.umd = coolie;
+        return 'define("' + id + '",[' + dependenciesStr + '],function(require,exports,module){' +
+            code +
+            '\n\n});' +
+            '//# sourceURL=' + url;
     };
 
 
@@ -1142,8 +1090,6 @@
         var moduleInType = module.inType;
         var moduleOutType = module.outType;
 
-        define.coolie = define.amd = define.cmd = define.umd = coolie;
-
         switch (moduleInType) {
             case 'js':
                 ajaxText(url, function (err, code) {
@@ -1168,8 +1114,10 @@
 
                     var moduleCode = moduleWrap(url, id, dependencyNameList, code);
 
+                    win.define = define;
                     /* jshint evil: true */
-                    eval(moduleCode);
+                    win.eval(moduleCode);
+                    win.define = null;
                 });
                 break;
 
@@ -1269,6 +1217,59 @@
     };
 
 
+    /**
+     * AMD 模式（代码构建之后）下，注入全局 define，只在 coolie.use 之后调用，防止其他模块干扰
+     */
+    var injectWindowDefine = function () {
+        if (win.define && win.define.coolie || !coolieAMDMode) {
+            return;
+        }
+
+        /**
+         * 定义 AMD 模块
+         * @param id
+         * @param dependencies
+         * @param factory
+         * @returns {Module}
+         */
+        var define = win.define = function (id, dependencies, factory) {
+            var cacheModule = modulesCacheMap[id];
+
+            if (id === '0') {
+                id = queue.last.id;
+                cacheModule = modulesCacheMap[id];
+                cacheModule.main = cacheModule;
+            }
+
+            var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
+
+            if (module.state === MODULE_STATE_EXECUTED) {
+                module.exec();
+                return module;
+            }
+
+            var parentModule = module.parent;
+
+            if (parentModule) {
+                module.url = parentModule.url;
+                module.main = module.main || parentModule.main;
+            }
+
+            each(dependencies, function (index, depId) {
+                var depModule = modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
+                depModule.url = module.url;
+                depModule.main = module.main;
+            });
+
+            module.build(dependencies, factory);
+            module.exec();
+
+            return module;
+        };
+        define.coolie = define.amd = define.cmd = define.umd = coolie;
+    };
+
+
     // ==============================================================================
     // ===================================== 出口 ===================================
     // ==============================================================================
@@ -1359,6 +1360,7 @@
          */
         use: function (mainModules, callback) {
             callback = isFunction(callback) ? callback : noop;
+
             injectWindowDefine();
 
             var useLength = 0;
