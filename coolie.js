@@ -9,17 +9,27 @@
 ;(function () {
     'use strict';
 
-    var VERSION = '2.1.0';
-    var COOLIE = 'coolie';
-    var NODE_MODULES = 'node_modules';
-    var JS = 'js';
-    var INDEX_JS = 'index.' + JS;
-    var MODULE_SPLIT = '->';
+    var VERSION_STR = '2.1.0';
+    var COOLIE_STR = 'coolie';
+    var NODE_MODULES_STR = 'node_modules';
+    var JS_STR = 'js';
+    var JSON_STR = 'JSON ';
+    var INDEX_JS_STR = 'index.' + JS_STR;
+    var MODULE_SPLIT_STR = '->';
     var DEPENDENT_STR = ' 依赖的 ';
     var LOAD_ERROR_STR = ' 资源加载失败';
+    var FILE_STR = 'file';
+    var TEXT_STR = 'text';
+    var JSON_LOWERCASE_STR = 'json';
+    var URL_LOWERCASE_STR = 'url';
+    var CSS_LOWERCASE_STR = 'css';
+    var HTML_LOWERCASE_STR = 'html';
+    var STYLE_STR = 'style';
+    var COMMONS_STR = 'CJS';
+    var AMD_STR = 'AMD';
     var win = window;
     var doc = win.document;
-    var headEl = doc.head || doc.getElementsByTagName("head")[0] || doc.documentElement;
+    var headEl = doc.head || doc.getElementsByTagName('head')[0] || doc.documentElement;
 
 
     // ==============================================================================
@@ -32,15 +42,15 @@
 
     var isType = function (type) {
         return function (obj) {
-            return {}.toString.call(obj) === "[object " + type + "]";
+            return {}.toString.call(obj) === '[object ' + type + ']';
         };
     };
 
-    // var isObject = isType("Object");
+    var isObject = isType('Object');
     // var isString = isType("String");
     // var isBoolean = isType("Boolean");
-    var isArray = isType("Array");
-    var isFunction = isType("Function");
+    var isArray = isType('Array');
+    var isFunction = isType('Function');
 
 
     /**
@@ -62,7 +72,7 @@
                     break;
                 }
             }
-        } else if (typeof(list) === 'object') {
+        } else if (isObject(list)) {
             for (i in list) {
                 callback(i, list[i]);
             }
@@ -148,14 +158,14 @@
         ajaxText(url, function (err, text) {
             /* istanbul ignore next */
             if (err) {
-                throw new URIError((parent ? parent.url + DEPENDENT_STR : '') + 'JSON ' + LOAD_ERROR_STR + '\n' + url);
+                throw new URIError((parent ? parent.url + DEPENDENT_STR : '') + JSON_STR + LOAD_ERROR_STR + '\n' + url);
             }
 
             var json = evalJSON(text);
 
             /* istanbul ignore next */
             if (!json) {
-                throw new URIError((parent ? parent.url + DEPENDENT_STR : '') + 'JSON 资源解析失败\n' + url);
+                throw new URIError((parent ? parent.url + DEPENDENT_STR : '') + JSON_STR + '资源解析失败\n' + url);
             }
 
             callback(json);
@@ -174,9 +184,9 @@
 
 
     var importStyle = (function () {
-        var styleEl = doc.createElement('style');
+        var styleEl = doc.createElement(STYLE_STR);
         styleEl.setAttribute('type', 'text/css');
-        styleEl.setAttribute('id', COOLIE + '-' + VERSION + '-style');
+        styleEl.setAttribute('id', COOLIE_STR + '-' + VERSION_STR + '-' + STYLE_STR);
         headEl.appendChild(styleEl);
         // ie
         var stylesheet = styleEl.styleSheet;
@@ -205,7 +215,7 @@
      * @returns {Element}
      */
     var loadScript = function (url, callback) {
-        var scriptEl = doc.createElement("script");
+        var scriptEl = doc.createElement('script');
         var onLoad = function onload(err) {
             scriptEl.onload = scriptEl.onerror = scriptEl.onreadystatechange = null;
             headEl.removeChild(scriptEl);
@@ -258,7 +268,7 @@
         return node.hasAttribute ? // non-IE6/7
             node.src :
             // see http://msdn.microsoft.com/en-us/library/ms536429(VS.85).aspx
-            node.getAttribute("src", 4);
+            node.getAttribute('src', 4);
     };
 
 
@@ -496,7 +506,7 @@
         }
 
         var extname = getPathExtname(path);
-        return path + (extname === '.' + JS ? '' : '.' + JS);
+        return path + (extname === '.' + JS_STR ? '' : '.' + JS_STR);
     };
 
 
@@ -619,19 +629,18 @@
      */
     var reRequire = /(?:[^.\[]|)\brequire\((['"])([^'"]*)\1(\s*,\s*(['"])([^'"]*)\4)?/g;
 
-
     /**
      * 模块入口类型
      * @type {{}}
      */
     var moduleInTypeMap = {
-        js: 'js',
-        image: 'file',
-        file: 'file',
-        text: 'text',
-        html: 'text',
-        json: 'json',
-        css: 'css'
+        js: JS_STR,
+        image: FILE_STR,
+        file: FILE_STR,
+        text: TEXT_STR,
+        html: TEXT_STR,
+        json: JSON_LOWERCASE_STR,
+        css: CSS_LOWERCASE_STR
     };
 
 
@@ -642,32 +651,32 @@
     var moduleOutTypeMap = {
         js: {
             js: 1,
-            d: 'js'
+            d: JS_STR
         },
         file: {
             url: 1,
             base64: 1,
-            d: 'url'
+            d: URL_LOWERCASE_STR
         },
         text: {
             text: 1,
             url: 2,
             base64: 2,
-            d: 'text'
+            d: TEXT_STR
         },
         css: {
             text: 1,
             url: 2,
             base64: 2,
             style: 3,
-            d: 'text'
+            d: TEXT_STR
         },
         json: {
             js: 1,
             text: 2,
             url: 3,
             base64: 3,
-            d: 'js'
+            d: JS_STR
         }
     };
 
@@ -677,11 +686,11 @@
      * @type {*[]}
      */
     var moduleInTypeMatches = [
-        [JS, /^js$/],
-        ['html', /^html$/],
-        ['css', /^css$/],
-        ['json', /^json$/],
-        ['text', /^txt$/]
+        [JS_STR, /^js$/],
+        [HTML_LOWERCASE_STR, /^html$/],
+        [CSS_LOWERCASE_STR, /^css$/],
+        [JSON_LOWERCASE_STR, /^json$/],
+        [TEXT_STR, /^txt$/]
     ];
 
 
@@ -710,7 +719,7 @@
      * @returns {*[]}
      */
     var parseRequire = function (name, pipeline) {
-        var dftInType = JS;
+        var dftInType = JS_STR;
         var extension = getPathExtname(name).slice(1);
 
         if (isRelativePath(name) && extension && !pipeline) {
@@ -724,7 +733,7 @@
                 }
             });
 
-            dftInType = dftInType || 'file';
+            dftInType = dftInType || FILE_STR;
         }
 
         pipeline = (pipeline ? pipeline.toLowerCase() : dftInType).split('|');
@@ -815,10 +824,10 @@
                     } else {
                         // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
                         // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
-                        var pkgURL = resolveModulePath(coolieNodeModulesDir, dependency + '/package.json', false);
+                        var pkgURL = resolveModulePath(coolieNodeModulesDir, dependency + '/package.' + JSON_LOWERCASE_STR, false);
 
                         ajaxJSON(the.parent, pkgURL, function (pkg) {
-                            mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS, true);
+                            mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
                             callback(mainURL, pkg, pkgURL);
                         });
                     }
@@ -837,7 +846,7 @@
 
                 // ./path/to ../path/to
                 if (isRelativeOrAbsoluteDependency) {
-                    url = the.resolve(dependency, inType === JS);
+                    url = the.resolve(dependency, inType === JS_STR);
                     dependencyModule = loadModule(the, url, inType, outType);
                     the.dependencies[index] = dependencyModule.id;
                 }
@@ -900,7 +909,7 @@
                 var reqMetas = parseRequire(name, pipeLine);
                 var inType = reqMetas[1];
                 var outType = reqMetas[2];
-                var id = the.resolve(name, inType === 'js') + MODULE_SPLIT + outType;
+                var id = the.resolve(name, inType === 'js') + MODULE_SPLIT_STR + outType;
                 return modulesCacheMap[id].expose();
             };
             the.require.resolve = the.resolve;
@@ -920,14 +929,14 @@
                 nextTick(function () {
                     each(names, function (_, name) {
                         if (coolieAMDMode) {
-                            name = name + '.' + coolieAsyncModulesMap[name] + '.' + JS;
+                            name = name + '.' + coolieAsyncModulesMap[name] + '.' + JS_STR;
                         }
 
                         var url =
                             coolieAMDMode ?
                                 resolveModulePath(coolieAsyncModulesDir, name, true) :
                                 resolveModulePath(the.url, name, true);
-                        useModule(null, url, JS, JS, the.pkg, done);
+                        useModule(null, url, JS_STR, JS_STR, the.pkg, done);
                     });
                 });
             };
@@ -1037,7 +1046,7 @@
      * @param callback
      */
     var loadModule = function (parent, url, inType, outType, pkg, callback) {
-        var id = url + MODULE_SPLIT + outType;
+        var id = url + MODULE_SPLIT_STR + outType;
         var cacheModule = modulesCacheMap[id];
 
         if (cacheModule) {
@@ -1091,11 +1100,11 @@
         var moduleOutType = module.outType;
 
         switch (moduleInType) {
-            case 'js':
+            case JS_STR:
                 ajaxText(url, function (err, code) {
                     /* istanbul ignore next */
                     if (err) {
-                        throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + 'JS' + LOAD_ERROR_STR + '\n' + url);
+                        throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + 'JS_STR' + LOAD_ERROR_STR + '\n' + url);
                     }
 
                     var requires = parseRequires(code);
@@ -1121,18 +1130,18 @@
                 });
                 break;
 
-            case 'css':
-            case 'text':
-            case 'json':
+            case CSS_LOWERCASE_STR:
+            case TEXT_STR:
+            case JSON_LOWERCASE_STR:
                 switch (moduleOutType) {
-                    case 'url':
+                    case URL_LOWERCASE_STR:
                     case 'base64':
                         define(id, [], function () {
                             return url;
                         });
                         break;
 
-                    case 'js':
+                    case JS_STR:
                         ajaxText(url, function (err, code) {
                             if (err) {
                                 throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
@@ -1144,7 +1153,7 @@
                         });
                         break;
 
-                    case 'style':
+                    case STYLE_STR:
                         ajaxText(url, function (err, code) {
                             if (err) {
                                 throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
@@ -1171,7 +1180,7 @@
                 }
                 break;
 
-            case 'file':
+            case FILE_STR:
                 // url
                 // base64
                 define(id, [], function () {
@@ -1193,7 +1202,7 @@
      * @param callback
      */
     var useModule = function (parent, url, inType, outType, pkg, callback) {
-        var id = url + (coolieAMDMode ? '' : MODULE_SPLIT + outType);
+        var id = url + (coolieAMDMode ? '' : MODULE_SPLIT_STR + outType);
         var cacheModule = modulesCacheMap[id];
 
         if (cacheModule) {
@@ -1284,7 +1293,7 @@
      * @namespace coolie
      */
     var coolie = win.coolie = {
-        version: VERSION,
+        version: VERSION_STR,
         url: cooliePath,
         configURL: coolieConfigPath,
         importStyle: importStyle,
@@ -1323,12 +1332,12 @@
             }
 
             cf = cf || {};
-            coolieConfigs.mode = cf.mode || 'CJS';
-            coolieAMDMode = coolieConfigs.mode === 'AMD';
+            coolieConfigs.mode = (cf.mode || COMMONS_STR).toUpperCase();
+            coolieAMDMode = coolieConfigs.mode === AMD_STR;
             coolieConfigs.mainModulesDir = coolieMainModulesDir =
                 ensurePathDirname(resolvePath(coolieConfigDirname, cf.mainModulesDir || '.'));
             coolieConfigs.nodeModulesDir = coolieNodeModulesDir =
-                ensurePathDirname(resolvePath(coolieMainModulesDir, cf.nodeModulesDir || '/' + NODE_MODULES + '/'));
+                ensurePathDirname(resolvePath(coolieMainModulesDir, cf.nodeModulesDir || '/' + NODE_MODULES_STR + '/'));
             coolieConfigs.chunkModulesDir = coolieChunkModulesDir =
                 ensurePathDirname(resolvePath(coolieMainModulesDir, cf.chunkModulesDir || '.'));
             coolieConfigs.chunkModulesMap = coolieChunkModulesMap = cf.chunkModulesMap || {};
@@ -1353,7 +1362,7 @@
 
 
         /**
-         * 加载入口模块，只支持 JS 模块
+         * 加载入口模块，只支持 JS_STR 模块
          * @param mainModules
          * @param callback
          * @returns {{coolie}}
@@ -1381,7 +1390,7 @@
             /* istanbul ignore next */
             if (!mainModules && coolieAttributeMainName) {
                 coolieMainPath = resolvePath(coolieMainModulesDir, coolieAttributeMainName);
-                useModule(null, coolieMainPath, JS, JS, null, done);
+                useModule(null, coolieMainPath, JS_STR, JS_STR, null, done);
                 useLength = 1;
                 return coolie;
             }
@@ -1396,7 +1405,7 @@
                 var url = resolveModulePath(coolieMainModulesDir, mainModule, true);
 
                 nextTick(function () {
-                    useModule(null, url, JS, JS, null, done);
+                    useModule(null, url, JS_STR, JS_STR, null, done);
                 });
             });
 
@@ -1437,7 +1446,7 @@
                 }
 
                 coolieChunkMap[chunkId] = true;
-                var chunkName = chunkId + '.' + coolieChunkModulesMap[chunkId] + '.' + JS;
+                var chunkName = chunkId + '.' + coolieChunkModulesMap[chunkId] + '.' + JS_STR;
                 var chunkURL = resolvePath(coolieChunkModulesDir, chunkName);
                 loadScript(chunkURL, noop);
             });
@@ -1456,7 +1465,7 @@
     var coolieChunkModulesMap = {};
     var coolieAsyncModulesDir = coolieDirname;
     var coolieAsyncModulesMap = {};
-    var coolieNodeModulesDir = resolvePath(coolieDirname, '/' + NODE_MODULES + '/');
+    var coolieNodeModulesDir = resolvePath(coolieDirname, '/' + NODE_MODULES_STR + '/');
 
     /* istanbul ignore next */
     if (coolieConfigPath) {
