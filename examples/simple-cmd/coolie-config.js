@@ -1,5 +1,5 @@
 coolie.config({
-    mode: 'cjs',
+    mode: 'cmd',
     mainModulesDir: './',
     nodeModulesDir: '../../node_modules/'
 }).use();
