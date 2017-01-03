@@ -31,7 +31,7 @@
     var win = window;
     var doc = win.document;
     var headEl = doc.head || doc.getElementsByTagName('head')[0] || doc.documentElement;
-
+    var executingModule;
 
     // ==============================================================================
     // =================================== 工具函数 ==================================
@@ -883,6 +883,7 @@
                     return the.exports;
                 }
 
+                executingModule = the;
                 the.state = MODULE_STATE_EXECUTED;
 
                 var originalFactory = the.factory;
@@ -1047,6 +1048,7 @@
      * @param callback
      */
     var loadModule = function (parent, url, inType, outType, pkg, callback) {
+        console.log('load module', url);
         var id = url + MODULE_SPLIT_STR + outType;
         var cacheModule = modulesCacheMap[id];
 
@@ -1089,16 +1091,22 @@
 
                 default:
                     // 对 cmd 的兼容
+                    // define(id, deps, function() {
+                    //    define(id, deps, function() {
+                    //    ^^^^^^
+                    //    这里的 define 执行时，module 已经不是上下文的 module 了，而是当前正在执行的 module
+                    //        // ...
+                    //    });
+                    // });
                     // define(factory);
-                    if (module.state === MODULE_STATE_EXECUTED) {
-                        var ret = args[argsLength - 1](module.require, module.exports, module);
+                    var ret = args[argsLength - 1](executingModule.require, executingModule.exports, executingModule);
 
-                        if (ret !== undefined) {
-                            module.exports = ret;
-                        }
+                    if (ret !== undefined) {
+                        executingModule.exports = ret;
                     }
             }
         };
+        define.coolie = define.amd = define.cmd = define.umd = coolie;
         var moduleInType = module.inType;
         var moduleOutType = module.outType;
 
