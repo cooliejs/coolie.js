@@ -1,4 +1,3 @@
-define(function (require, exports, module) {
     'use strict';
 
     module.exports = {
@@ -43,4 +42,3 @@ define(function (require, exports, module) {
         css_base64: require('./sub/css.css', 'css|base64'),
         css_style: require('./sub/css.css', 'css|style')
     };
-});

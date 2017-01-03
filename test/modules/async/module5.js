@@ -5,6 +5,4 @@
  */
 
 
-define(function (require, exports, module) {
-    return 'module5';
-});
+module.exports = 'module5';

@@ -111,6 +111,13 @@ body = body.replace(reComments, function (source) {
 //     });
 // };
 
+
+var replaceVersion = function () {
+    var pkg = require('../package.json');
+    return body.replace(/\{\{VERSION}}/g, pkg.version);
+};
+
+
 var minify = function () {
     var minBody = uglifyJS.minify(body, {
         fromString: true,
@@ -125,6 +132,6 @@ var minify = function () {
     return commentsBody + '\n' + minBody;
 };
 
-fs.writeFileSync(miniFile, minify(), 'utf8');
+fs.writeFileSync(miniFile, minify(replaceVersion()), 'utf8');
 console.log('minify coolie.js to coolie.min.js success');
 

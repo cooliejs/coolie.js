@@ -9,6 +9,7 @@ describe('coolie.js', function () {
     'use strict';
 
     coolie.config({
+        mode: 'CJS',
         mainModulesDir: coolie.resolvePath(coolie.dirname, './test/modules/'),
         nodeModulesDir: './__node_modules/',
         global: {

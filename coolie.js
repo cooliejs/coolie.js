@@ -24,6 +24,7 @@
     var URL_LOWERCASE_STR = 'url';
     var CSS_LOWERCASE_STR = 'css';
     var HTML_LOWERCASE_STR = 'html';
+    var BASE64_STR = 'base64';
     var STYLE_STR = 'style';
     var COMMONS_STR = 'CJS';
     var AMD_STR = 'AMD';
@@ -1078,6 +1079,7 @@
                     /* istanbul ignore next */
                     throw new SyntaxError('模块书写语法不正确\n' + id);
 
+                // 对 amd 的兼容
                 // define(id, deps, factory);
                 case 3:
                     if (module.state !== MODULE_STATE_EXECUTED) {
@@ -1086,7 +1088,8 @@
                     break;
 
                 default:
-                    // 对 amd 的兼容
+                    // 对 cmd 的兼容
+                    // define(factory);
                     if (module.state === MODULE_STATE_EXECUTED) {
                         var ret = args[argsLength - 1](module.require, module.exports, module);
 
@@ -1135,7 +1138,7 @@
             case JSON_LOWERCASE_STR:
                 switch (moduleOutType) {
                     case URL_LOWERCASE_STR:
-                    case 'base64':
+                    case BASE64_STR:
                         define(id, [], function () {
                             return url;
                         });
