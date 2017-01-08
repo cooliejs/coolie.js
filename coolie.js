@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.1.4
+ * @version 2.1.5
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION_STR = '2.1.4';
+    var VERSION_STR = '2.1.5';
     var COOLIE_STR = 'coolie';
     var NODE_MODULES_STR = 'node_modules';
     var JS_STR = 'js';
@@ -1297,6 +1297,7 @@
     var coolieCallbackArgs = null;
     var coolieChunkMap = {};
     var coolieNodeModuleMainPath = null;
+    var coolieUsed = false;
 
     /**
      * @namespace coolie
@@ -1336,7 +1337,7 @@
          * @returns {{coolie}}
          */
         config: function (cf) {
-            if (coolieConfigs.mode) {
+            if (coolieUsed) {
                 return coolie;
             }
 
@@ -1377,6 +1378,7 @@
          * @returns {{coolie}}
          */
         use: function (mainModules, callback) {
+            coolieUsed = true;
             callback = isFunction(callback) ? callback : noop;
 
             injectWindowDefine();
