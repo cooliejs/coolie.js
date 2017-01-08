@@ -31,7 +31,6 @@
     var win = window;
     var doc = win.document;
     var headEl = doc.head || doc.getElementsByTagName('head')[0] || doc.documentElement;
-    var executingModule;
 
     // ==============================================================================
     // =================================== 工具函数 ==================================
@@ -883,7 +882,6 @@
                     return the.exports;
                 }
 
-                executingModule = the;
                 the.state = MODULE_STATE_EXECUTED;
 
                 var originalFactory = the.factory;
@@ -1098,10 +1096,10 @@
                     //    });
                     // });
                     // define(factory);
-                    var ret = args[argsLength - 1](executingModule.require, executingModule.exports, executingModule);
+                    var ret = args[argsLength - 1](module.require, module.exports, module);
 
                     if (ret !== undefined) {
-                        executingModule.exports = ret;
+                        module.exports = ret;
                     }
             }
         };
@@ -1133,9 +1131,8 @@
 
                     var moduleCode = moduleWrap(url, id, dependencyNameList, code);
 
-                    win.define = define;
                     /* jshint evil: true */
-                    win.eval(moduleCode);
+                    new Function('define', moduleCode)(define);
                 });
                 break;
 

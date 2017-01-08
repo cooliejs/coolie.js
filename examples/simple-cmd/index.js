@@ -1,3 +1,4 @@
 define(function () {
-    document.getElementById('demo').innerHTML = 'coolie@2.x CMD mode';
+    var cmd = require('./cmd');
+    document.getElementById('demo').innerHTML = 'coolie@2.x ' + cmd.a;
 });
