@@ -15,7 +15,30 @@ describe('coolie.js', function () {
         global: {
             abc: true
         }
-    }).use('./main.js');
+    });
+
+    coolie.config({
+        mode: 'cmd'
+    });
+
+    coolie.config({
+        mode: 'cjs'
+    });
+
+    coolie.config({
+        nodeModulesDir: './__node_modules2/'
+    });
+
+    coolie.config({
+        nodeModulesDir: './__node_modules/'
+    });
+
+    coolie.use('./main.js');
+
+
+    it('rewrite configs', function () {
+        expect(coolie.configs.mode).toBe('CJS');
+    });
 
     var getStyle = function (el, cssKey) {
         return getComputedStyle(el).getPropertyValue(cssKey);
