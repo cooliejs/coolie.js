@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.1.5
+ * @version 2.1.6
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION_STR = '2.1.5';
+    var VERSION_STR = '2.1.6';
     var COOLIE_STR = 'coolie';
     var NODE_MODULES_STR = 'node_modules';
     var JS_STR = 'js';
@@ -1129,7 +1129,7 @@
                 ajaxText(url, function (err, code) {
                     /* istanbul ignore next */
                     if (err) {
-                        throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + 'JS_STR' + LOAD_ERROR_STR + '\n' + url);
+                        throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
                     }
 
                     var requires = parseRequires(code);
@@ -1410,7 +1410,7 @@
 
 
         /**
-         * 加载入口模块，只支持 JS_STR 模块
+         * 加载入口模块，只支持 JS 模块
          * @param mainModules
          * @param callback
          * @returns {{coolie}}
