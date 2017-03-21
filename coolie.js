@@ -793,6 +793,7 @@
     var modulesCacheMap = {};
     var moduleGid = 0;
     var nodeModulesNameMap = {};
+    var mainModules = [];
 
     var Module = function (parent, id, inType, outType, pkg) {
         var the = this;
@@ -986,42 +987,49 @@
             var module = this;
             var mainModule = module.main;
 
-            if (!mainModule) {
+            if (!mainModules.length) {
                 return;
             }
 
-            var allLoaded = true;
-            var foundMap = {};
+            each(mainModules, function(index, mainModule) {
+                if (!mainModule.expose) {
+                    return;
+                }
 
-            // 从祖先模块开始向下遍历查询依赖模块是否都加载完毕
-            var checkModule = function (module) {
-                each(module.dependencies, function (index, dependency) {
-                    var cacheModule = modulesCacheMap[dependency];
+                var allLoaded = true;
+                var foundMap = {};
 
-                    if (!cacheModule || cacheModule.state < MODULE_STATE_LOADED) {
-                        allLoaded = false;
-                        return false;
-                    }
+                // 从祖先模块开始向下遍历查询依赖模块是否都加载完毕
+                var checkModule = function (module) {
+                    each(module.dependencies, function (index, dependency) {
+                        var cacheModule = modulesCacheMap[dependency];
 
-                    if (foundMap[cacheModule.id]) {
-                        return;
-                    }
+                        if (!cacheModule || cacheModule.state < MODULE_STATE_LOADED) {
+                            allLoaded = false;
+                            return false;
+                        }
 
-                    foundMap[cacheModule.id] = true;
-                    checkModule(cacheModule);
-                });
-            };
+                        if (foundMap[cacheModule.id]) {
+                            return;
+                        }
 
-            checkModule(mainModule);
+                        foundMap[cacheModule.id] = true;
+                        checkModule(cacheModule);
+                    });
+                };
 
-            if (!allLoaded) {
-                return;
-            }
+                checkModule(mainModule);
 
-            mainModule.expose();
-            nextTick(function () {
-                each(mainModule.callbacks, function (_, callback) {
-                    callback(mainModule.exports);
+                if (!allLoaded) {
+                    return;
+                }
+
+                mainModule.expose();
+                mainModule.expose = null;
+                nextTick(function () {
+                    each(mainModule.callbacks, function (_, callback) {
+                        callback(mainModule.exports);
+                    });
                 });
             });
         }
@@ -1073,16 +1081,13 @@
         var module = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
         module.url = url;
 
-        if (parent) {
-            module.main = module.main || parent.main;
-        } else {
-            module.main = module;
-
+        if (!parent) {
             if (isFunction(callback)) {
                 module.callbacks.push(callback);
             }
-        }
 
+            mainModules.push(module);
+        }
 
         var dependencyMetaList = [];
         var dependencyNameList = [];
@@ -1270,7 +1275,7 @@
             if (id === '0') {
                 id = queue.last.id;
                 cacheModule = modulesCacheMap[id];
-                cacheModule.main = cacheModule;
+                mainModules.push(cacheModule);
             }
 
             var module = modulesCacheMap[id] = cacheModule || new Module(null, id);
@@ -1284,13 +1289,11 @@
 
             if (parentModule) {
                 module.url = parentModule.url;
-                module.main = module.main || parentModule.main;
             }
 
             each(dependencies, function (index, depId) {
                 var depModule = modulesCacheMap[depId] = modulesCacheMap[depId] || new Module(module, depId);
                 depModule.url = module.url;
-                depModule.main = module.main;
             });
 
             module.build(dependencies, factory);
