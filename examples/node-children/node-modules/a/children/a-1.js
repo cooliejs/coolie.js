@@ -1,0 +1,1 @@
+module.exports = 'a/children/a-1';

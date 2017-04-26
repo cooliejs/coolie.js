@@ -1,0 +1,1 @@
+alert(require('a/children/a-1'));
