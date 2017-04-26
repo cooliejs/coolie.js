@@ -64,13 +64,6 @@ describe('coolie.js', function () {
         });
     });
 
-    // it('.use twice', function (done) {
-    //     coolie.use('main2.js', function (exports) {
-    //         expect(exports).toEqual('main2');
-    //         done();
-    //     });
-    // });
-
     it('.use delay', function (done) {
         var index = 0;
         var length = 2;
@@ -109,6 +102,7 @@ describe('coolie.js', function () {
             expect(exports.module2).toEqual('module2');
 
             expect(exports.nodeModuleA).toEqual('a/a-b');
+            expect(exports.nodeModuleAChild).toEqual('a/child');
 
             expect(exports.text).toEqual('text');
             expect(exports.text_js).toEqual('text');

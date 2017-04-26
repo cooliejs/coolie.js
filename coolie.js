@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.1.7
+ * @version 2.2.0
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION_STR = '2.1.7';
+    var VERSION_STR = '2.2.0';
     var COOLIE_STR = 'coolie';
     var NODE_MODULES_STR = 'node_modules';
     var JS_STR = 'js';
@@ -792,7 +792,6 @@
     var MODULE_STATE_EXECUTED = 2;
     var modulesCacheMap = {};
     var moduleGid = 0;
-    var nodeModulesNameMap = {};
     var mainModules = [];
 
     var Module = function (parent, id, inType, outType, pkg) {
@@ -830,25 +829,23 @@
              */
             var resolveNodeModuleURL = function (dependency, callback) {
                 var mainURL;
-                var nodeModuleDir = resolvePath(coolieNodeModulesDir, dependency + '/');
+                var dependencyPath = dependency.split('/');
+                var nodeModuleName = dependencyPath.shift();
+                var nodeModuleFile = dependencyPath.join('/') || coolieNodeModuleMainPath;
+                var nodeModuleDir = resolvePath(coolieNodeModulesDir, nodeModuleName + '/');
 
-                if (coolieNodeModuleMainPath) {
-                    mainURL = resolveModulePath(nodeModuleDir, coolieNodeModuleMainPath, true);
+                if (nodeModuleFile) {
+                    mainURL = resolveModulePath(nodeModuleDir, nodeModuleFile, true);
                     callback(mainURL);
                 } else {
-                    // 解析地址已缓存
-                    if (nodeModulesNameMap[dependency]) {
-                        callback.apply(win, nodeModulesNameMap[dependency]);
-                    } else {
-                        // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
-                        // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
-                        var pkgURL = resolveModulePath(coolieNodeModulesDir, dependency + '/package.' + JSON_LOWERCASE_STR, false);
+                    // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
+                    // node 模块只从根目录的 node_modules 查找，前端模块必须平级安装
+                    var pkgURL = resolveModulePath(coolieNodeModulesDir, nodeModuleName + '/package.' + JSON_LOWERCASE_STR, false);
 
-                        ajaxJSON(the.parent, pkgURL, function (pkg) {
-                            mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
-                            callback(mainURL, pkg, pkgURL);
-                        });
-                    }
+                    ajaxJSON(the.parent, pkgURL, function (pkg) {
+                        mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
+                        callback(mainURL, pkg, pkgURL);
+                    });
                 }
             };
 
@@ -862,20 +859,22 @@
                 var url = dependency;
                 var dependencyModule;
 
-                // ./path/to ../path/to
+                // ./path/to
+                // ../path/to
+                // /path/to
                 if (isRelativeOrAbsoluteDependency) {
                     url = the.resolve(dependency, inType === JS_STR);
                     dependencyModule = loadModule(the, url, inType, outType);
                     the.dependencies[index] = dependencyModule.id;
                 }
                 // name
+                // name/path/to
                 // 需要根据目录下 package.json 来判断
                 else {
                     resolveNodeModuleURL(dependency, function (url, pkg, pkgURL) {
                         dependencyModule = loadModule(the, url, inType, outType, pkg);
                         dependencyModule.pkgURL = pkgURL;
                         the.resolvedMap[dependency] = url;
-                        nodeModulesNameMap[the.dependencies[index]] = arguments;
                         the.dependencies[index] = dependencyModule.id;
                     });
                 }
@@ -990,7 +989,7 @@
                 return;
             }
 
-            each(mainModules, function(index, mainModule) {
+            each(mainModules, function (index, mainModule) {
                 if (!mainModule.expose) {
                     return;
                 }

@@ -1,1 +1,4 @@
-alert(require('a/children/a-1'));
+alert(
+    require('a') +
+    require('a/children/a-1')
+);

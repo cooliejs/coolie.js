@@ -6,7 +6,8 @@
         module2: require('./module2.js'),
         
         nodeModuleA: require('a'),
-        
+        nodeModuleAChild: require('a/child'),
+
         text: require('./text.txt', 'text'),
         text_js: require('./text.txt', 'text|js'),
         text_text: require('./text.txt', 'text|text'),
