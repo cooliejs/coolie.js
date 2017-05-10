@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.2.0
+ * @version 2.2.1
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION_STR = '2.2.0';
+    var VERSION_STR = '2.2.1';
     var COOLIE_STR = 'coolie';
     var NODE_MODULES_STR = 'node_modules';
     var JS_STR = 'js';
@@ -793,6 +793,7 @@
     var modulesCacheMap = {};
     var moduleGid = 0;
     var mainModules = [];
+    var nodeModulesResolveMap = {};
 
     var Module = function (parent, id, inType, outType, pkg) {
         var the = this;
@@ -828,14 +829,19 @@
              * @param callback
              */
             var resolveNodeModuleURL = function (dependency, callback) {
-                var mainURL;
+                var mainURL = nodeModulesResolveMap[dependency];
+
+                if (mainURL) {
+                    return callback(mainURL);
+                }
+
                 var dependencyPath = dependency.split('/');
                 var nodeModuleName = dependencyPath.shift();
                 var nodeModuleFile = dependencyPath.join('/') || coolieNodeModuleMainPath;
                 var nodeModuleDir = resolvePath(coolieNodeModulesDir, nodeModuleName + '/');
 
                 if (nodeModuleFile) {
-                    mainURL = resolveModulePath(nodeModuleDir, nodeModuleFile, true);
+                    nodeModulesResolveMap[dependency] = mainURL = resolveModulePath(nodeModuleDir, nodeModuleFile, true);
                     callback(mainURL);
                 } else {
                     // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
@@ -843,13 +849,24 @@
                     var pkgURL = resolveModulePath(coolieNodeModulesDir, nodeModuleName + '/package.' + JSON_LOWERCASE_STR, false);
 
                     ajaxJSON(the.parent, pkgURL, function (pkg) {
-                        mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
+                        nodeModulesResolveMap[dependency] = mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
                         callback(mainURL, pkg, pkgURL);
                     });
                 }
             };
 
             the.build(dependencyNameList, factory);
+
+            var depLen = dependencyMetaList.length;
+            var donLen = 0;
+            var checkDoneAndExec = function () {
+                dependencyMetaList;
+                dependencyNameList;
+                if (donLen === depLen) {
+                    donLen++;
+                    the.exec();
+                }
+            };
 
             each(dependencyMetaList, function (index, dependencyMeta) {
                 var dependency = dependencyMeta.name;
@@ -864,7 +881,10 @@
                 // /path/to
                 if (isRelativeOrAbsoluteDependency) {
                     url = the.resolve(dependency, inType === JS_STR);
-                    dependencyModule = loadModule(the, url, inType, outType);
+                    dependencyModule = loadModule(the, url, inType, outType, null, null, function () {
+                        donLen++;
+                        checkDoneAndExec();
+                    });
                     the.dependencies[index] = dependencyModule.id;
                 }
                 // name
@@ -872,14 +892,19 @@
                 // 需要根据目录下 package.json 来判断
                 else {
                     resolveNodeModuleURL(dependency, function (url, pkg, pkgURL) {
-                        dependencyModule = loadModule(the, url, inType, outType, pkg);
+                        dependencyModule = loadModule(the, url, inType, outType, pkg, null, function () {
+                            donLen++;
+                            checkDoneAndExec();
+                        });
                         dependencyModule.pkgURL = pkgURL;
                         the.resolvedMap[dependency] = url;
                         the.dependencies[index] = dependencyModule.id;
                     });
                 }
             });
-            the.exec();
+
+            // 无依赖的时候也去尝试检查并执行
+            checkDoneAndExec();
         },
 
 
@@ -995,11 +1020,19 @@
                 }
 
                 var allLoaded = true;
-                var foundMap = {};
+                var checkedMap = {};
 
                 // 从祖先模块开始向下遍历查询依赖模块是否都加载完毕
                 var checkModule = function (module) {
+                    if (!allLoaded) {
+                        return;
+                    }
+
                     each(module.dependencies, function (index, dependency) {
+                        if (!allLoaded) {
+                            return false;
+                        }
+
                         var cacheModule = modulesCacheMap[dependency];
 
                         if (!cacheModule || cacheModule.state < MODULE_STATE_LOADED) {
@@ -1007,11 +1040,11 @@
                             return false;
                         }
 
-                        if (foundMap[cacheModule.id]) {
+                        if (checkedMap[cacheModule.id]) {
                             return;
                         }
 
-                        foundMap[cacheModule.id] = true;
+                        checkedMap[cacheModule.id] = true;
                         checkModule(cacheModule);
                     });
                 };
@@ -1066,13 +1099,18 @@
      * @param inType
      * @param outType
      * @param pkg
-     * @param callback
+     * @param mainCallback
+     * @param moduleCallback
      */
-    var loadModule = function (parent, url, inType, outType, pkg, callback) {
+    var loadModule = function (parent, url, inType, outType, pkg, mainCallback, moduleCallback) {
         var id = url + MODULE_SPLIT_STR + outType;
         var cacheModule = modulesCacheMap[id];
 
         if (cacheModule) {
+            if (isFunction(moduleCallback)) {
+                moduleCallback();
+            }
+
             return cacheModule;
         }
 
@@ -1080,8 +1118,8 @@
         module.url = url;
 
         if (!parent) {
-            if (isFunction(callback)) {
-                module.callbacks.push(callback);
+            if (isFunction(mainCallback)) {
+                module.callbacks.push(mainCallback);
             }
 
             mainModules.push(module);
@@ -1121,6 +1159,10 @@
                     if (ret !== undefined) {
                         module.exports = ret;
                     }
+            }
+
+            if (isFunction(moduleCallback)) {
+                moduleCallback();
             }
         };
         define.coolie = define.amd = define.cmd = define.umd = coolie;
@@ -1225,29 +1267,29 @@
      * @param inType
      * @param outType
      * @param pkg
-     * @param callback
+     * @param mainCallback
      */
-    var useModule = function (parent, url, inType, outType, pkg, callback) {
+    var useModule = function (parent, url, inType, outType, pkg, mainCallback) {
         var id = url + (coolieAMDMode ? '' : MODULE_SPLIT_STR + outType);
         var cacheModule = modulesCacheMap[id];
 
         if (cacheModule) {
             if (cacheModule.state === MODULE_STATE_EXECUTED) {
-                return callback(cacheModule.exports);
+                return mainCallback(cacheModule.exports);
             }
 
-            return cacheModule.callbacks.push(callback);
+            return cacheModule.callbacks.push(mainCallback);
         }
 
         if (coolieAMDMode) {
             cacheModule = modulesCacheMap[id] = new Module(parent, id, inType, outType, pkg);
             cacheModule.url = url;
-            cacheModule.callbacks.push(callback);
+            cacheModule.callbacks.push(mainCallback);
             queue.task(url, function (next) {
                 loadScript(url, next);
             });
         } else {
-            loadModule(parent, url, inType, outType, pkg, callback);
+            loadModule(parent, url, inType, outType, pkg, mainCallback);
         }
     };
 
