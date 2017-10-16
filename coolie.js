@@ -1,7 +1,7 @@
 /**
  * coolie 苦力
  * @author coolie.ydr.me
- * @version 2.2.1
+ * @version 2.2.2
  * @license MIT
  */
 
@@ -9,7 +9,7 @@
 ;(function () {
     'use strict';
 
-    var VERSION_STR = '2.2.1';
+    var VERSION_STR = '2.2.2';
     var COOLIE_STR = 'coolie';
     var NODE_MODULES_STR = 'node_modules';
     var JS_STR = 'js';
@@ -860,11 +860,11 @@
             var depLen = dependencyMetaList.length;
             var donLen = 0;
             var checkDoneAndExec = function () {
-                dependencyMetaList;
-                dependencyNameList;
                 if (donLen === depLen) {
                     donLen++;
-                    the.exec();
+                    nextTick(function () {
+                        the.exec();
+                    });
                 }
             };
 
@@ -1008,8 +1008,6 @@
          * 模块尝试执行
          */
         exec: function () {
-            var module = this;
-
             if (!mainModules.length) {
                 return;
             }
