@@ -1433,17 +1433,18 @@
             coolieConfigs.asyncModulesMap = coolieAsyncModulesMap = cf.asyncModulesMap || {};
             coolieConfigs.dirname = coolieDirname;
             coolieConfigs.configDirname = coolieConfigDirname;
+            var debug;
 
             if ('debug' in cf) {
                 //noinspection JSAnnotator
-                var debug = cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
-
-                win.process = {
-                    env: {
-                        NODE_ENV: debug ? DEVELOPMENT_STR : PRODUCTION_STR
-                    }
-                };
+                debug = cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
             }
+
+            win.process = {
+                env: {
+                    NODE_ENV: debug ? DEVELOPMENT_STR : PRODUCTION_STR
+                }
+            };
 
             if (cf.nodeModuleMainPath) {
                 coolieNodeModuleMainPath = coolieConfigs.nodeModuleMainPath = cf.nodeModuleMainPath;
