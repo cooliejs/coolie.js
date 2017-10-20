@@ -28,6 +28,8 @@
     var STYLE_STR = 'style';
     var COMMONS_STR = 'CJS';
     var AMD_STR = 'AMD';
+    var DEVELOPMENT_STR = 'development';
+    var PRODUCTION_STR = 'production';
     var win = window;
     var doc = win.document;
     var headEl = doc.head || doc.getElementsByTagName('head')[0] || doc.documentElement;
@@ -1434,7 +1436,13 @@
 
             if ('debug' in cf) {
                 //noinspection JSAnnotator
-                cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
+                var debug = cf.global.DEBUG = coolieConfigs.debug = cf.debug !== false;
+
+                win.process = {
+                    env: {
+                        NODE_ENV: debug ? DEVELOPMENT_STR : PRODUCTION_STR
+                    }
+                };
             }
 
             if (cf.nodeModuleMainPath) {
