@@ -670,6 +670,9 @@
     var moduleOutTypeMap = {
         js: {
             js: 1,
+            text: 2,
+            url: 3,
+            base64: 4,
             d: JS_STR
         },
         file: {
@@ -1169,38 +1172,46 @@
         var moduleInType = module.inType;
         var moduleOutType = module.outType;
 
-        switch (moduleInType) {
-            case JS_STR:
-                ajaxText(url, function (err, code) {
-                    /* istanbul ignore next */
-                    if (err) {
-                        throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
-                    }
+        // js 出入模块独立处理
+        if (moduleInType === JS_STR && moduleOutType === JS_STR) {
+            ajaxText(url, function (err, code) {
+                /* istanbul ignore next */
+                if (err) {
+                    throw new URIError((module.parent ? module.parent.url + DEPENDENT_STR : '') + moduleInType + LOAD_ERROR_STR + '\n' + url);
+                }
 
-                    var requires = parseRequires(code);
+                var requires = parseRequires(code);
 
-                    each(requires, function (index, meta) {
-                        var name = meta[0];
-                        var inType = meta[1];
-                        var outType = meta[2];
-                        dependencyMetaList.push({
-                            name: name,
-                            inType: inType,
-                            outType: outType
-                        });
-                        dependencyNameList.push(name);
+                each(requires, function (index, meta) {
+                    var name = meta[0];
+                    var inType = meta[1];
+                    var outType = meta[2];
+                    dependencyMetaList.push({
+                        name: name,
+                        inType: inType,
+                        outType: outType
                     });
+                    dependencyNameList.push(name);
+                });
 
-                    var moduleCode = moduleWrap(url, id, dependencyNameList, code);
+                var moduleCode = moduleWrap(url, id, dependencyNameList, code);
 
-                    /* jshint evil: true */
-                    new Function('define', moduleCode)(define);
+                /* jshint evil: true */
+                new Function('define', moduleCode)(define);
+            });
+            return;
+        }
+
+        switch (moduleInType) {
+            case FILE_STR:
+                // url
+                // base64
+                define(id, [], function () {
+                    return url;
                 });
                 break;
 
-            case CSS_LOWERCASE_STR:
-            case TEXT_STR:
-            case JSON_LOWERCASE_STR:
+            default:
                 switch (moduleOutType) {
                     case URL_LOWERCASE_STR:
                     case BASE64_STR:
@@ -1247,13 +1258,6 @@
                         break;
                 }
                 break;
-
-            case FILE_STR:
-                // url
-                // base64
-                define(id, [], function () {
-                    return url;
-                });
         }
 
         return module;
