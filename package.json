@@ -24,11 +24,7 @@
     "commonJS",
     "seajs"
   ],
-  "author": {
-    "name": "cloudcome",
-    "email": "cloudcome@163.com",
-    "url": "http://ydr.me"
-  },
+  "author": "yundanran<cloudcome@163.com> https://ydr.me",
   "homepage": "https://github.com/cooliejs/coolie.js",
   "repository": {
     "type": "git",
