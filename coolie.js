@@ -833,8 +833,9 @@
              * @param dependency
              * @param callback
              */
-            var resolveNodeModuleURL = function (dependency, callback) {
-                var mainURL = nodeModulesResolveMap[dependency];
+            var resolveNodeModuleURL = function (dependency, inType, outType, callback) {
+                var dependencyId = dependency + MODULE_SPLIT_STR + outType;
+                var mainURL = nodeModulesResolveMap[dependencyId];
 
                 if (mainURL) {
                     return callback(mainURL);
@@ -846,7 +847,7 @@
                 var nodeModuleDir = resolvePath(coolieNodeModulesDir, nodeModuleName + '/');
 
                 if (nodeModuleFile) {
-                    nodeModulesResolveMap[dependency] = mainURL = resolveModulePath(nodeModuleDir, nodeModuleFile, true);
+                    nodeModulesResolveMap[dependencyId] = mainURL = resolveModulePath(nodeModuleDir, nodeModuleFile, inType === JS_STR);
                     callback(mainURL);
                 } else {
                     // ！！为了减少复杂度，避免模块可能无法被查找到的 BUG，因 npm 不同的版本，安装依赖模块的存放方式不一致
@@ -854,7 +855,7 @@
                     var pkgURL = resolveModulePath(coolieNodeModulesDir, nodeModuleName + '/package.' + JSON_LOWERCASE_STR, false);
 
                     ajaxJSON(the.parent, pkgURL, function (pkg) {
-                        nodeModulesResolveMap[dependency] = mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
+                        nodeModulesResolveMap[dependencyId] = mainURL = resolveModulePath(pkgURL, pkg.main || INDEX_JS_STR, true);
                         callback(mainURL, pkg, pkgURL);
                     });
                 }
@@ -877,6 +878,7 @@
                 var dependency = dependencyMeta.name;
                 var inType = dependencyMeta.inType;
                 var outType = dependencyMeta.outType;
+                var dependencyId = dependency + MODULE_SPLIT_STR + outType;
                 var isRelativeOrAbsoluteDependency = isRelativePath(dependency) || isAbsolutePath(dependency);
                 var url = dependency;
                 var dependencyModule;
@@ -885,7 +887,7 @@
                 // ../path/to
                 // /path/to
                 if (isRelativeOrAbsoluteDependency) {
-                    url = the.resolve(dependency, inType === JS_STR);
+                    url = the.resolve(dependency, outType);
                     dependencyModule = loadModule(the, url, inType, outType, null, null, function () {
                         donLen++;
                         checkDoneAndExec();
@@ -896,13 +898,13 @@
                 // name/path/to
                 // 需要根据目录下 package.json 来判断
                 else {
-                    resolveNodeModuleURL(dependency, function (url, pkg, pkgURL) {
+                    resolveNodeModuleURL(dependency, inType, outType, function (url, pkg, pkgURL) {
                         dependencyModule = loadModule(the, url, inType, outType, pkg, null, function () {
                             donLen++;
                             checkDoneAndExec();
                         });
                         dependencyModule.pkgURL = pkgURL;
-                        the.resolvedMap[dependency] = url;
+                        the.resolvedMap[dependencyId] = url;
                         the.dependencies[index] = dependencyModule.id;
                     });
                 }
@@ -956,7 +958,7 @@
                 var reqMetas = parseRequire(name, pipeLine);
                 var inType = reqMetas[1];
                 var outType = reqMetas[2];
-                var id = the.resolve(name, inType === 'js') + MODULE_SPLIT_STR + outType;
+                var id = the.resolve(name, outType) + MODULE_SPLIT_STR + outType;
                 return modulesCacheMap[id].expose();
             };
             the.require.resolve = the.resolve;
@@ -994,18 +996,19 @@
         /**
          * 模块路径
          * @param name
-         * @param isJS
+         * @param outType
          * @returns {*}
          */
-        resolve: function (name, isJS) {
+        resolve: function (name, outType) {
             var the = this;
-            var url = the.resolvedMap[name];
+            var id = name + MODULE_SPLIT_STR + outType;
+            var url = the.resolvedMap[id];
 
             if (url) {
                 return url;
             }
 
-            return resolveModulePath(the.id, name, isJS);
+            return resolveModulePath(the.id, name, outType === JS_STR);
         },
 
 
