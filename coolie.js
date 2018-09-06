@@ -887,7 +887,7 @@
                 // ../path/to
                 // /path/to
                 if (isRelativeOrAbsoluteDependency) {
-                    url = the.resolve(dependency, outType);
+                    url = the.resolve(dependency, inType, outType);
                     dependencyModule = loadModule(the, url, inType, outType, null, null, function () {
                         donLen++;
                         checkDoneAndExec();
@@ -958,7 +958,7 @@
                 var reqMetas = parseRequire(name, pipeLine);
                 var inType = reqMetas[1];
                 var outType = reqMetas[2];
-                var id = the.resolve(name, outType) + MODULE_SPLIT_STR + outType;
+                var id = the.resolve(name, inType, outType) + MODULE_SPLIT_STR + outType;
                 return modulesCacheMap[id].expose();
             };
             the.require.resolve = the.resolve;
@@ -996,10 +996,11 @@
         /**
          * 模块路径
          * @param name
+         * @param inType
          * @param outType
          * @returns {*}
          */
-        resolve: function (name, outType) {
+        resolve: function (name, inType, outType) {
             var the = this;
             var id = name + MODULE_SPLIT_STR + outType;
             var url = the.resolvedMap[id];
@@ -1008,7 +1009,7 @@
                 return url;
             }
 
-            return resolveModulePath(the.id, name, outType === JS_STR);
+            return resolveModulePath(the.id, name, inType === JS_STR && outType === JS_STR);
         },
 
 
