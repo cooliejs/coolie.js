@@ -948,7 +948,13 @@
                     the.exports = ret;
                 }
 
-                return the.exports;
+                var exports = the.exports;
+
+                if (exports.__esModule === true && exports.default !== undefined) {
+                    return exports.default;
+                }
+
+                return exports;
             };
             the.require = function (name, pipeLine) {
                 if (coolieAMDMode) {
