@@ -1,4 +1,5 @@
 document.getElementById('demo').innerHTML =
-    'found tool' +
-    require('./tool');
+    'success: 2lines' +
+    require('./tool1') +
+    require('./tool2');
 

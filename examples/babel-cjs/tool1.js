@@ -4,4 +4,4 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 exports.default = void 0;
-exports.default = 'exports.default equal module.exports';
+exports.default = '<br>exports.default';
