@@ -100,9 +100,21 @@ describe('coolie.js', function () {
             expect(exports.module0).toEqual('module0');
             expect(exports.module1).toEqual('module1');
             expect(exports.module2).toEqual('module2');
+            expect(exports.esModule).toEqual('es-module');
 
             expect(exports.nodeModuleA).toEqual('a/a-b');
-            expect(exports.nodeModuleAChild).toEqual('a/child');
+            expect(exports.nodeModuleAChildJS).toEqual('a/child');
+            expect(exports.nodeModuleAChildTxt).toEqual('txt');
+
+            expect(exports.scopeModuleA).toEqual('@scope/a');
+            expect(exports.scopeModuleAChildJS).toEqual('@scope/a/child');
+            expect(exports.scopeModuleAChildTxt).toEqual('txt');
+
+            expect(exports.js).toEqual('js');
+            expect(exports.js_js).toEqual('js');
+            expect(exports.js_text).toEqual('module.exports = \'js\';');
+            expect(exports.js_url).toMatch(/^http/);
+            expect(exports.js_base64).toMatch(/^http/);
 
             expect(exports.text).toEqual('text');
             expect(exports.text_js).toEqual('text');

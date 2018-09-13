@@ -4,16 +4,28 @@
         module0: require('./module0.js'),
         module1: require('./module1.js'),
         module2: require('./module2.js'),
+        esModule: require('./es-module'),
         
         nodeModuleA: require('a'),
-        nodeModuleAChild: require('a/child'),
+        nodeModuleAChildJS: require('a/child'),
+        nodeModuleAChildTxt: require('a/child.txt', 'text'),
 
-        text: require('./text.txt', 'text'),
-        text_js: require('./text.txt', 'text|js'),
-        text_text: require('./text.txt', 'text|text'),
-        text_url: require('./text.txt', 'text|url'),
-        text_base64: require('./text.txt', 'text|base64'),
-        
+        scopeModuleA: require('@scope/a'),
+        scopeModuleAChildJS: require('@scope/a/child'),
+        scopeModuleAChildTxt: require('@scope/a/child.txt', 'text'),
+
+        js: require('./sub/js.js', 'js'),
+        js_js: require('./sub/js.js', 'js|js'),
+        js_text: require('./sub/js.js', 'js|text'),
+        js_url: require('./sub/js.js', 'js|url'),
+        js_base64: require('./sub/js.js', 'js|base64'),
+
+        text: require('./sub/text.txt', 'text'),
+        text_js: require('./sub/text.txt', 'text|js'),
+        text_text: require('./sub/text.txt', 'text|text'),
+        text_url: require('./sub/text.txt', 'text|url'),
+        text_base64: require('./sub/text.txt', 'text|base64'),
+
         json: require('./sub/json.json', 'json'),
         json_js: require('./sub/json.json', 'json|js'),
         json_text: require('./sub/json.json', 'json|text'),
