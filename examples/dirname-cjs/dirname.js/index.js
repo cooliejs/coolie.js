@@ -1,0 +1,1 @@
+module.exports = 'dirname/index.js';
