@@ -843,6 +843,15 @@
 
                 var dependencyPath = dependency.split('/');
                 var nodeModuleName = dependencyPath.shift();
+
+                // @scope module
+                if (nodeModuleName[0] === '@') {
+                    nodeModuleName = [
+                        nodeModuleName,
+                        dependencyPath.shift()
+                    ].join('/');
+                }
+
                 var nodeModuleFile = dependencyPath.join('/') || coolieNodeModuleMainPath;
                 var nodeModuleDir = resolvePath(coolieNodeModulesDir, nodeModuleName + '/');
 

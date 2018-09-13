@@ -1,0 +1,1 @@
+module.exports = '<br>@scope/module/index.js';
