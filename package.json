@@ -1,6 +1,6 @@
 {
   "name": "coolie.js",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "苦力 —— 前端模块加载，支持 CommonJS、CMD、AMD 规范。",
   "scripts": {
     "min": "node ./node_modules/uglify-js/bin/uglifyjs ./coolie.js -cm --comments some -o ./coolie.min.js",
