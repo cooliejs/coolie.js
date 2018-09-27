@@ -936,8 +936,18 @@
             the.state = MODULE_STATE_LOADED;
             the.factory = factory;
             the.expose = function () {
+                var echo = function () {
+                    var exports = the.exports;
+
+                    if (exports && exports.__esModule === true) {
+                        return exports.default;
+                    }
+
+                    return exports;
+                };
+
                 if (the.state === MODULE_STATE_EXECUTED) {
-                    return the.exports;
+                    return echo();
                 }
 
                 the.state = MODULE_STATE_EXECUTED;
@@ -953,17 +963,17 @@
 
                 var ret = factory.call(win, the.require, the.exports, the);
 
-                if (ret !== undefined) {
+                if (ret !== undefined && the.exports === undefined) {
                     the.exports = ret;
                 }
 
-                var exports = the.exports;
-
-                if (exports.__esModule === true && exports.default !== undefined) {
-                    return exports.default;
+                try {
+                    the.exports.__moduleId = the.gid;
+                } catch (err) {
+                    // ignore
                 }
 
-                return exports;
+                return echo();
             };
             the.require = function (name, pipeLine) {
                 if (coolieAMDMode) {
