@@ -939,6 +939,7 @@
                 var echo = function () {
                     var exports = the.exports;
 
+                    // 兼容 babel 编译后的模块
                     if (exports && exports.__esModule === true) {
                         return exports.default;
                     }
@@ -963,7 +964,7 @@
 
                 var ret = factory.call(win, the.require, the.exports, the);
 
-                if (ret !== undefined && the.exports === undefined) {
+                if (ret !== undefined) {
                     the.exports = ret;
                 }
 
