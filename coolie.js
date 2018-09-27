@@ -967,12 +967,6 @@
                     the.exports = ret;
                 }
 
-                try {
-                    the.exports.__moduleId = the.gid;
-                } catch (err) {
-                    // ignore
-                }
-
                 return echo();
             };
             the.require = function (name, pipeLine) {
