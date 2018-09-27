@@ -796,7 +796,7 @@
     var MODULE_STATE_LOADED = 1;
     var MODULE_STATE_EXECUTED = 2;
     var modulesCacheMap = {};
-    var moduleGid = 0;
+    var moduleGid = 1;
     var mainModules = [];
     var nodeModulesResolveMap = {};
 
